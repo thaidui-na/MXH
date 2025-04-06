@@ -36,7 +36,7 @@
                             {{ Auth::user()->name }}
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end">
-                            <li><a class="dropdown-item" href="#">Hồ sơ</a></li>
+                            <li><a class="dropdown-item" href="{{ route('profile.edit') }}">Hồ sơ</a></li>
                             <li><a class="dropdown-item" href="#">Cài đặt</a></li>
                             <li><hr class="dropdown-divider"></li>
                             <li>
