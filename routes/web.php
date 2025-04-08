@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\PostController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -25,3 +26,20 @@ Route::middleware('auth')->group(function () {
     Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::put('/profile/password', [ProfileController::class, 'updatePassword'])->name('profile.password');
 });
+
+// Routes cho bài viết
+Route::middleware('auth')->group(function () {
+    // Danh sách tất cả bài viết
+    Route::get('/posts', [PostController::class, 'index'])->name('posts.index');
+    
+    // Danh sách bài viết của tôi
+    Route::get('/my-posts', [PostController::class, 'myPosts'])->name('posts.my_posts');
+    
+    // CRUD cho posts
+    Route::resource('posts', PostController::class)->except(['index']);
+});
+
+// Cập nhật route dashboard
+Route::get('/dashboard', function () {
+    return redirect()->route('posts.index');
+})->middleware(['auth'])->name('dashboard');

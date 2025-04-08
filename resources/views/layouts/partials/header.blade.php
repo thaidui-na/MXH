@@ -14,10 +14,10 @@
                 </li>
                 @auth
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url('/dashboard') }}">Bảng tin</a>
+                        <a class="nav-link" href="{{ route('posts.index') }}">Bảng tin</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#">Bạn bè</a>
+                        <a class="nav-link" href="{{ route('posts.my_posts') }}">Bài viết của tôi</a>
                     </li>
                 @endauth
             </ul>

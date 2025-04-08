@@ -60,4 +60,13 @@ class User extends Authenticatable
         // Avatar mặc định nếu chưa upload
         return 'https://ui-avatars.com/api/?name=' . urlencode($this->name) . '&color=7F9CF5&background=EBF4FF';
     }
+
+    /**
+     * Quan hệ một-nhiều với Post
+     * Một user có thể có nhiều bài viết
+     */
+    public function posts()
+    {
+        return $this->hasMany(Post::class);
+    }
 }
