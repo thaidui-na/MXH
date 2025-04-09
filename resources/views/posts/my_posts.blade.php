@@ -25,9 +25,6 @@
                         <div class="card-body">
                             <div class="d-flex justify-content-between">
                                 <h5 class="card-title">{{ $post->title }}</h5>
-                                <span class="badge {{ $post->is_public ? 'bg-success' : 'bg-secondary' }}">
-                                    {{ $post->is_public ? 'Công khai' : 'Riêng tư' }}
-                                </span>
                             </div>
                             <p class="card-text text-muted small">
                                 Đăng ngày {{ $post->created_at->format('d/m/Y H:i') }}
@@ -65,4 +62,4 @@
         </div>
     @endif
 </div>
-@endsection 
+@endsection
