@@ -20,14 +20,6 @@
                             <i class="fas fa-user"></i> {{ $post->user->name }} <br>
                             <i class="fas fa-calendar"></i> {{ $post->created_at->format('d/m/Y H:i') }}
                         </p>
-                        
-                        @if($post->user_id === auth()->id())
-                            <div>
-                                <span class="badge {{ $post->is_public ? 'bg-success' : 'bg-secondary' }}">
-                                    {{ $post->is_public ? 'Công khai' : 'Riêng tư' }}
-                                </span>
-                            </div>
-                        @endif
                     </div>
                     
                     <hr>

@@ -15,6 +15,7 @@ class PostController extends Controller
     {
         // Lấy tất cả bài viết công khai, mới nhất đầu tiên
         $posts = Post::with('user') // Eager loading để tối ưu truy vấn
+                    ->where('is_public', true) // Chỉ lấy bài viết công khai
                     ->latest()
                     ->paginate(10); // Phân trang mỗi trang 10 bài
 
@@ -51,16 +52,13 @@ class PostController extends Controller
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'content' => 'required|string',
-            'is_public' => 'sometimes|boolean'
         ]);
 
         // Thêm user_id vào dữ liệu
         $validated['user_id'] = auth()->id();
         
-        // Mặc định là công khai nếu không có giá trị
-        if (!isset($validated['is_public'])) {
-            $validated['is_public'] = true;
-        }
+        // Tất cả bài viết đều công khai
+        $validated['is_public'] = true;
 
         // Tạo bài viết mới
         Post::create($validated);
@@ -75,7 +73,7 @@ class PostController extends Controller
      */
     public function show(Post $post)
     {
-        // Kiểm tra nếu bài viết không công khai và không phải của user hiện tại
+        // Chỉ cho phép xem bài viết của mình hoặc bài viết công khai
         if (!$post->is_public && $post->user_id !== auth()->id()) {
             abort(403, 'Bạn không có quyền xem bài viết này.');
         }
@@ -110,13 +108,10 @@ class PostController extends Controller
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'content' => 'required|string',
-            'is_public' => 'sometimes|boolean'
         ]);
 
-        // Mặc định là công khai nếu không có giá trị
-        if (!isset($validated['is_public'])) {
-            $validated['is_public'] = false;
-        }
+        // Tất cả bài viết đều công khai
+        $validated['is_public'] = true;
 
         // Cập nhật bài viết
         $post->update($validated);
