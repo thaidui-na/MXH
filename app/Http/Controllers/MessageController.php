@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Models\Message;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class MessageController extends Controller
 {
@@ -58,16 +59,35 @@ class MessageController extends Controller
      */
     public function store(Request $request)
     {
+        // Validate dữ liệu đầu vào
         $request->validate([
             'receiver_id' => 'required|exists:users,id',
-            'content' => 'required|string'
+            'content' => 'nullable|string',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048'
         ]);
 
-        $message = Message::create([
+        // Kiểm tra có ít nhất một trong hai: nội dung hoặc hình ảnh
+        if (empty($request->content) && !$request->hasFile('image')) {
+            return response()->json([
+                'error' => 'Vui lòng nhập nội dung hoặc chọn hình ảnh'
+            ], 422);
+        }
+
+        // Khởi tạo dữ liệu tin nhắn
+        $messageData = [
             'sender_id' => auth()->id(),
             'receiver_id' => $request->receiver_id,
-            'content' => $request->content
-        ]);
+            'content' => $request->content ?: null  // Đảm bảo là null nếu không có nội dung
+        ];
+
+        // Xử lý upload hình ảnh nếu có
+        if ($request->hasFile('image')) {
+            $path = $request->file('image')->store('message-images', 'public');
+            $messageData['image_path'] = $path;
+        }
+
+        // Tạo tin nhắn mới
+        $message = Message::create($messageData);
 
         if ($request->ajax()) {
             return response()->json([
