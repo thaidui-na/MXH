@@ -10,6 +10,7 @@ class Message extends Model
         'sender_id',
         'receiver_id',
         'content',
+        'image_path',
         'is_read'
     ];
 
@@ -27,5 +28,21 @@ class Message extends Model
     public function receiver()
     {
         return $this->belongsTo(User::class, 'receiver_id');
+    }
+
+    /**
+     * Kiểm tra tin nhắn có hình ảnh không
+     */
+    public function hasImage()
+    {
+        return !is_null($this->image_path);
+    }
+
+    /**
+     * Lấy URL của hình ảnh
+     */
+    public function getImageUrl()
+    {
+        return $this->hasImage() ? asset('storage/' . $this->image_path) : null;
     }
 } 

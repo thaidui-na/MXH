@@ -78,12 +78,33 @@
                         @include('messages.partials.message-list')
                     </div>
                     <div class="card-footer">
-                        <form id="message-form" action="{{ route('messages.store') }}" method="POST">
+                        <form id="message-form" action="{{ route('messages.store') }}" method="POST" enctype="multipart/form-data">
                             @csrf
                             <input type="hidden" name="receiver_id" value="{{ $selectedUser->id }}">
+                            
+                            <!-- Preview hình ảnh -->
+                            <div id="image-preview" class="mb-2" style="display: none;">
+                                <div class="position-relative d-inline-block">
+                                    <img src="" alt="Preview" style="max-height: 100px; max-width: 200px;">
+                                    <button type="button" class="btn-close position-absolute top-0 end-0" 
+                                            style="background-color: white; border-radius: 50%;"
+                                            onclick="removeImage()"></button>
+                                </div>
+                            </div>
+
                             <div class="input-group">
+                                <!-- Input nhập tin nhắn -->
                                 <input type="text" name="content" class="form-control" 
-                                       placeholder="Nhập tin nhắn..." required>
+                                       placeholder="Nhập tin nhắn...">
+                                
+                                <!-- Button upload ảnh -->
+                                <label class="btn btn-outline-secondary" for="image-upload">
+                                    <i class="fas fa-image"></i>
+                                </label>
+                                <input type="file" id="image-upload" name="image" 
+                                       accept="image/*" style="display: none;">
+                                
+                                <!-- Button gửi -->
                                 <button type="submit" class="btn btn-primary">Gửi</button>
                             </div>
                         </form>
