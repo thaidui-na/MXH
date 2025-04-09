@@ -1,5 +1,5 @@
 <div class="mb-3 {{ $message->sender_id === auth()->id() ? 'text-end' : '' }}">
-    <div class="d-inline-block">
+    <div class="d-inline-block">  
         <!-- Hiển thị nội dung tin nhắn và emoji nếu có -->
         @if($message->content || $message->emoji)
             <div class="p-2 rounded {{ $message->sender_id === auth()->id() ? 'bg-primary text-white' : 'bg-light' }}">
