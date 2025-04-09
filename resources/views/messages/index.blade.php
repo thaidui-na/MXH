@@ -78,36 +78,227 @@
                         @include('messages.partials.message-list')
                     </div>
                     <div class="card-footer">
-                        <form id="message-form" action="{{ route('messages.store') }}" method="POST" enctype="multipart/form-data">
-                            @csrf
-                            <input type="hidden" name="receiver_id" value="{{ $selectedUser->id }}">
-                            
-                            <!-- Preview hình ảnh -->
-                            <div id="image-preview" class="mb-2" style="display: none;">
-                                <div class="position-relative d-inline-block">
-                                    <img src="" alt="Preview" style="max-height: 100px; max-width: 200px;">
-                                    <button type="button" class="btn-close position-absolute top-0 end-0" 
-                                            style="background-color: white; border-radius: 50%;"
-                                            onclick="removeImage()"></button>
+                        <div class="message-input-wrapper">
+                            <div class="message-actions mb-2">
+                                <button type="button" class="btn btn-light btn-sm" onclick="toggleEmojiPicker()">
+                                    <i class="far fa-smile"></i>
+                                </button>
+                                <button type="button" class="btn btn-light btn-sm" onclick="toggleStickerPicker()">
+                                    <i class="far fa-sticky-note"></i>
+                                </button>
+                            </div>
+
+                            <!-- Emoji Picker -->
+                            <div id="emoji-picker" class="emoji-picker" style="display: none;">
+                                <!-- Tab navigation -->
+                                <ul class="nav nav-tabs nav-fill mb-2">
+                                    <li class="nav-item">
+                                        <a class="nav-link active" data-bs-toggle="tab" href="#smileys">😊</a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a class="nav-link" data-bs-toggle="tab" href="#gestures">👋</a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a class="nav-link" data-bs-toggle="tab" href="#love">❤️</a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a class="nav-link" data-bs-toggle="tab" href="#activities">⚽</a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a class="nav-link" data-bs-toggle="tab" href="#food">🍔</a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a class="nav-link" data-bs-toggle="tab" href="#animals">🐶</a>
+                                    </li>
+                                </ul>
+
+                                <!-- Tab content -->
+                                <div class="tab-content">
+                                    <!-- Mặt cười -->
+                                    <div class="tab-pane fade show active" id="smileys">
+                                        <div class="emoji-list">
+                                            <span onclick="insertEmoji('😀')">😀</span>
+                                            <span onclick="insertEmoji('😃')">😃</span>
+                                            <span onclick="insertEmoji('😄')">😄</span>
+                                            <span onclick="insertEmoji('😁')">😁</span>
+                                            <span onclick="insertEmoji('😅')">😅</span>
+                                            <span onclick="insertEmoji('😂')">😂</span>
+                                            <span onclick="insertEmoji('🤣')">🤣</span>
+                                            <span onclick="insertEmoji('😊')">😊</span>
+                                            <span onclick="insertEmoji('😇')">😇</span>
+                                            <span onclick="insertEmoji('🙂')">🙂</span>
+                                            <span onclick="insertEmoji('😉')">😉</span>
+                                            <span onclick="insertEmoji('😌')">😌</span>
+                                            <span onclick="insertEmoji('😍')">😍</span>
+                                            <span onclick="insertEmoji('🥰')">🥰</span>
+                                            <span onclick="insertEmoji('😘')">😘</span>
+                                            <span onclick="insertEmoji('😋')">😋</span>
+                                            <span onclick="insertEmoji('😎')">😎</span>
+                                            <span onclick="insertEmoji('🤩')">🤩</span>
+                                            <span onclick="insertEmoji('🥳')">🥳</span>
+                                            <span onclick="insertEmoji('😏')">😏</span>
+                                        </div>
+                                    </div>
+
+                                    <!-- Cử chỉ -->
+                                    <div class="tab-pane fade" id="gestures">
+                                        <div class="emoji-list">
+                                            <span onclick="insertEmoji('👋')">👋</span>
+                                            <span onclick="insertEmoji('🤚')">🤚</span>
+                                            <span onclick="insertEmoji('🖐')">🖐</span>
+                                            <span onclick="insertEmoji('✋')">✋</span>
+                                            <span onclick="insertEmoji('🖖')">🖖</span>
+                                            <span onclick="insertEmoji('👌')">👌</span>
+                                            <span onclick="insertEmoji('🤌')">🤌</span>
+                                            <span onclick="insertEmoji('🤏')">🤏</span>
+                                            <span onclick="insertEmoji('✌️')">✌️</span>
+                                            <span onclick="insertEmoji('🤞')">🤞</span>
+                                            <span onclick="insertEmoji('🤟')">🤟</span>
+                                            <span onclick="insertEmoji('🤘')">🤘</span>
+                                            <span onclick="insertEmoji('👍')">👍</span>
+                                            <span onclick="insertEmoji('👎')">👎</span>
+                                            <span onclick="insertEmoji('👊')">👊</span>
+                                        </div>
+                                    </div>
+
+                                    <!-- Tình yêu -->
+                                    <div class="tab-pane fade" id="love">
+                                        <div class="emoji-list">
+                                            <span onclick="insertEmoji('❤️')">❤️</span>
+                                            <span onclick="insertEmoji('🧡')">🧡</span>
+                                            <span onclick="insertEmoji('💛')">💛</span>
+                                            <span onclick="insertEmoji('💚')">💚</span>
+                                            <span onclick="insertEmoji('💙')">💙</span>
+                                            <span onclick="insertEmoji('💜')">💜</span>
+                                            <span onclick="insertEmoji('🤎')">🤎</span>
+                                            <span onclick="insertEmoji('🖤')">🖤</span>
+                                            <span onclick="insertEmoji('🤍')">🤍</span>
+                                            <span onclick="insertEmoji('💯')">💯</span>
+                                            <span onclick="insertEmoji('💢')">💢</span>
+                                            <span onclick="insertEmoji('💥')">💥</span>
+                                            <span onclick="insertEmoji('💫')">💫</span>
+                                            <span onclick="insertEmoji('💝')">💝</span>
+                                            <span onclick="insertEmoji('💞')">💞</span>
+                                        </div>
+                                    </div>
+
+                                    <!-- Hoạt động -->
+                                    <div class="tab-pane fade" id="activities">
+                                        <div class="emoji-list">
+                                            <span onclick="insertEmoji('⚽')">⚽</span>
+                                            <span onclick="insertEmoji('🏀')">🏀</span>
+                                            <span onclick="insertEmoji('🏈')">🏈</span>
+                                            <span onclick="insertEmoji('⚾')">⚾</span>
+                                            <span onclick="insertEmoji('🎾')">🎾</span>
+                                            <span onclick="insertEmoji('🏐')">🏐</span>
+                                            <span onclick="insertEmoji('🎮')">🎮</span>
+                                            <span onclick="insertEmoji('🎲')">🎲</span>
+                                            <span onclick="insertEmoji('🎭')">🎭</span>
+                                            <span onclick="insertEmoji('🎨')">🎨</span>
+                                            <span onclick="insertEmoji('🎬')">🎬</span>
+                                            <span onclick="insertEmoji('🎤')">🎤</span>
+                                            <span onclick="insertEmoji('🎧')">🎧</span>
+                                            <span onclick="insertEmoji('🎸')">🎸</span>
+                                            <span onclick="insertEmoji('🎹')">🎹</span>
+                                        </div>
+                                    </div>
+
+                                    <!-- Đồ ăn -->
+                                    <div class="tab-pane fade" id="food">
+                                        <div class="emoji-list">
+                                            <span onclick="insertEmoji('🍕')">🍕</span>
+                                            <span onclick="insertEmoji('🍔')">🍔</span>
+                                            <span onclick="insertEmoji('🍟')">🍟</span>
+                                            <span onclick="insertEmoji('🌭')">🌭</span>
+                                            <span onclick="insertEmoji('🍿')">🍿</span>
+                                            <span onclick="insertEmoji('🧂')">🧂</span>
+                                            <span onclick="insertEmoji('🥓')">🥓</span>
+                                            <span onclick="insertEmoji('🥚')">🥚</span>
+                                            <span onclick="insertEmoji('🍳')">🍳</span>
+                                            <span onclick="insertEmoji('🧇')">🧇</span>
+                                            <span onclick="insertEmoji('🥞')">🥞</span>
+                                            <span onclick="insertEmoji('🧈')">🧈</span>
+                                            <span onclick="insertEmoji('🍞')">🍞</span>
+                                            <span onclick="insertEmoji('🥐')">🥐</span>
+                                            <span onclick="insertEmoji('🥨')">🥨</span>
+                                        </div>
+                                    </div>
+
+                                    <!-- Động vật -->
+                                    <div class="tab-pane fade" id="animals">
+                                        <div class="emoji-list">
+                                            <span onclick="insertEmoji('🐶')">🐶</span>
+                                            <span onclick="insertEmoji('🐱')">🐱</span>
+                                            <span onclick="insertEmoji('🐭')">🐭</span>
+                                            <span onclick="insertEmoji('🐹')">🐹</span>
+                                            <span onclick="insertEmoji('🐰')">🐰</span>
+                                            <span onclick="insertEmoji('🦊')">🦊</span>
+                                            <span onclick="insertEmoji('🐻')">🐻</span>
+                                            <span onclick="insertEmoji('🐼')">🐼</span>
+                                            <span onclick="insertEmoji('🐨')">🐨</span>
+                                            <span onclick="insertEmoji('🐯')">🐯</span>
+                                            <span onclick="insertEmoji('🦁')">🦁</span>
+                                            <span onclick="insertEmoji('🐮')">🐮</span>
+                                            <span onclick="insertEmoji('🐷')">🐷</span>
+                                            <span onclick="insertEmoji('🐸')">🐸</span>
+                                            <span onclick="insertEmoji('🐵')">🐵</span>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
 
-                            <div class="input-group">
-                                <!-- Input nhập tin nhắn -->
-                                <input type="text" name="content" class="form-control" 
-                                       placeholder="Nhập tin nhắn...">
-                                
-                                <!-- Button upload ảnh -->
-                                <label class="btn btn-outline-secondary" for="image-upload">
-                                    <i class="fas fa-image"></i>
-                                </label>
-                                <input type="file" id="image-upload" name="image" 
-                                       accept="image/*" style="display: none;">
-                                
-                                <!-- Button gửi -->
-                                <button type="submit" class="btn btn-primary">Gửi</button>
+                            <!-- Sticker Picker -->
+                            <div id="sticker-picker" class="sticker-picker" style="display: none;">
+                                <div class="sticker-list">
+                                    <!-- Thêm danh sách sticker -->
+                                    <img src="/stickers/1.png" onclick="selectSticker('1.png')" class="sticker-thumb">
+                                    <img src="/stickers/2.png" onclick="selectSticker('2.png')" class="sticker-thumb">
+                                    <!-- Thêm các sticker khác -->
+                                    <img src="/stickers/3.png" onclick="selectSticker('3.png')" class="sticker-thumb">
+                                    <img src="/stickers/4.png" onclick="selectSticker('4.png')" class="sticker-thumb">
+                                    <img src="/stickers/5.png" onclick="selectSticker('5.png')" class="sticker-thumb">
+                                    <img src="/stickers/6.png" onclick="selectSticker('6.png')" class="sticker-thumb">
+                                    <img src="/stickers/7.png" onclick="selectSticker('7.png')" class="sticker-thumb">
+                                    <img src="/stickers/8.png" onclick="selectSticker('8.png')" class="sticker-thumb">
+                                    <img src="/stickers/9.png" onclick="selectSticker('9.png')" class="sticker-thumb">
+                                    <img src="/stickers/10.png" onclick="selectSticker('10.png')" class="sticker-thumb">
+                                    <img src="/stickers/11.png" onclick="selectSticker('11.png')" class="sticker-thumb">
+                                    <img src="/stickers/12.png" onclick="selectSticker('12.png')" class="sticker-thumb">
+                                </div>
                             </div>
-                        </form>
+
+                            <form id="message-form" action="{{ route('messages.store') }}" method="POST" enctype="multipart/form-data">
+                                @csrf
+                                <input type="hidden" name="receiver_id" value="{{ $selectedUser->id }}">
+                                <input type="hidden" name="sticker" id="selected-sticker">
+                                
+                                <!-- Preview hình ảnh -->
+                                <div id="image-preview" class="mb-2" style="display: none;">
+                                    <div class="position-relative d-inline-block">
+                                        <img src="" alt="Preview" style="max-height: 100px; max-width: 200px;">
+                                        <button type="button" class="btn-close position-absolute top-0 end-0" 
+                                                style="background-color: white; border-radius: 50%;"
+                                                onclick="removeImage()"></button>
+                                    </div>
+                                </div>
+
+                                <div class="input-group">
+                                    <!-- Input nhập tin nhắn -->
+                                    <input type="text" name="content" class="form-control" 
+                                           placeholder="Nhập tin nhắn...">
+                                    
+                                    <!-- Button upload ảnh -->
+                                    <label class="btn btn-outline-secondary" for="image-upload">
+                                        <i class="fas fa-image"></i>
+                                    </label>
+                                    <input type="file" id="image-upload" name="image" 
+                                           accept="image/*" style="display: none;">
+                                    
+                                    <!-- Button gửi -->
+                                    <button type="submit" class="btn btn-primary">Gửi</button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
                 </div>
             @else
@@ -150,6 +341,72 @@
 /* Đảm bảo tin nhắn dài không bị tràn */
 .min-width-0 {
     min-width: 0;
+}
+
+.emoji-picker {
+    width: 300px;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    padding: 10px;
+    position: absolute;
+    bottom: 100%;
+    left: 0;
+    z-index: 1000;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+}
+
+.nav-tabs .nav-link {
+    padding: 5px;
+    font-size: 1.2em;
+}
+
+.emoji-list {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 5px;
+    padding: 10px;
+}
+
+.emoji-list span {
+    cursor: pointer;
+    font-size: 1.5em;
+    text-align: center;
+    padding: 5px;
+    border-radius: 5px;
+    transition: background-color 0.2s;
+}
+
+.emoji-list span:hover {
+    background-color: #f0f0f0;
+}
+
+.tab-content {
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.sticker-picker {
+    position: absolute;
+    bottom: 100%;
+    left: 0;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    padding: 10px;
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 1000;
+}
+
+.sticker-thumb {
+    width: 60px;
+    height: 60px;
+    object-fit: contain;
+}
+
+.message-input-wrapper {
+    position: relative;
 }
 </style>
 @endpush
@@ -258,5 +515,29 @@ document.addEventListener('DOMContentLoaded', function() {
     // Cập nhật danh sách người dùng mỗi 5 giây
     setInterval(updateUsersList, 5000);
 });
+
+function toggleEmojiPicker() {
+    const picker = document.getElementById('emoji-picker');
+    picker.style.display = picker.style.display === 'none' ? 'block' : 'none';
+    document.getElementById('sticker-picker').style.display = 'none';
+}
+
+function toggleStickerPicker() {
+    const picker = document.getElementById('sticker-picker');
+    picker.style.display = picker.style.display === 'none' ? 'block' : 'none';
+    document.getElementById('emoji-picker').style.display = 'none';
+}
+
+function insertEmoji(emoji) {
+    const input = document.querySelector('input[name="content"]');
+    input.value += emoji;
+}
+
+function selectSticker(stickerId) {
+    document.getElementById('selected-sticker').value = stickerId;
+    document.getElementById('message-form').dispatchEvent(new Event('submit'));
+    document.getElementById('selected-sticker').value = '';
+    document.getElementById('sticker-picker').style.display = 'none';
+}
 </script>
 @endpush 

@@ -63,13 +63,16 @@ class MessageController extends Controller
         $request->validate([
             'receiver_id' => 'required|exists:users,id',
             'content' => 'nullable|string',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048'
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'sticker' => 'nullable|string',
+            'emoji' => 'nullable|string'
         ]);
 
-        // Kiểm tra có ít nhất một trong hai: nội dung hoặc hình ảnh
-        if (empty($request->content) && !$request->hasFile('image')) {
+        // Kiểm tra có ít nhất một trong các trường: nội dung, hình ảnh, sticker hoặc emoji
+        if (empty($request->content) && !$request->hasFile('image') && 
+            empty($request->sticker) && empty($request->emoji)) {
             return response()->json([
-                'error' => 'Vui lòng nhập nội dung hoặc chọn hình ảnh'
+                'error' => 'Vui lòng nhập nội dung, chọn hình ảnh, sticker hoặc emoji'
             ], 422);
         }
 
@@ -77,7 +80,9 @@ class MessageController extends Controller
         $messageData = [
             'sender_id' => auth()->id(),
             'receiver_id' => $request->receiver_id,
-            'content' => $request->content ?: null  // Đảm bảo là null nếu không có nội dung
+            'content' => $request->content ?: null,
+            'sticker' => $request->sticker ?: null,
+            'emoji' => $request->emoji ?: null
         ];
 
         // Xử lý upload hình ảnh nếu có

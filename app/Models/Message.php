@@ -11,6 +11,8 @@ class Message extends Model
         'receiver_id',
         'content',
         'image_path',
+        'sticker',
+        'emoji',
         'is_read'
     ];
 
@@ -39,10 +41,26 @@ class Message extends Model
     }
 
     /**
+     * Kiểm tra tin nhắn có sticker không
+     */
+    public function hasSticker()
+    {
+        return !is_null($this->sticker);
+    }
+
+    /**
      * Lấy URL của hình ảnh
      */
     public function getImageUrl()
     {
         return $this->hasImage() ? asset('storage/' . $this->image_path) : null;
+    }
+
+    /**
+     * Lấy URL của sticker
+     */
+    public function getStickerUrl()
+    {
+        return $this->hasSticker() ? asset('stickers/' . $this->sticker) : null;
     }
 } 
