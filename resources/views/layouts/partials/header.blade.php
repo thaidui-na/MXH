@@ -13,6 +13,16 @@
                     <li class="nav-item">
                         <a class="nav-link" href="{{ route('posts.my_posts') }}">Bài viết của tôi</a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ route('messages.index') }}">
+                            Tin nhắn
+                            @if(auth()->user()->unreadMessages()->count() > 0)
+                                <span class="badge bg-danger">
+                                    {{ auth()->user()->unreadMessages()->count() }}
+                                </span>
+                            @endif
+                        </a>
+                    </li>
                 @endauth
             </ul>
             

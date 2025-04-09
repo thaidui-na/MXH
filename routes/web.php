@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PostController;
+use App\Http\Controllers\MessageController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -37,6 +38,13 @@ Route::middleware('auth')->group(function () {
     
     // CRUD cho posts
     Route::resource('posts', PostController::class)->except(['index']);
+
+    // Routes cho tin nhắn
+    Route::get('/messages', [MessageController::class, 'index'])->name('messages.index');
+    Route::get('/messages/{user}', [MessageController::class, 'show'])->name('messages.show');
+    Route::post('/messages', [MessageController::class, 'store'])->name('messages.store');
+    Route::get('/messages/{user}/new', [MessageController::class, 'getNewMessages'])->name('messages.new');
+    Route::get('/messages/users/status', [MessageController::class, 'getUsersStatus'])->name('messages.users.status');
 });
 
 // Cập nhật route dashboard
