@@ -69,4 +69,53 @@ class User extends Authenticatable
     {
         return $this->hasMany(Post::class);
     }
+
+    /**
+     * Lấy tin nhắn đã gửi
+     */
+    public function sentMessages()
+    {
+        return $this->hasMany(Message::class, 'sender_id');
+    }
+
+    /**
+     * Lấy tin nhắn đã nhận
+     */
+    public function receivedMessages()
+    {
+        return $this->hasMany(Message::class, 'receiver_id');
+    }
+
+    /**
+     * Lấy số tin nhắn chưa đọc
+     */
+    public function unreadMessages()
+    {
+        return $this->receivedMessages()->where('is_read', false);
+    }
+
+    /**
+     * Lấy số tin nhắn chưa đọc từ một người dùng cụ thể
+     */
+    public function getUnreadMessagesFrom($senderId)
+    {
+        return $this->receivedMessages()
+            ->where('sender_id', $senderId)
+            ->where('is_read', false)
+            ->count();
+    }
+
+    /**
+     * Lấy tin nhắn cuối cùng với một người dùng
+     */
+    public function getLastMessageWith($userId)
+    {
+        return Message::where(function($query) use ($userId) {
+            $query->where('sender_id', $this->id)
+                  ->where('receiver_id', $userId);
+        })->orWhere(function($query) use ($userId) {
+            $query->where('sender_id', $userId)
+                  ->where('receiver_id', $this->id);
+        })->latest()->first();
+    }
 }
