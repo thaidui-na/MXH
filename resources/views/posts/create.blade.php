@@ -34,13 +34,6 @@
                             @enderror
                         </div>
                         
-                        <!-- Trạng thái công khai -->
-                        <div class="mb-3 form-check">
-                            <input type="checkbox" class="form-check-input" id="is_public" 
-                                   name="is_public" value="1" {{ old('is_public', '1') == '1' ? 'checked' : '' }}>
-                            <label class="form-check-label" for="is_public">Công khai bài viết</label>
-                        </div>
-                        
                         <div class="d-grid gap-2 d-md-flex justify-content-md-end">
                             <a href="{{ route('posts.my_posts') }}" class="btn btn-secondary me-md-2">Hủy</a>
                             <button type="submit" class="btn btn-primary">Đăng bài</button>
