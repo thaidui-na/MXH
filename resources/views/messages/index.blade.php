@@ -5,58 +5,125 @@
 @section('content')
 <div class="container-fluid py-4">
     <div class="row">
-        <!-- Danh sách người dùng -->
+        <!-- Danh sách người dùng và nhóm -->
         <div class="col-md-3">
             <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0">Danh sách người dùng</h5>
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Trò chuyện</h5>
+                    <button type="button" class="btn btn-sm btn-primary" onclick="showCreateGroupModal()">
+                        <i class="fas fa-users"></i> Tạo nhóm
+                    </button>
                 </div>
                 <div class="card-body p-0">
-                    <div class="list-group list-group-flush" id="users-list">
-                        @foreach($users as $user)
-                            @php
-                                // Lấy số tin nhắn chưa đọc từ người dùng này
-                                $unreadCount = auth()->user()->getUnreadMessagesFrom($user->id);
-                                // Lấy tin nhắn cuối cùng
-                                $lastMessage = auth()->user()->getLastMessageWith($user->id);
-                            @endphp
-                            <a href="{{ route('messages.show', $user->id) }}" 
-                               class="list-group-item list-group-item-action user-chat-item {{ $selectedUser && $selectedUser->id == $user->id ? 'active' : '' }}"
-                               data-user-id="{{ $user->id }}">
-                                <div class="d-flex align-items-center">
-                                    <!-- Avatar người dùng -->
-                                    <div class="position-relative">
-                                        <img src="{{ $user->avatar_url }}" 
-                                             class="rounded-circle me-2" 
-                                             style="width: 40px; height: 40px; object-fit: cover;">
-                                        @if($unreadCount > 0)
-                                            <!-- Badge hiển thị số tin nhắn chưa đọc -->
-                                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-                                                {{ $unreadCount }}
-                                            </span>
-                                        @endif
-                                    </div>
-                                    
-                                    <!-- Thông tin người dùng và tin nhắn -->
-                                    <div class="flex-grow-1 min-width-0">
-                                        <div class="d-flex justify-content-between align-items-center">
-                                            <h6 class="mb-0">{{ $user->name }}</h6>
-                                            @if($lastMessage)
-                                                <small class="text-muted">
-                                                    {{ $lastMessage->created_at->diffForHumans(null, true) }}
-                                                </small>
-                                            @endif
-                                        </div>
-                                        @if($lastMessage)
-                                            <p class="mb-0 small text-truncate {{ !$lastMessage->is_read && $lastMessage->receiver_id === auth()->id() ? 'fw-bold' : 'text-muted' }}">
-                                                {{ $lastMessage->sender_id === auth()->id() ? 'Bạn: ' : '' }}
-                                                {{ Str::limit($lastMessage->content, 30) }}
-                                            </p>
-                                        @endif
-                                    </div>
-                                </div>
+                    <!-- Tab navigation -->
+                    <ul class="nav nav-tabs" role="tablist">
+                        <li class="nav-item">
+                            <a class="nav-link active" data-bs-toggle="tab" href="#users-tab">
+                                Người dùng
                             </a>
-                        @endforeach
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" data-bs-toggle="tab" href="#groups-tab">
+                                Nhóm chat
+                            </a>
+                        </li>
+                    </ul>
+
+                    <!-- Tab content -->
+                    <div class="tab-content">
+                        <!-- Danh sách người dùng -->
+                        <div class="tab-pane fade show active" id="users-tab">
+                            <div class="list-group list-group-flush" id="users-list">
+                                @foreach($users as $user)
+                                    @php
+                                        // Lấy số tin nhắn chưa đọc từ người dùng này
+                                        $unreadCount = auth()->user()->getUnreadMessagesFrom($user->id);
+                                        // Lấy tin nhắn cuối cùng
+                                        $lastMessage = auth()->user()->getLastMessageWith($user->id);
+                                    @endphp
+                                    <a href="{{ route('messages.show', $user->id) }}" 
+                                       class="list-group-item list-group-item-action user-chat-item {{ $selectedUser && $selectedUser->id == $user->id ? 'active' : '' }}"
+                                       data-user-id="{{ $user->id }}">
+                                        <div class="d-flex align-items-center">
+                                            <!-- Avatar người dùng -->
+                                            <div class="position-relative">
+                                                <img src="{{ $user->avatar_url }}" 
+                                                     class="rounded-circle me-2" 
+                                                     style="width: 40px; height: 40px; object-fit: cover;">
+                                                @if($unreadCount > 0)
+                                                    <!-- Badge hiển thị số tin nhắn chưa đọc -->
+                                                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                                                        {{ $unreadCount }}
+                                                    </span>
+                                                @endif
+                                            </div>
+                                            
+                                            <!-- Thông tin người dùng và tin nhắn -->
+                                            <div class="flex-grow-1 min-width-0">
+                                                <div class="d-flex justify-content-between align-items-center">
+                                                    <h6 class="mb-0">{{ $user->name }}</h6>
+                                                    @if($lastMessage)
+                                                        <small class="text-muted">
+                                                            {{ $lastMessage->created_at->diffForHumans(null, true) }}
+                                                        </small>
+                                                    @endif
+                                                </div>
+                                                @if($lastMessage)
+                                                    <p class="mb-0 small text-truncate {{ !$lastMessage->is_read && $lastMessage->receiver_id === auth()->id() ? 'fw-bold' : 'text-muted' }}">
+                                                        {{ $lastMessage->sender_id === auth()->id() ? 'Bạn: ' : '' }}
+                                                        {{ Str::limit($lastMessage->content, 30) }}
+                                                    </p>
+                                                @endif
+                                            </div>
+                                        </div>
+                                    </a>
+                                @endforeach
+                            </div>
+                        </div>
+
+                        <!-- Danh sách nhóm -->
+                        <div class="tab-pane fade" id="groups-tab">
+                            <div class="list-group list-group-flush" id="groups-list">
+                                @forelse(auth()->user()->groups as $group)
+                                    <a href="{{ route('chat-groups.show', $group) }}" 
+                                       class="list-group-item list-group-item-action {{ request()->is('chat-groups/'.$group->id) ? 'active' : '' }}">
+                                        <div class="d-flex align-items-center">
+                                            <div class="flex-shrink-0">
+                                                @if($group->avatar)
+                                                    <img src="{{ asset('storage/' . $group->avatar) }}" 
+                                                         class="rounded-circle" 
+                                                         style="width: 40px; height: 40px; object-fit: cover;">
+                                                @else
+                                                    <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center"
+                                                         style="width: 40px; height: 40px;">
+                                                        {{ substr($group->name, 0, 1) }}
+                                                    </div>
+                                                @endif
+                                            </div>
+                                            <div class="flex-grow-1 ms-3">
+                                                <h6 class="mb-0">{{ $group->name }}</h6>
+                                                <small class="text-muted">
+                                                    {{ $group->members->count() }} thành viên
+                                                    @if($group->messages->isNotEmpty())
+                                                        · {{ $group->messages->first()->created_at->diffForHumans() }}
+                                                    @endif
+                                                </small>
+                                                @if($group->messages->isNotEmpty())
+                                                    <p class="mb-0 small text-truncate text-muted">
+                                                        {{ $group->messages->first()->sender->name }}: 
+                                                        {{ $group->messages->first()->content }}
+                                                    </p>
+                                                @endif
+                                            </div>
+                                        </div>
+                                    </a>
+                                @empty
+                                    <div class="text-center p-3 text-muted">
+                                        <p>Bạn chưa tham gia nhóm chat nào</p>
+                                    </div>
+                                @endforelse
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -309,6 +376,63 @@
         </div>
     </div>
 </div>
+
+<!-- Modal tạo nhóm chat -->
+<div class="modal fade" id="createGroupModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Tạo nhóm chat mới</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="createGroupForm" action="{{ route('chat-groups.store') }}" method="POST" enctype="multipart/form-data">
+                @csrf
+                <div class="modal-body">
+                    <!-- Tên nhóm -->
+                    <div class="mb-3">
+                        <label class="form-label">Tên nhóm</label>
+                        <input type="text" class="form-control" name="name" required>
+                    </div>
+
+                    <!-- Mô tả -->
+                    <div class="mb-3">
+                        <label class="form-label">Mô tả</label>
+                        <textarea class="form-control" name="description" rows="2"></textarea>
+                    </div>
+
+                    <!-- Chọn thành viên -->
+                    <div class="mb-3">
+                        <label class="form-label">Chọn thành viên (tối thiểu 2 người)</label>
+                        <div class="border p-2 rounded" style="max-height: 200px; overflow-y: auto;">
+                            @foreach($users as $user)
+                                <div class="form-check">
+                                    <input class="form-check-input member-checkbox" 
+                                           type="checkbox" 
+                                           name="members[]" 
+                                           value="{{ $user->id }}" 
+                                           id="user-{{ $user->id }}">
+                                    <label class="form-check-label" for="user-{{ $user->id }}">
+                                        {{ $user->name }}
+                                    </label>
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+
+                    <!-- Avatar nhóm -->
+                    <div class="mb-3">
+                        <label class="form-label">Avatar nhóm (tùy chọn)</label>
+                        <input type="file" class="form-control" name="avatar" accept="image/*">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-primary" id="createGroupBtn" disabled>Tạo nhóm</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 @endsection
 
 @push('styles')
@@ -407,6 +531,30 @@
 
 .message-input-wrapper {
     position: relative;
+}
+
+.nav-tabs .nav-link {
+    border: none;
+    color: #6c757d;
+    padding: 1rem;
+}
+
+.nav-tabs .nav-link.active {
+    color: #0d6efd;
+    border-bottom: 2px solid #0d6efd;
+}
+
+.list-group-item-action {
+    border-left: 3px solid transparent;
+}
+
+.list-group-item-action.active {
+    border-left-color: #0d6efd;
+    background-color: rgba(13, 110, 253, 0.1);
+}
+
+.list-group-item-action:hover {
+    border-left-color: #0d6efd;
 }
 </style>
 @endpush
@@ -539,5 +687,66 @@ function selectSticker(stickerId) {
     document.getElementById('selected-sticker').value = '';
     document.getElementById('sticker-picker').style.display = 'none';
 }
+
+// Hiển thị modal tạo nhóm
+function showCreateGroupModal() {
+    const modal = new bootstrap.Modal(document.getElementById('createGroupModal'));
+    modal.show();
+}
+
+// Xử lý form tạo nhóm
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('createGroupForm');
+    const checkboxes = document.querySelectorAll('.member-checkbox');
+    const createGroupBtn = document.getElementById('createGroupBtn');
+
+    // Kiểm tra số lượng thành viên được chọn
+    function updateCreateButton() {
+        const checkedCount = document.querySelectorAll('.member-checkbox:checked').length;
+        createGroupBtn.disabled = checkedCount < 2;
+    }
+
+    // Thêm sự kiện cho các checkbox
+    checkboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', updateCreateButton);
+    });
+
+    // Xử lý submit form
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(this);
+        
+        fetch(this.action, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Thêm nhóm mới vào danh sách
+                const groupsList = document.getElementById('groups-list');
+                groupsList.insertAdjacentHTML('afterbegin', data.groupHtml);
+                
+                // Đóng modal và reset form
+                bootstrap.Modal.getInstance(document.getElementById('createGroupModal')).hide();
+                form.reset();
+                
+                // Chuyển tab sang danh sách nhóm
+                const groupsTab = document.querySelector('a[href="#groups-tab"]');
+                bootstrap.Tab.getOrCreateInstance(groupsTab).show();
+            } else {
+                alert(data.error || 'Có lỗi xảy ra khi tạo nhóm');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Có lỗi xảy ra khi tạo nhóm');
+        });
+    });
+});
 </script>
 @endpush 

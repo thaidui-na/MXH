@@ -5,6 +5,8 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PostController;
 use App\Http\Controllers\MessageController;
+use App\Http\Controllers\ChatGroupController;
+use App\Http\Controllers\GroupMessageController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -45,6 +47,16 @@ Route::middleware('auth')->group(function () {
     Route::post('/messages', [MessageController::class, 'store'])->name('messages.store');
     Route::get('/messages/{user}/new', [MessageController::class, 'getNewMessages'])->name('messages.new');
     Route::get('/messages/users/status', [MessageController::class, 'getUsersStatus'])->name('messages.users.status');
+});
+
+// Routes cho nhóm chat
+Route::middleware(['web', 'auth'])->group(function () {
+    // Chat groups
+    Route::resource('chat-groups', ChatGroupController::class);
+    Route::post('chat-groups/{group}/messages', [GroupMessageController::class, 'store'])
+         ->name('group.messages.store');
+    Route::get('chat-groups/{group}/messages/check', [GroupMessageController::class, 'checkNewMessages'])
+         ->name('group.messages.check');
 });
 
 // Cập nhật route dashboard
