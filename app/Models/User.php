@@ -118,4 +118,24 @@ class User extends Authenticatable
                   ->where('receiver_id', $this->id);
         })->latest()->first();
     }
+
+    /**
+     * Quan hệ với các nhóm chat
+     */
+    public function chatGroups()
+    {
+        return $this->belongsToMany(ChatGroup::class, 'chat_group_members', 'user_id', 'group_id')
+                    ->withPivot('is_admin')
+                    ->withTimestamps();
+    }
+
+    /**
+     * Lấy các nhóm chat mà user là thành viên
+     */
+    public function getGroupsAttribute()
+    {
+        return $this->chatGroups()->with(['members', 'messages' => function($query) {
+            $query->latest()->take(1);
+        }])->get();
+    }
 }
