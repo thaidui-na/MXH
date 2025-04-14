@@ -199,83 +199,106 @@ class ChatGroupController extends Controller
     }
 
     /**
-     * Cập nhật thông tin nhóm
+     * Cập nhật thông tin nhóm và thành viên
      */
     public function update(Request $request, $id)
     {
         try {
             // Tìm nhóm bằng ID
             $group = ChatGroup::findOrFail($id);
-            
-            // Log để debug
-            \Log::info('=== BẮT ĐẦU CẬP NHẬT NHÓM ===', [
-                'group_id' => $id,
-                'request_data' => $request->except(['avatar'])
-            ]);
-            
+
             // Kiểm tra quyền admin
-            if (!$group->members()->where('user_id', auth()->id())->where('is_admin', true)->exists()) {
+            $isAdmin = $group->members()->where('user_id', auth()->id())->where('is_admin', true)->exists();
+            if (!$isAdmin) {
+                // Nếu không phải admin, chuyển hướng về trang xem nhóm với lỗi
                 return redirect()->route('chat-groups.show', $group)
                                ->with('error', 'Bạn không có quyền chỉnh sửa nhóm này');
             }
 
-            // Validate dữ liệu
-            $request->validate([
+            // Validate dữ liệu chung
+            $validatedData = $request->validate([
                 'name' => 'required|string|max:255',
                 'description' => 'nullable|string',
-                'members' => 'required|array|min:2', // Ít nhất 2 thành viên
-                'members.*' => 'exists:users,id',
-                'avatar' => 'nullable|image|max:2048'
+                'members' => 'nullable|array', // Cho phép mảng rỗng nếu không chọn ai khác
+                'members.*' => 'exists:users,id', // Kiểm tra từng ID thành viên tồn tại
+                'avatar' => 'nullable|image|max:2048' // Validate avatar
             ]);
 
+            // Bắt đầu transaction để đảm bảo toàn vẹn dữ liệu
             DB::beginTransaction();
-            try {
-                // Cập nhật avatar nếu có
-                if ($request->hasFile('avatar')) {
-                    // Xóa avatar cũ nếu có
-                    if ($group->avatar) {
-                        Storage::disk('public')->delete($group->avatar);
-                    }
-                    // Upload avatar mới
-                    $avatarPath = $request->file('avatar')->store('group-avatars', 'public');
-                    $group->avatar = $avatarPath;
+            
+            // Cập nhật avatar nếu có file mới được tải lên
+            if ($request->hasFile('avatar')) {
+                // Xóa avatar cũ nếu tồn tại
+                if ($group->avatar) {
+                    Storage::disk('public')->delete($group->avatar);
                 }
-
-                // Cập nhật thông tin cơ bản
-                $group->update([
-                    'name' => $request->name,
-                    'description' => $request->description
-                ]);
-
-                // Cập nhật danh sách thành viên
-                $currentMembers = $group->members()->where('user_id', '!=', auth()->id())->pluck('user_id');
-                
-                // Xóa thành viên không còn trong danh sách
-                $removedMembers = $currentMembers->diff($request->members);
-                $group->members()->detach($removedMembers);
-
-                // Thêm thành viên mới
-                $newMembers = collect($request->members)->diff($currentMembers);
-                foreach ($newMembers as $memberId) {
-                    $group->members()->attach($memberId, ['is_admin' => false]);
-                }
-
-                DB::commit();
-
-                return redirect()->route('chat-groups.show', $group)
-                               ->with('success', 'Cập nhật nhóm thành công!');
-
-            } catch (\Exception $e) {
-                DB::rollback();
-                \Log::error('Lỗi cập nhật nhóm chat: ' . $e->getMessage());
-                
-                return back()->with('error', 'Có lỗi xảy ra khi cập nhật nhóm chat');
+                // Lưu avatar mới và cập nhật đường dẫn
+                $avatarPath = $request->file('avatar')->store('group-avatars', 'public');
+                $group->avatar = $avatarPath;
             }
 
+            // Cập nhật thông tin cơ bản của nhóm
+            $group->name = $validatedData['name'];
+            $group->description = $validatedData['description'];
+            $group->save(); // Lưu thay đổi tên, mô tả, avatar
+
+            // --- Xử lý cập nhật thành viên ---
+            
+            // Lấy danh sách ID thành viên mong muốn từ form
+            // Đảm bảo admin hiện tại luôn có trong danh sách
+            $desiredMemberIds = collect($request->input('members', []))->map(fn($id) => (int)$id);
+            $desiredMemberIds->push(auth()->id())->unique(); // Thêm admin và loại bỏ trùng lặp
+
+            // Lấy danh sách ID thành viên hiện tại của nhóm
+            $currentMemberIds = $group->members()->pluck('user_id');
+
+            // Xác định thành viên cần thêm mới
+            $membersToAdd = $desiredMemberIds->diff($currentMemberIds);
+
+            // Xác định thành viên cần xóa (không bao gồm admin hiện tại)
+            $membersToRemove = $currentMemberIds->diff($desiredMemberIds)->reject(fn($id) => $id === auth()->id());
+
+            // Thêm thành viên mới (không set admin)
+            if ($membersToAdd->isNotEmpty()) {
+                $group->members()->attach($membersToAdd->all(), ['is_admin' => false]);
+                \Log::info('Đã thêm thành viên mới:', ['group_id' => $group->id, 'added_ids' => $membersToAdd->all()]);
+            }
+
+            // Xóa thành viên cũ
+            if ($membersToRemove->isNotEmpty()) {
+                $group->members()->detach($membersToRemove->all());
+                 \Log::info('Đã xóa thành viên:', ['group_id' => $group->id, 'removed_ids' => $membersToRemove->all()]);
+            }
+
+            // Commit transaction sau khi mọi thứ thành công
+            DB::commit();
+
+            // Chuyển hướng về trang xem nhóm với thông báo thành công
+            return redirect()->route('chat-groups.show', $group)
+                           ->with('success', 'Cập nhật nhóm thành công!');
+
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-             // Xử lý trường hợp không tìm thấy nhóm
+            // Xử lý khi không tìm thấy nhóm
             \Log::error('Lỗi update nhóm chat: Không tìm thấy nhóm', ['group_id' => $id]);
-            abort(404, 'Không tìm thấy nhóm chat.');
+            abort(404, 'Không tìm thấy nhóm chat.'); // Trả về lỗi 404
+            
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            // Nếu validation thất bại, quay lại form với lỗi
+            DB::rollback(); // Hoàn tác transaction nếu có lỗi validation
+            return back()->withErrors($e->validator)->withInput();
+            
+        } catch (\Exception $e) {
+            // Nếu có lỗi khác xảy ra, hoàn tác transaction và báo lỗi
+            DB::rollback();
+            \Log::error('Lỗi cập nhật nhóm chat:', [
+                'error' => $e->getMessage(),
+                'line' => $e->getLine(),
+                'file' => $e->getFile()
+            ]);
+            
+            // Quay lại trang trước đó với thông báo lỗi chung
+            return back()->with('error', 'Có lỗi xảy ra khi cập nhật nhóm chat. Vui lòng thử lại.');
         }
     }
 
