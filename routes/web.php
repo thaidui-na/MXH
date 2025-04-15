@@ -7,6 +7,7 @@ use App\Http\Controllers\PostController;
 use App\Http\Controllers\MessageController;
 use App\Http\Controllers\ChatGroupController;
 use App\Http\Controllers\GroupMessageController;
+use App\Http\Controllers\Admin\AdminController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -63,3 +64,20 @@ Route::middleware(['web', 'auth'])->group(function () {
 Route::get('/dashboard', function () {
     return redirect()->route('posts.index');
 })->middleware(['auth'])->name('dashboard');
+
+// Routes cho trang admin
+Route::middleware(['web', 'auth', \App\Http\Middleware\AdminMiddleware::class])->prefix('admin')->group(function () {
+    Route::get('/', [AdminController::class, 'index'])->name('admin.dashboard');
+    
+    // Users routes
+    Route::get('/users', [AdminController::class, 'users'])->name('admin.users');
+    Route::get('/users/{id}/edit', [AdminController::class, 'editUser'])->name('admin.users.edit');
+    Route::put('/users/{id}', [AdminController::class, 'updateUser'])->name('admin.users.update');
+    Route::delete('/users/{id}', [AdminController::class, 'deleteUser'])->name('admin.users.delete');
+    
+    // Posts routes
+    Route::get('/posts', [AdminController::class, 'posts'])->name('admin.posts');
+    Route::get('/posts/{id}/edit', [AdminController::class, 'editPost'])->name('admin.posts.edit');
+    Route::put('/posts/{id}', [AdminController::class, 'updatePost'])->name('admin.posts.update');
+    Route::delete('/posts/{id}', [AdminController::class, 'deletePost'])->name('admin.posts.delete');
+});
