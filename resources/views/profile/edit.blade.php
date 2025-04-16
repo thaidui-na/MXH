@@ -141,45 +141,6 @@
                     </form>
                 </div>
             </div>
-
-            <!-- Form đổi mật khẩu -->
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0">Đổi mật khẩu</h5>
-                </div>
-                <div class="card-body">
-                    <form action="{{ route('profile.password') }}" method="POST">
-                        @csrf
-                        @method('PUT')
-
-                        <div class="mb-3">
-                            <label for="current_password" class="form-label">Mật khẩu hiện tại</label>
-                            <input type="password" class="form-control @error('current_password') is-invalid @enderror" 
-                                   id="current_password" name="current_password">
-                            @error('current_password')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
-
-                        <div class="mb-3">
-                            <label for="password" class="form-label">Mật khẩu mới</label>
-                            <input type="password" class="form-control @error('password') is-invalid @enderror" 
-                                   id="password" name="password">
-                            @error('password')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
-
-                        <div class="mb-3">
-                            <label for="password_confirmation" class="form-label">Xác nhận mật khẩu mới</label>
-                            <input type="password" class="form-control" 
-                                   id="password_confirmation" name="password_confirmation">
-                        </div>
-
-                        <button type="submit" class="btn btn-primary">Đổi mật khẩu</button>
-                    </form>
-                </div>
-            </div>
         </div>
     </div>
 </div>

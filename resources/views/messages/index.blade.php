@@ -342,26 +342,19 @@
                                 <!-- Preview hình ảnh -->
                                 <div id="image-preview" class="mb-2" style="display: none;">
                                     <div class="position-relative d-inline-block">
-                                        <img src="" alt="Preview" style="max-height: 100px; max-width: 200px;">
-                                        <button type="button" class="btn-close position-absolute top-0 end-0" 
-                                                style="background-color: white; border-radius: 50%;"
+                                        <img src="" alt="Preview" style="max-height: 150px; max-width: 200px; object-fit: contain;" class="rounded">
+                                        <button type="button" class="btn-close position-absolute top-0 end-0 m-1" 
+                                                style="background-color: white; padding: 5px; border-radius: 50%; box-shadow: 0 0 5px rgba(0,0,0,0.2);"
                                                 onclick="removeImage()"></button>
                                     </div>
                                 </div>
 
                                 <div class="input-group">
-                                    <!-- Input nhập tin nhắn -->
-                                    <input type="text" name="content" class="form-control" 
-                                           placeholder="Nhập tin nhắn...">
-                                    
-                                    <!-- Button upload ảnh -->
+                                    <input type="text" name="content" class="form-control" placeholder="Nhập tin nhắn...">
                                     <label class="btn btn-outline-secondary" for="image-upload">
                                         <i class="fas fa-image"></i>
                                     </label>
-                                    <input type="file" id="image-upload" name="image" 
-                                           accept="image/*" style="display: none;">
-                                    
-                                    <!-- Button gửi -->
+                                    <input type="file" id="image-upload" name="image" accept="image/*" style="display: none;" onchange="previewImage(this)">
                                     <button type="submit" class="btn btn-primary">Gửi</button>
                                 </div>
                             </form>
@@ -556,6 +549,39 @@
 .list-group-item-action:hover {
     border-left-color: #0d6efd;
 }
+
+/* Style cho preview hình ảnh */
+#image-preview {
+    background-color: #f8f9fa;
+    border-radius: 5px;
+    padding: 10px;
+    margin-bottom: 10px;
+}
+
+#image-preview img {
+    border-radius: 5px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.btn-close {
+    transition: all 0.2s ease;
+}
+
+.btn-close:hover {
+    background-color: #dc3545 !important;
+    opacity: 1;
+}
+
+/* Style cho input file button */
+.btn-outline-secondary {
+    border-color: #ced4da;
+}
+
+.btn-outline-secondary:hover {
+    background-color: #f8f9fa;
+    border-color: #0d6efd;
+    color: #0d6efd;
+}
 </style>
 @endpush
 
@@ -575,24 +601,50 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Xử lý gửi tin nhắn bằng Ajax
     if (messageForm) {
-        messageForm.addEventListener('submit', function(e) {
+        messageForm.addEventListener('submit', async function(e) {
             e.preventDefault();
             
             const formData = new FormData(this);
+            const submitButton = this.querySelector('button[type="submit"]');
             
-            fetch(this.action, {
-                method: 'POST',
-                body: formData,
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
+            try {
+                // Disable nút gửi để tránh gửi nhiều lần
+                submitButton.disabled = true;
+                
+                const response = await fetch(this.action, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    // Thêm tin nhắn mới vào container
+                    messageContainer.insertAdjacentHTML('beforeend', data.message);
+                    scrollToBottom();
+                    
+                    // Reset form và preview
+                    this.reset();
+                    document.getElementById('image-preview').style.display = 'none';
+                    document.getElementById('selected-sticker').value = '';
+                    
+                    // Ẩn các picker
+                    document.getElementById('emoji-picker').style.display = 'none';
+                    document.getElementById('sticker-picker').style.display = 'none';
+                } else {
+                    // Hiển thị lỗi nếu có
+                    alert(data.error || 'Có lỗi xảy ra khi gửi tin nhắn');
                 }
-            })
-            .then(response => response.json())
-            .then(data => {
-                messageContainer.insertAdjacentHTML('beforeend', data.message);
-                scrollToBottom();
-                messageForm.reset();
-            });
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Có lỗi xảy ra khi gửi tin nhắn');
+            } finally {
+                // Enable lại nút gửi
+                submitButton.disabled = false;
+            }
         });
     }
     
@@ -682,10 +734,35 @@ function insertEmoji(emoji) {
 }
 
 function selectSticker(stickerId) {
+    const messageForm = document.getElementById('message-form');
     document.getElementById('selected-sticker').value = stickerId;
-    document.getElementById('message-form').dispatchEvent(new Event('submit'));
-    document.getElementById('selected-sticker').value = '';
-    document.getElementById('sticker-picker').style.display = 'none';
+    
+    // Tạo FormData mới thay vì dùng Event
+    const formData = new FormData(messageForm);
+    
+    fetch(messageForm.action, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.message) {
+            messageContainer.insertAdjacentHTML('beforeend', data.message);
+            scrollToBottom();
+            messageForm.reset();
+            document.getElementById('selected-sticker').value = '';
+            document.getElementById('sticker-picker').style.display = 'none';
+        } else {
+            alert(data.error || 'Có lỗi xảy ra khi gửi sticker');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Có lỗi xảy ra khi gửi sticker');
+    });
 }
 
 // Hiển thị modal tạo nhóm
@@ -747,6 +824,37 @@ document.addEventListener('DOMContentLoaded', function() {
             alert('Có lỗi xảy ra khi tạo nhóm');
         });
     });
+});
+
+// Thêm các hàm xử lý preview hình ảnh
+function previewImage(input) {
+    const preview = document.getElementById('image-preview');
+    const previewImg = preview.querySelector('img');
+    
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        
+        reader.onload = function(e) {
+            previewImg.src = e.target.result;
+            preview.style.display = 'block';
+        }
+        
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+
+function removeImage() {
+    const input = document.getElementById('image-upload');
+    const preview = document.getElementById('image-preview');
+    
+    input.value = ''; // Xóa file đã chọn
+    preview.style.display = 'none'; // Ẩn preview
+    preview.querySelector('img').src = ''; // Xóa source của ảnh
+}
+
+// Thêm event listener cho input file
+document.getElementById('image-upload').addEventListener('change', function() {
+    previewImage(this);
 });
 </script>
 @endpush 

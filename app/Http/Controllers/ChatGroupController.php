@@ -8,14 +8,20 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
 
+/**
+ * Controller xử lý các chức năng liên quan đến nhóm chat
+ * Bao gồm: tạo, xem, sửa, xóa nhóm và quản lý thành viên
+ */
 class ChatGroupController extends Controller
 {
     /**
      * Hiển thị danh sách nhóm chat
+     * Lấy các nhóm mà người dùng hiện tại là thành viên
+     * Kèm theo thông tin thành viên và tin nhắn mới nhất để hiển thị tóm tắt
      */
     public function index()
     {
-        // Lấy danh sách nhóm chat của user hiện tại với các relationship
+        // Lấy các nhóm chat mà người dùng đang đăng nhập là thành viên
         $groups = auth()->user()->chatGroups()
             ->with(['members', 'messages' => function($query) {
                 $query->latest()->take(1)->with('sender');
@@ -27,20 +33,27 @@ class ChatGroupController extends Controller
 
     /**
      * Hiển thị form tạo nhóm mới
+     * Cung cấp danh sách người dùng (trừ người dùng hiện tại) để chọn làm thành viên
      */
     public function create()
     {
-        // Lấy danh sách user để chọn thành viên
+        // Lấy danh sách tất cả người dùng trừ người dùng đang đăng nhập
         $users = User::where('id', '!=', auth()->id())->get();
         return view('chat_groups.create', compact('users'));
     }
 
     /**
-     * Lưu nhóm chat mới
+     * Lưu nhóm chat mới vào database
+     * - Validate dữ liệu đầu vào
+     * - Upload avatar nếu có
+     * - Tạo nhóm với thông tin cơ bản
+     * - Thêm các thành viên được chọn và người tạo vào nhóm
+     * - Đặt người tạo làm admin nhóm
+     * - Sử dụng transaction để đảm bảo toàn vẹn dữ liệu
      */
     public function store(Request $request)
     {
-        // Validate dữ liệu
+        // Validate dữ liệu gửi lên từ form
         $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
@@ -51,13 +64,13 @@ class ChatGroupController extends Controller
 
         DB::beginTransaction();
         try {
-            // Upload avatar nếu có
+            // Xử lý upload avatar nếu người dùng có tải lên file
             $avatarPath = null;
             if ($request->hasFile('avatar')) {
                 $avatarPath = $request->file('avatar')->store('group-avatars', 'public');
             }
 
-            // Tạo nhóm mới
+            // Tạo bản ghi nhóm mới trong bảng 'chat_groups'
             $group = ChatGroup::create([
                 'name' => $request->name,
                 'description' => $request->description,
@@ -65,7 +78,8 @@ class ChatGroupController extends Controller
                 'avatar' => $avatarPath
             ]);
 
-            // Tạo mảng thành viên bao gồm cả người tạo
+            // Chuẩn bị dữ liệu thành viên để thêm vào bảng pivot 'chat_group_members'
+            // Bao gồm các thành viên được chọn từ form và người tạo nhóm
             $memberData = collect($request->members)
                 ->map(function($memberId) {
                     return [
@@ -82,10 +96,13 @@ class ChatGroupController extends Controller
                     'updated_at' => now()
                 ]);
 
-            // Thêm tất cả thành viên vào nhóm
+            // Thêm tất cả thành viên (bao gồm người tạo) vào nhóm thông qua relationship 'members'
+            // Sử dụng attach() để thêm nhiều bản ghi vào bảng pivot
+            // Chỉ lấy ra các 'user_id' từ collection $memberData
             $group->members()->attach($memberData->pluck('user_id')->toArray());
 
-            // Cập nhật quyền admin cho người tạo
+            // Cập nhật lại quyền admin cho người tạo (đảm bảo chắc chắn)
+            // Sử dụng DB Query Builder để cập nhật trực tiếp bảng pivot
             DB::table('chat_group_members')
                 ->where('group_id', $group->id)
                 ->where('user_id', auth()->id())
@@ -125,14 +142,17 @@ class ChatGroupController extends Controller
     }
 
     /**
-     * Hiển thị nhóm chat
+     * Hiển thị trang chat của nhóm cụ thể
+     * - Kiểm tra quyền truy cập (phải là thành viên)
+     * - Load tin nhắn và thông tin thành viên
+     * - Sắp xếp tin nhắn theo thời gian tạo
      */
     public function show($id)
     {
-        // Lấy thông tin nhóm
+        // Tìm nhóm chat theo ID, nếu không tìm thấy sẽ ném lỗi ModelNotFoundException (thường dẫn đến 404)
         $group = ChatGroup::findOrFail($id);
         
-        // Debug log
+        // Ghi log thông tin truy cập để debug
         \Log::info('Đang truy cập nhóm chat:', [
             'group_id' => $id,
             'user_id' => auth()->id(),
@@ -142,7 +162,7 @@ class ChatGroupController extends Controller
             ])->exists()
         ]);
 
-        // Kiểm tra quyền truy cập
+        // Kiểm tra xem người dùng hiện tại có phải là thành viên của nhóm này không (query lại để chắc chắn)
         $isMember = DB::table('chat_group_members')
             ->where([
                 'group_id' => $id,
@@ -150,128 +170,155 @@ class ChatGroupController extends Controller
             ])
             ->exists();
 
+        // Nếu không phải là thành viên
         if (!$isMember) {
+            // Ghi log cảnh báo về việc truy cập trái phép
             \Log::warning('Người dùng không có quyền truy cập:', [
                 'user_id' => auth()->id(),
                 'group_id' => $id
             ]);
+            // Dừng thực thi và trả về lỗi 403 (Forbidden)
             abort(403, 'Bạn không có quyền truy cập nhóm này');
         }
 
-        // Load messages với sender
+        // Lấy danh sách tin nhắn của nhóm
         $messages = $group->messages()
             ->with('sender')
             ->orderBy('created_at', 'asc')
             ->get();
         
-        // Load thông tin nhóm với members và creator
+        // Tải kèm thông tin thành viên và người tạo nhóm (eager loading)
+        // Giúp tránh query N+1 trong view khi hiển thị tên thành viên hoặc người tạo
         $group->load(['members', 'creator']);
 
         return view('chat_groups.show', compact('group', 'messages'));
     }
 
     /**
-     * Hiển thị form chỉnh sửa nhóm
+     * Hiển thị form chỉnh sửa thông tin nhóm
+     * Chỉ admin của nhóm mới có quyền truy cập form này
      */
     public function edit($id)
     {
         try {
-            // Tìm nhóm bằng ID
+            // Tìm nhóm theo ID, nếu không thấy sẽ ném lỗi ModelNotFoundException
             $group = ChatGroup::findOrFail($id); 
 
-            // Kiểm tra quyền admin của nhóm
+            // Kiểm tra xem người dùng hiện tại có phải là admin của nhóm không
+            // Truy vấn bảng pivot 'chat_group_members' thông qua relationship 'members'
             if (!$group->members()->where('user_id', auth()->id())->where('is_admin', true)->exists()) {
+                // Nếu không phải admin, chuyển hướng về trang xem nhóm với thông báo lỗi
                 return redirect()->route('chat-groups.show', $group)
                                ->with('error', 'Bạn không có quyền chỉnh sửa nhóm này');
             }
 
-            // Lấy danh sách user để chọn thành viên
+            // Lấy danh sách tất cả người dùng (trừ người dùng hiện tại) để hiển thị trong multi-select
             $users = User::where('id', '!=', auth()->id())->get();
+            // Lấy danh sách ID của các thành viên hiện tại trong nhóm
             $currentMembers = $group->members()->pluck('user_id')->toArray();
 
+            // Trả về view 'chat_groups.edit' và truyền các biến cần thiết vào view
             return view('chat_groups.edit', compact('group', 'users', 'currentMembers'));
 
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            // Xử lý trường hợp không tìm thấy nhóm
+            // Xử lý trường hợp không tìm thấy nhóm (do ID không đúng)
            \Log::error('Lỗi edit nhóm chat: Không tìm thấy nhóm', ['group_id' => $id]);
+           // Dừng và trả về lỗi 404 (Not Found)
            abort(404, 'Không tìm thấy nhóm chat.');
        }
     }
 
     /**
-     * Cập nhật thông tin nhóm và thành viên
+     * Cập nhật thông tin nhóm và thành viên sau khi submit form edit
+     * - Kiểm tra quyền admin
+     * - Validate dữ liệu
+     * - Cập nhật thông tin cơ bản (tên, mô tả)
+     * - Cập nhật avatar (xóa cũ, lưu mới nếu có)
+     * - Cập nhật danh sách thành viên (thêm mới, xóa cũ)
+     * - Sử dụng transaction
      */
     public function update(Request $request, $id)
     {
         try {
-            // Tìm nhóm bằng ID
+            // Tìm nhóm cần cập nhật bằng ID
             $group = ChatGroup::findOrFail($id);
 
-            // Kiểm tra quyền admin
+            // Kiểm tra quyền admin của người dùng hiện tại đối với nhóm này
             $isAdmin = $group->members()->where('user_id', auth()->id())->where('is_admin', true)->exists();
+            // Nếu không phải admin
             if (!$isAdmin) {
-                // Nếu không phải admin, chuyển hướng về trang xem nhóm với lỗi
+                // Chuyển hướng về trang xem nhóm với thông báo lỗi
                 return redirect()->route('chat-groups.show', $group)
                                ->with('error', 'Bạn không có quyền chỉnh sửa nhóm này');
             }
 
-            // Validate dữ liệu chung
+            // Validate dữ liệu chung từ request
             $validatedData = $request->validate([
                 'name' => 'required|string|max:255',
                 'description' => 'nullable|string',
-                'members' => 'nullable|array', // Cho phép mảng rỗng nếu không chọn ai khác
-                'members.*' => 'exists:users,id', // Kiểm tra từng ID thành viên tồn tại
-                'avatar' => 'nullable|image|max:2048' // Validate avatar
+                'members' => 'nullable|array',
+                'members.*' => 'exists:users,id',
+                'avatar' => 'nullable|image|max:2048'
             ]);
 
-            // Bắt đầu transaction để đảm bảo toàn vẹn dữ liệu
+            // Bắt đầu transaction
             DB::beginTransaction();
             
             // Cập nhật avatar nếu có file mới được tải lên
             if ($request->hasFile('avatar')) {
-                // Xóa avatar cũ nếu tồn tại
+                // Xóa avatar cũ nếu nhóm hiện đang có avatar
                 if ($group->avatar) {
+                    // Xóa file từ disk 'public' (thường là storage/app/public)
                     Storage::disk('public')->delete($group->avatar);
                 }
-                // Lưu avatar mới và cập nhật đường dẫn
+                // Lưu avatar mới vào thư mục 'group-avatars' và lấy đường dẫn
                 $avatarPath = $request->file('avatar')->store('group-avatars', 'public');
+                // Cập nhật đường dẫn avatar mới cho nhóm
                 $group->avatar = $avatarPath;
             }
 
-            // Cập nhật thông tin cơ bản của nhóm
+            // Cập nhật thông tin cơ bản của nhóm từ dữ liệu đã validate
             $group->name = $validatedData['name'];
             $group->description = $validatedData['description'];
-            $group->save(); // Lưu thay đổi tên, mô tả, avatar
+            // Lưu các thay đổi (tên, mô tả, avatar) vào database
+            $group->save();
 
             // --- Xử lý cập nhật thành viên ---
             
-            // Lấy danh sách ID thành viên mong muốn từ form
-            // Đảm bảo admin hiện tại luôn có trong danh sách
+            // Lấy danh sách ID thành viên mong muốn từ form (input 'members')
+            // Nếu không có input 'members', mặc định là mảng rỗng
+            // Chuyển đổi các ID thành kiểu integer và đưa vào Collection
             $desiredMemberIds = collect($request->input('members', []))->map(fn($id) => (int)$id);
-            $desiredMemberIds->push(auth()->id())->unique(); // Thêm admin và loại bỏ trùng lặp
+            // Đảm bảo admin hiện tại (người đang thực hiện thao tác) luôn có trong danh sách
+            $desiredMemberIds->push(auth()->id())->unique(); // Thêm ID admin và loại bỏ trùng lặp
 
-            // Lấy danh sách ID thành viên hiện tại của nhóm
+            // Lấy danh sách ID thành viên hiện tại của nhóm từ bảng pivot
             $currentMemberIds = $group->members()->pluck('user_id');
 
-            // Xác định thành viên cần thêm mới
+            // Xác định thành viên cần thêm mới: những ID có trong $desiredMemberIds nhưng không có trong $currentMemberIds
             $membersToAdd = $desiredMemberIds->diff($currentMemberIds);
 
-            // Xác định thành viên cần xóa (không bao gồm admin hiện tại)
+            // Xác định thành viên cần xóa: những ID có trong $currentMemberIds nhưng không có trong $desiredMemberIds
+            // Loại bỏ admin hiện tại khỏi danh sách cần xóa (admin không thể tự xóa mình)
             $membersToRemove = $currentMemberIds->diff($desiredMemberIds)->reject(fn($id) => $id === auth()->id());
 
-            // Thêm thành viên mới (không set admin)
+            // Thêm thành viên mới vào bảng pivot nếu có
             if ($membersToAdd->isNotEmpty()) {
+                // Sử dụng attach() để thêm nhiều thành viên, set is_admin = false cho các thành viên mới này
                 $group->members()->attach($membersToAdd->all(), ['is_admin' => false]);
+                // Ghi log
                 \Log::info('Đã thêm thành viên mới:', ['group_id' => $group->id, 'added_ids' => $membersToAdd->all()]);
             }
 
-            // Xóa thành viên cũ
+            // Xóa thành viên cũ khỏi bảng pivot nếu có
             if ($membersToRemove->isNotEmpty()) {
+                // Sử dụng detach() để xóa các thành viên khỏi nhóm
                 $group->members()->detach($membersToRemove->all());
+                 // Ghi log
                  \Log::info('Đã xóa thành viên:', ['group_id' => $group->id, 'removed_ids' => $membersToRemove->all()]);
             }
 
-            // Commit transaction sau khi mọi thứ thành công
+            // Nếu mọi thứ thành công, commit transaction
             DB::commit();
 
             // Chuyển hướng về trang xem nhóm với thông báo thành công
@@ -279,18 +326,21 @@ class ChatGroupController extends Controller
                            ->with('success', 'Cập nhật nhóm thành công!');
 
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            // Xử lý khi không tìm thấy nhóm
+            // Xử lý khi không tìm thấy nhóm (ID không đúng)
             \Log::error('Lỗi update nhóm chat: Không tìm thấy nhóm', ['group_id' => $id]);
-            abort(404, 'Không tìm thấy nhóm chat.'); // Trả về lỗi 404
+            // Trả về lỗi 404
+            abort(404, 'Không tìm thấy nhóm chat.');
             
         } catch (\Illuminate\Validation\ValidationException $e) {
-            // Nếu validation thất bại, quay lại form với lỗi
-            DB::rollback(); // Hoàn tác transaction nếu có lỗi validation
+            // Nếu validation thất bại (dữ liệu gửi lên không hợp lệ)
+            DB::rollback(); // Hoàn tác transaction
+            // Quay lại trang trước đó (form edit) với các lỗi validation và dữ liệu đã nhập
             return back()->withErrors($e->validator)->withInput();
             
         } catch (\Exception $e) {
-            // Nếu có lỗi khác xảy ra, hoàn tác transaction và báo lỗi
-            DB::rollback();
+            // Nếu có lỗi khác xảy ra (lỗi DB, lỗi logic...)
+            DB::rollback(); // Hoàn tác transaction
+            // Ghi log chi tiết lỗi
             \Log::error('Lỗi cập nhật nhóm chat:', [
                 'error' => $e->getMessage(),
                 'line' => $e->getLine(),
@@ -304,116 +354,140 @@ class ChatGroupController extends Controller
 
     /**
      * Xóa nhóm chat
+     * - Kiểm tra quyền xóa (phải là admin hoặc người tạo nhóm)
+     * - Xóa avatar (nếu có) khỏi storage
+     * - Xóa tất cả tin nhắn liên quan
+     * - Xóa tất cả thành viên liên quan khỏi bảng pivot
+     * - Xóa bản ghi nhóm khỏi database
+     * - Sử dụng transaction
+     * - Thường được gọi qua AJAX nên trả về JSON response
      */
     public function destroy($id)
     {
         try {
-             // Tìm nhóm bằng ID, nếu không tìm thấy sẽ trả về 404
+             // Tìm nhóm bằng ID, nếu không tìm thấy sẽ ném lỗi ModelNotFoundException
             $chat_group = ChatGroup::findOrFail($id); 
 
-            // Debug log để kiểm tra
+            // Ghi log bắt đầu quá trình xóa để debug
             \Log::info('=== BẮT ĐẦU XÓA NHÓM ===');
+            // Ghi log thông tin người dùng đang thực hiện xóa
             \Log::info('Thông tin người dùng:', [
                 'user_id' => auth()->id(),
                 'user_name' => auth()->user()->name
             ]);
             
-            \Log::info('Thông tin nhóm (sau khi tìm thấy):', [ // Log sau khi đã tìm thấy nhóm
+            // Ghi log thông tin nhóm sắp bị xóa (sau khi đã tìm thấy)
+            \Log::info('Thông tin nhóm (sau khi tìm thấy):', [
                 'group_id' => $chat_group->id,
                 'group_name' => $chat_group->name,
                 'created_by' => $chat_group->created_by
             ]);
 
-            // Kiểm tra chi tiết quyền admin
+            // Kiểm tra chi tiết thông tin thành viên của người dùng đang thực hiện trong nhóm này
             $memberCheck = DB::table('chat_group_members')
                 ->where('group_id', $chat_group->id)
                 ->where('user_id', auth()->id())
                 ->first();
 
+            // Ghi log thông tin kiểm tra thành viên
             \Log::info('Thông tin member:', [
                 'member_exists' => !is_null($memberCheck),
                 'is_admin' => $memberCheck ? $memberCheck->is_admin : false,
                 'user_id' => auth()->id()
             ]);
 
-            // Kiểm tra quyền admin hoặc người tạo nhóm
+            // Kiểm tra quyền admin bằng cách truy vấn trực tiếp bảng pivot
             $isAdmin = DB::table('chat_group_members')
                 ->where('group_id', $chat_group->id)
                 ->where('user_id', auth()->id())
                 ->where('is_admin', true)
                 ->exists();
 
+            // Kiểm tra xem người dùng có phải là người tạo nhóm không
             $isCreator = $chat_group->created_by === auth()->id();
 
+            // Ghi log kết quả kiểm tra quyền
             \Log::info('Kiểm tra quyền:', [
                 'is_admin' => $isAdmin,
                 'is_creator' => $isCreator
             ]);
 
+            // Nếu người dùng không phải admin VÀ cũng không phải người tạo nhóm
             if (!$isAdmin && !$isCreator) {
+                // Ghi log cảnh báo từ chối quyền
                 \Log::warning('Từ chối quyền xóa nhóm:', [
                     'reason' => 'Không phải admin hoặc người tạo'
                 ]);
+                // Trả về JSON response lỗi 403 (Forbidden)
                 return response()->json([
                     'success' => false,
                     'message' => 'Bạn không có quyền xóa nhóm này'
                 ], 403);
             }
 
-            // Bắt đầu transaction để đảm bảo tính toàn vẹn
+            // Bắt đầu transaction
             DB::beginTransaction();
 
-            \Log::info('Bắt đầu xóa dữ liệu');
+            \Log::info('Bắt đầu xóa dữ liệu liên quan');
 
-            // Xóa avatar nếu có
+            // Xóa avatar nếu nhóm có avatar
             if ($chat_group->avatar) {
+                // Xóa file khỏi disk 'public'
                 Storage::disk('public')->delete($chat_group->avatar);
                 \Log::info('Đã xóa avatar');
             }
 
-            // Xóa tất cả tin nhắn trong nhóm
+            // Xóa tất cả tin nhắn thuộc về nhóm này
+            // Sử dụng DB Query Builder để xóa hiệu quả hơn khi xóa nhiều bản ghi
             $messageCount = DB::table('group_messages')
                 ->where('group_id', $chat_group->id)
                 ->delete();
             \Log::info("Đã xóa {$messageCount} tin nhắn");
 
-            // Xóa tất cả thành viên
+            // Xóa tất cả các bản ghi thành viên liên quan đến nhóm này trong bảng pivot
             $memberCount = DB::table('chat_group_members')
                 ->where('group_id', $chat_group->id)
                 ->delete();
             \Log::info("Đã xóa {$memberCount} thành viên");
 
-            // Xóa nhóm
+            // Xóa bản ghi nhóm khỏi bảng 'chat_groups'
             $chat_group->delete();
             \Log::info('Đã xóa nhóm thành công');
 
+            // Nếu mọi thứ thành công, commit transaction
             DB::commit();
             \Log::info('=== KẾT THÚC XÓA NHÓM ===');
 
+            // Trả về JSON response thành công
             return response()->json([
                 'success' => true,
                 'message' => 'Đã xóa nhóm thành công!',
-                'redirect' => route('messages.index')
+                // Cung cấp URL để redirect sau khi xóa thành công (thường là trang danh sách tin nhắn/nhóm)
+                'redirect' => route('messages.index') 
             ]);
 
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-             // Xử lý trường hợp không tìm thấy nhóm
+             // Xử lý trường hợp không tìm thấy nhóm (ID không đúng)
             \Log::error('Lỗi xóa nhóm chat: Không tìm thấy nhóm', ['group_id' => $id]);
+            // Trả về JSON response lỗi 404 (Not Found)
             return response()->json([
                 'success' => false,
                 'message' => 'Không tìm thấy nhóm chat để xóa.'
             ], 404);
         } catch (\Exception $e) {
-            DB::rollback();
+            // Nếu có lỗi khác xảy ra
+            DB::rollback(); // Hoàn tác transaction
+            // Ghi log chi tiết lỗi
             \Log::error('Lỗi xóa nhóm chat:', [
                 'error' => $e->getMessage(),
                 'line' => $e->getLine(),
                 'file' => $e->getFile()
             ]);
             
+            // Trả về JSON response lỗi 500 (Internal Server Error)
             return response()->json([
                 'success' => false,
-                'message' => 'Có lỗi xảy ra khi xóa nhóm chat: ' . $e->getMessage()
+                'message' => 'Có lỗi xảy ra khi xóa nhóm chat: ' . $e->getMessage() // Kèm theo thông báo lỗi gốc
             ], 500);
         }
     }

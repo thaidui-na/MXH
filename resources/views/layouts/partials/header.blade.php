@@ -41,17 +41,20 @@
                 @else
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <img src="https://ui-avatars.com/api/?name={{ urlencode(Auth::user()->name) }}&background=random&size=30&rounded=true" class="me-2" alt="Avatar">
+                            <img src="{{ Auth::user()->avatar_url }}" 
+                                 class="rounded-circle me-2" 
+                                 style="width: 32px; height: 32px; object-fit: cover;"
+                                 alt="{{ Auth::user()->name }}'s avatar">
                             {{ Auth::user()->name }}
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" aria-labelledby="navbarDropdown">
-                            <li><a class="dropdown-item" href="{{ route('profile.edit') }}">Hồ sơ</a></li>
-                            <li><a class="dropdown-item" href="#">Cài đặt</a></li>
+                            <li><a class="dropdown-item" href="{{ route('profile.edit') }}"><i class="fas fa-user-edit me-2"></i>Hồ sơ</a></li>
+                            <li><a class="dropdown-item" href="{{ route('password.change') }}"><i class="fas fa-key me-2"></i>Đổi mật khẩu</a></li>
                             <li><hr class="dropdown-divider"></li>
                             <li>
                                 <form action="{{ route('logout') }}" method="POST" class="d-grid px-2">
                                     @csrf
-                                    <button type="submit" class="btn btn-sm btn-outline-danger">Đăng xuất</button>
+                                    <button type="submit" class="btn btn-sm btn-outline-danger w-100"><i class="fas fa-sign-out-alt me-2"></i>Đăng xuất</button>
                                 </form>
                             </li>
                         </ul>
