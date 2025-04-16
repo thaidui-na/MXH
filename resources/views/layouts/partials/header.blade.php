@@ -36,7 +36,7 @@
                         <a class="nav-link" href="{{ route('login') }}">Đăng nhập</a>
                     </li>
                     <li class="nav-item">
-                        <a class="btn btn-outline-primary btn-sm" href="{{ route('register') }}">Đăng ký</a>
+                        <a class="nav-link" href="{{ route('register') }}">Đăng ký</a>
                     </li>
                 @else
                     <li class="nav-item dropdown">
@@ -114,17 +114,11 @@
          padding-top: 0.5rem;
          padding-bottom: 0.5rem;
     }
+    
     .dropdown-item:hover {
         background-color: #f8f9fa; /* Nền xám nhạt khi hover */
     }
-     .btn-outline-primary {
-         border-width: 1px;
-         transition: background-color 0.2s ease, color 0.2s ease;
-     }
-     .btn-outline-primary:hover {
-         background-color: #0d6efd;
-         color: white;
-     }
+
 
     /* Keyframes cho animation dropdown */
     @keyframes fadeIn {
