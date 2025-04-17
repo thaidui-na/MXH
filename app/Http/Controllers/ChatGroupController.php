@@ -84,14 +84,14 @@ class ChatGroupController extends Controller
                 ->map(function($memberId) {
                     return [
                         'user_id' => $memberId,
-                        'is_admin' => false,
+                        'is_admin_group_chat' => false,
                         'created_at' => now(),
                         'updated_at' => now()
                     ];
                 })
                 ->push([
                     'user_id' => auth()->id(),
-                    'is_admin' => true,
+                    'is_admin_group_chat' => true,
                     'created_at' => now(),
                     'updated_at' => now()
                 ]);
@@ -101,12 +101,11 @@ class ChatGroupController extends Controller
             // Chỉ lấy ra các 'user_id' từ collection $memberData
             $group->members()->attach($memberData->pluck('user_id')->toArray());
 
-            // Cập nhật lại quyền admin cho người tạo (đảm bảo chắc chắn)
-            // Sử dụng DB Query Builder để cập nhật trực tiếp bảng pivot
+            // Cập nhật quyền admin cho người tạo
             DB::table('chat_group_members')
                 ->where('group_id', $group->id)
                 ->where('user_id', auth()->id())
-                ->update(['is_admin' => true]);
+                ->update(['is_admin_group_chat' => true]);
 
             DB::commit();
 
@@ -149,10 +148,9 @@ class ChatGroupController extends Controller
      */
     public function show($id)
     {
-        // Tìm nhóm chat theo ID, nếu không tìm thấy sẽ ném lỗi ModelNotFoundException (thường dẫn đến 404)
+        // Tìm nhóm chat theo ID
         $group = ChatGroup::findOrFail($id);
         
-        // Ghi log thông tin truy cập để debug
         \Log::info('Đang truy cập nhóm chat:', [
             'group_id' => $id,
             'user_id' => auth()->id(),
@@ -162,22 +160,21 @@ class ChatGroupController extends Controller
             ])->exists()
         ]);
 
-        // Kiểm tra xem người dùng hiện tại có phải là thành viên của nhóm này không (query lại để chắc chắn)
+        // Kiểm tra xem người dùng hiện tại có phải là thành viên của nhóm này không
+        // Chỉ định rõ bảng cho cột is_admin_group_chat
         $isMember = DB::table('chat_group_members')
             ->where([
                 'group_id' => $id,
                 'user_id' => auth()->id()
             ])
+            ->where('is_admin_group_chat', true)
             ->exists();
 
-        // Nếu không phải là thành viên
         if (!$isMember) {
-            // Ghi log cảnh báo về việc truy cập trái phép
             \Log::warning('Người dùng không có quyền truy cập:', [
                 'user_id' => auth()->id(),
                 'group_id' => $id
             ]);
-            // Dừng thực thi và trả về lỗi 403 (Forbidden)
             abort(403, 'Bạn không có quyền truy cập nhóm này');
         }
 
@@ -187,8 +184,7 @@ class ChatGroupController extends Controller
             ->orderBy('created_at', 'asc')
             ->get();
         
-        // Tải kèm thông tin thành viên và người tạo nhóm (eager loading)
-        // Giúp tránh query N+1 trong view khi hiển thị tên thành viên hoặc người tạo
+        // Tải kèm thông tin thành viên và người tạo nhóm
         $group->load(['members', 'creator']);
 
         return view('chat_groups.show', compact('group', 'messages'));
@@ -206,7 +202,7 @@ class ChatGroupController extends Controller
 
             // Kiểm tra xem người dùng hiện tại có phải là admin của nhóm không
             // Truy vấn bảng pivot 'chat_group_members' thông qua relationship 'members'
-            if (!$group->members()->where('user_id', auth()->id())->where('is_admin', true)->exists()) {
+            if (!$group->members()->where('user_id', auth()->id())->where('is_admin_group_chat', true)->exists()) {
                 // Nếu không phải admin, chuyển hướng về trang xem nhóm với thông báo lỗi
                 return redirect()->route('chat-groups.show', $group)
                                ->with('error', 'Bạn không có quyền chỉnh sửa nhóm này');
@@ -244,7 +240,7 @@ class ChatGroupController extends Controller
             $group = ChatGroup::findOrFail($id);
 
             // Kiểm tra quyền admin của người dùng hiện tại đối với nhóm này
-            $isAdmin = $group->members()->where('user_id', auth()->id())->where('is_admin', true)->exists();
+            $isAdmin = $group->members()->where('user_id', auth()->id())->where('is_admin_group_chat', true)->exists();
             // Nếu không phải admin
             if (!$isAdmin) {
                 // Chuyển hướng về trang xem nhóm với thông báo lỗi
@@ -304,8 +300,8 @@ class ChatGroupController extends Controller
 
             // Thêm thành viên mới vào bảng pivot nếu có
             if ($membersToAdd->isNotEmpty()) {
-                // Sử dụng attach() để thêm nhiều thành viên, set is_admin = false cho các thành viên mới này
-                $group->members()->attach($membersToAdd->all(), ['is_admin' => false]);
+                // Sử dụng attach() để thêm nhiều thành viên, set is_admin_group_chat = false cho các thành viên mới này
+                $group->members()->attach($membersToAdd->all(), ['is_admin_group_chat' => false]);
                 // Ghi log
                 \Log::info('Đã thêm thành viên mới:', ['group_id' => $group->id, 'added_ids' => $membersToAdd->all()]);
             }
@@ -365,60 +361,39 @@ class ChatGroupController extends Controller
     public function destroy($id)
     {
         try {
-             // Tìm nhóm bằng ID, nếu không tìm thấy sẽ ném lỗi ModelNotFoundException
-            $chat_group = ChatGroup::findOrFail($id); 
+            $chat_group = ChatGroup::findOrFail($id);
 
-            // Ghi log bắt đầu quá trình xóa để debug
             \Log::info('=== BẮT ĐẦU XÓA NHÓM ===');
-            // Ghi log thông tin người dùng đang thực hiện xóa
             \Log::info('Thông tin người dùng:', [
                 'user_id' => auth()->id(),
                 'user_name' => auth()->user()->name
             ]);
             
-            // Ghi log thông tin nhóm sắp bị xóa (sau khi đã tìm thấy)
-            \Log::info('Thông tin nhóm (sau khi tìm thấy):', [
+            \Log::info('Thông tin nhóm:', [
                 'group_id' => $chat_group->id,
                 'group_name' => $chat_group->name,
                 'created_by' => $chat_group->created_by
             ]);
 
-            // Kiểm tra chi tiết thông tin thành viên của người dùng đang thực hiện trong nhóm này
-            $memberCheck = DB::table('chat_group_members')
-                ->where('group_id', $chat_group->id)
-                ->where('user_id', auth()->id())
-                ->first();
-
-            // Ghi log thông tin kiểm tra thành viên
-            \Log::info('Thông tin member:', [
-                'member_exists' => !is_null($memberCheck),
-                'is_admin' => $memberCheck ? $memberCheck->is_admin : false,
-                'user_id' => auth()->id()
-            ]);
-
-            // Kiểm tra quyền admin bằng cách truy vấn trực tiếp bảng pivot
+            // Kiểm tra quyền admin bằng cách chỉ định rõ bảng cho cột is_admin_group_chat
             $isAdmin = DB::table('chat_group_members')
                 ->where('group_id', $chat_group->id)
                 ->where('user_id', auth()->id())
-                ->where('is_admin', true)
+                ->where('is_admin_group_chat', true)
                 ->exists();
 
-            // Kiểm tra xem người dùng có phải là người tạo nhóm không
+            // Kiểm tra người tạo nhóm
             $isCreator = $chat_group->created_by === auth()->id();
 
-            // Ghi log kết quả kiểm tra quyền
             \Log::info('Kiểm tra quyền:', [
                 'is_admin' => $isAdmin,
                 'is_creator' => $isCreator
             ]);
 
-            // Nếu người dùng không phải admin VÀ cũng không phải người tạo nhóm
             if (!$isAdmin && !$isCreator) {
-                // Ghi log cảnh báo từ chối quyền
                 \Log::warning('Từ chối quyền xóa nhóm:', [
                     'reason' => 'Không phải admin hoặc người tạo'
                 ]);
-                // Trả về JSON response lỗi 403 (Forbidden)
                 return response()->json([
                     'success' => false,
                     'message' => 'Bạn không có quyền xóa nhóm này'

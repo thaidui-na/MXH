@@ -27,7 +27,7 @@
                             </div>
                         </div>
                         @if($group->members()->where('user_id', auth()->id())->where(function($query) use ($group) {
-                            $query->where('is_admin', true)->orWhere('user_id', $group->created_by);
+                            $query->where('is_admin_group_chat', true)->orWhere('user_id', $group->created_by);
                         })->exists())
                             <div class="btn-group">
                                 <a href="{{ route('chat-groups.edit', $group) }}" class="btn btn-sm btn-outline-primary">
@@ -85,7 +85,7 @@
                                             @if($member->id === $group->created_by)
                                                 <span class="badge bg-primary">Người tạo</span>
                                             @endif
-                                            @if($member->pivot->is_admin)
+                                            @if($member->pivot->is_admin_group_chat)
                                                 <span class="badge bg-info">Admin</span>
                                             @endif
                                         </h6>

@@ -189,7 +189,7 @@ class User extends Authenticatable
         // Tham số thứ tư: Tên khóa ngoại trong bảng trung gian liên kết đến model liên quan (ChatGroup).
         return $this->belongsToMany(ChatGroup::class, 'chat_group_members', 'user_id', 'group_id')
                     // `withPivot` cho phép truy cập các cột bổ sung trong bảng trung gian khi lấy dữ liệu quan hệ.
-                    ->withPivot('is_admin') // Lấy thêm cột 'is_admin' từ bảng pivot
+                    ->withPivot('is_admin_group_chat') // Thay đổi từ is_admin thành is_admin_group_chat
                     // `withTimestamps` tự động quản lý cột 'created_at' và 'updated_at' trong bảng pivot khi attach/detach.
                     ->withTimestamps();
     }

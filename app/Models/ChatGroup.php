@@ -41,7 +41,7 @@ class ChatGroup extends Model
     /**
      * Định nghĩa quan hệ nhiều-nhiều: Một nhóm chat có nhiều thành viên (User), và một User có thể tham gia nhiều nhóm chat.
      * Liên kết thông qua bảng trung gian 'chat_group_members'.
-     * Lấy kèm thông tin từ cột 'is_admin' trong bảng trung gian.
+     * Lấy kèm thông tin từ cột 'is_admin_group_chat' trong bảng trung gian.
      * Tự động quản lý timestamps ('created_at', 'updated_at') trong bảng trung gian.
      *
      * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
@@ -55,7 +55,7 @@ class ChatGroup extends Model
         // Tham số thứ tư: Tên khóa ngoại trong bảng trung gian liên kết đến model liên quan (User).
         return $this->belongsToMany(User::class, 'chat_group_members', 'group_id', 'user_id')
                     // `withPivot` cho phép truy cập các cột bổ sung trong bảng trung gian.
-                    ->withPivot('is_admin')
+                    ->withPivot('is_admin_group_chat')
                     // `withTimestamps` tự động cập nhật cột created_at và updated_at trong bảng trung gian khi thêm/xóa thành viên.
                     ->withTimestamps();
     }
