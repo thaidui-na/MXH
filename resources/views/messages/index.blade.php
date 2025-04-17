@@ -734,12 +734,18 @@ function insertEmoji(emoji) {
 }
 
 function selectSticker(stickerId) {
+    // Lấy các element cần thiết
     const messageForm = document.getElementById('message-form');
+    const messageContainer = document.getElementById('message-container');
+    const stickerPicker = document.getElementById('sticker-picker');
+    
+    // Cập nhật giá trị sticker được chọn
     document.getElementById('selected-sticker').value = stickerId;
     
-    // Tạo FormData mới thay vì dùng Event
+    // Tạo FormData từ form
     const formData = new FormData(messageForm);
     
+    // Gửi request bằng fetch API
     fetch(messageForm.action, {
         method: 'POST',
         body: formData,
@@ -750,19 +756,33 @@ function selectSticker(stickerId) {
     .then(response => response.json())
     .then(data => {
         if (data.message) {
+            // Thêm tin nhắn sticker vào container
             messageContainer.insertAdjacentHTML('beforeend', data.message);
-            scrollToBottom();
+            
+            // Cuộn xuống cuối cùng
+            messageContainer.scrollTop = messageContainer.scrollHeight;
+            
+            // Reset form và đóng sticker picker
             messageForm.reset();
             document.getElementById('selected-sticker').value = '';
-            document.getElementById('sticker-picker').style.display = 'none';
-        } else {
-            alert(data.error || 'Có lỗi xảy ra khi gửi sticker');
+            stickerPicker.style.display = 'none';
+        } else if (data.error) {
+            // Hiển thị lỗi nếu có
+            console.error('Lỗi:', data.error);
         }
     })
     .catch(error => {
-        console.error('Error:', error);
-        alert('Có lỗi xảy ra khi gửi sticker');
+        // Xử lý lỗi network hoặc lỗi khác
+        console.error('Lỗi khi gửi sticker:', error);
     });
+}
+
+// Thêm function scrollToBottom vào scope global để có thể sử dụng ở nhiều nơi
+function scrollToBottom() {
+    const messageContainer = document.getElementById('message-container');
+    if (messageContainer) {
+        messageContainer.scrollTop = messageContainer.scrollHeight;
+    }
 }
 
 // Hiển thị modal tạo nhóm

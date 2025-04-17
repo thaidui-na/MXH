@@ -14,7 +14,7 @@
                         <a class="nav-link {{ request()->routeIs('posts.index') ? 'active text-primary fw-semibold' : '' }}" href="{{ route('posts.index') }}">Bảng tin</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link {{ request()->routeIs('posts.my_posts') ? 'active text-primary fw-semibold' : '' }}" href="{{ route('posts.my_posts') }}">Bài viết của tôi</a>
+                        <a class="nav-link {{ request()->routeIs('posts.my_posts') ? 'active text-primary fw-semibold' : '' }}" href="{{ route('posts.my_posts') }}">Trang cá nhân</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link position-relative {{ request()->routeIs('messages.index') ? 'active text-primary fw-semibold' : '' }}" href="{{ route('messages.index') }}">
