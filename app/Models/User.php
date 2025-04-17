@@ -28,45 +28,13 @@ class User extends Authenticatable
      *
      * @var list<string> // Gợi ý kiểu: một danh sách các chuỗi
      */
-    protected $fillable = [
-        'name',         // Tên của người dùng
-        'email',        // Địa chỉ email (thường dùng để đăng nhập)
-        'password',     // Mật khẩu (sẽ được hash tự động nhờ $casts)
-        'avatar',       // Đường dẫn tới file avatar của người dùng (có thể null)
-        'phone',        // Số điện thoại của người dùng (có thể null)
-        'bio',          // Giới thiệu ngắn về người dùng (có thể null)
-        'birthday'      // Ngày sinh của người dùng (có thể null)
-    ];
+    
 
-    /**
-     * Các thuộc tính sẽ bị ẩn khi model được chuyển đổi thành mảng hoặc JSON.
-     * Dùng để bảo mật, không trả về các thông tin nhạy cảm như password.
-     *
-     * @var list<string> // Gợi ý kiểu: một danh sách các chuỗi
-     */
-    protected $hidden = [
-        'password',        // Ẩn mật khẩu đã hash
-        'remember_token', // Ẩn token dùng cho chức năng "Remember Me"
-    ];
+    // đặt code ở đây
 
-    /**
-     * Định nghĩa cách các thuộc tính sẽ được ép kiểu (cast) khi truy cập hoặc gán giá trị.
-     * Giúp xử lý dữ liệu một cách tự động và nhất quán.
-     *
-     * @return array<string, string> // Gợi ý kiểu: mảng map tên thuộc tính -> kiểu dữ liệu
-     */
-    protected function casts(): array
-    {
-        return [
-            // Ép kiểu 'email_verified_at' thành đối tượng Carbon (ngày giờ) khi truy cập
-            'email_verified_at' => 'datetime',
-            // Tự động hash giá trị được gán cho 'password' khi lưu vào DB
-            // và đảm bảo giá trị hash không bao giờ bị trả về khi truy cập thuộc tính này
-            'password' => 'hashed',
-            // Ép kiểu 'birthday' thành đối tượng Carbon (chỉ ngày) khi truy cập
-            'birthday' => 'date',
-        ];
-    }
+
+    
+
 
     /**
      * Accessor (Getter) tùy chỉnh để lấy URL đầy đủ của avatar người dùng.

@@ -20,16 +20,7 @@ Route::get('/', function () {
  * PHẦN 1: ROUTES XỬ LÝ AUTHENTICATION
  */
 
-// Routes xử lý đăng ký tài khoản
-Route::get('/register', [AuthController::class, 'showRegisterForm'])->name('register'); // Hiển thị form đăng ký
-Route::post('/register', [AuthController::class, 'register']); // Xử lý dữ liệu đăng ký
 
-// Routes xử lý đăng nhập
-Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login'); // Hiển thị form đăng nhập
-Route::post('/login', [AuthController::class, 'login']); // Xử lý dữ liệu đăng nhập
-
-// Route xử lý đăng xuất - yêu cầu phương thức POST để tránh CSRF
-Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
 /**
  * PHẦN 2: ROUTES XỬ LÝ PROFILE
