@@ -177,62 +177,9 @@ class MessageController extends Controller
         ->get(); // Lấy tất cả các tin nhắn thỏa mãn điều kiện
     }
 
-    /**
-     * Lấy các tin nhắn mới nhận được từ một người dùng cụ thể mà chưa được đọc.
-     * Được sử dụng cho cơ chế polling bằng AJAX để cập nhật real-time.
-     * Đánh dấu các tin nhắn này là đã đọc sau khi lấy.
-     *
-     * @param  int  $userId ID của người dùng gửi tin nhắn mới
-     * @return \Illuminate\Http\JsonResponse
+    /*
+
+    pass code ở đây
+
      */
-    public function getNewMessages($userId)
-    {
-        // Truy vấn các tin nhắn: gửi từ userId, nhận bởi user hiện tại, và chưa đọc
-        $messages = Message::where('sender_id', $userId)
-            ->where('receiver_id', auth()->id())
-            ->where('is_read', false)
-            ->get();
-
-        // Đánh dấu các tin nhắn vừa lấy là đã đọc
-        foreach ($messages as $message) {
-            // Cập nhật trường 'is_read' thành true cho từng tin nhắn
-            $message->update(['is_read' => true]);
-        }
-
-        // Trả về JSON chứa HTML của danh sách tin nhắn mới
-        return response()->json([
-            // Render partial view 'messages.partials.message-list' với các tin nhắn mới
-            // Lưu ý: view này cần được thiết kế để chỉ hiển thị các tin nhắn được truyền vào
-            'messages' => view('messages.partials.message-list', ['messages' => $messages])->render()
-        ]);
-    }
-
-    /**
-     * Lấy trạng thái (số tin nhắn chưa đọc, tin nhắn cuối cùng) của tất cả người dùng khác.
-     * Được sử dụng để cập nhật trạng thái trên sidebar danh sách người dùng bằng AJAX.
-     *
-     * @return \Illuminate\Http\JsonResponse
-     */
-    public function getUsersStatus()
-    {
-        // Lấy tất cả người dùng trừ người dùng hiện tại
-        $users = User::where('id', '!=', auth()->id())
-            ->get()
-            // Sử dụng map để biến đổi collection, tính toán trạng thái cho mỗi user
-            ->map(function($user) {
-                // Trả về một mảng chứa thông tin trạng thái cho mỗi user
-                return [
-                    'id' => $user->id, // ID của người dùng
-                    // Lấy số lượng tin nhắn chưa đọc từ người dùng này gửi đến user hiện tại
-                    // Sử dụng phương thức helper getUnreadMessagesFrom() trong User model (cần được định nghĩa)
-                    'unread_count' => auth()->user()->getUnreadMessagesFrom($user->id),
-                    // Lấy nội dung hoặc mô tả của tin nhắn cuối cùng giữa hai người
-                    // Sử dụng phương thức helper getLastMessageWith() trong User model (cần được định nghĩa)
-                    'last_message' => $user->getLastMessageWith(auth()->id())
-                ];
-            });
-
-        // Trả về JSON chứa mảng thông tin trạng thái của các người dùng
-        return response()->json(['users' => $users]);
-    }
 } 

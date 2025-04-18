@@ -16,17 +16,13 @@
                     <li class="nav-item">
                         <a class="nav-link {{ request()->routeIs('posts.my_posts') ? 'active text-primary fw-semibold' : '' }}" href="{{ route('posts.my_posts') }}">Trang cá nhân</a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link position-relative {{ request()->routeIs('messages.index') ? 'active text-primary fw-semibold' : '' }}" href="{{ route('messages.index') }}">
-                            Tin nhắn
-                            @if(auth()->check() && auth()->user()->unreadMessages()->count() > 0)
-                                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.65em; line-height: 1;">
-                                    {{ auth()->user()->unreadMessages()->count() }}
-                                    <span class="visually-hidden">unread messages</span>
-                                </span>
-                            @endif
-                        </a>
-                    </li>
+                    
+                    /*
+
+                    pass code ở đây
+
+                    
+                     */
                 @endauth
             </ul>
 
