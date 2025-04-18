@@ -76,10 +76,10 @@ Route::middleware('auth')->group(function () {
  * PHẦN 4: ROUTES XỬ LÝ ĐỔI MẬT KHẨU
  * Yêu cầu user đã đăng nhập
  */
-Route::middleware('auth')->group(function () {
-    Route::get('/password/change', [PasswordController::class, 'showChangePasswordForm'])->name('password.change'); // Form đổi mật khẩu
-    Route::put('/password/change', [PasswordController::class, 'updatePassword'])->name('password.update'); // Xử lý đổi mật khẩu
-});
+
+
+
+
 
 // Route dashboard - Chuyển hướng đến trang danh sách bài viết
 Route::get('/dashboard', function () {
