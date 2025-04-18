@@ -28,13 +28,47 @@ class User extends Authenticatable
      *
      * @var list<string> // Gợi ý kiểu: một danh sách các chuỗi
      */
-    
-
-    // đặt code ở đây
 
 
-    
+    protected $fillable = [
+        'name',         // Tên của người dùng
+        'email',        // Địa chỉ email (thường dùng để đăng nhập)
+        'password',     // Mật khẩu (sẽ được hash tự động nhờ $casts)
+        'avatar',       // Đường dẫn tới file avatar của người dùng (có thể null)
+        'phone',        // Số điện thoại của người dùng (có thể null)
+        'bio',          // Giới thiệu ngắn về người dùng (có thể null)
+        'birthday'      // Ngày sinh của người dùng (có thể null)
+    ];
 
+    /**
+     * Các thuộc tính sẽ bị ẩn khi model được chuyển đổi thành mảng hoặc JSON.
+     * Dùng để bảo mật, không trả về các thông tin nhạy cảm như password.
+     *
+     * @var list<string> // Gợi ý kiểu: một danh sách các chuỗi
+     */
+    protected $hidden = [
+        'password',        // Ẩn mật khẩu đã hash
+        'remember_token', // Ẩn token dùng cho chức năng "Remember Me"
+    ];
+
+    /**
+     * Định nghĩa cách các thuộc tính sẽ được ép kiểu (cast) khi truy cập hoặc gán giá trị.
+     * Giúp xử lý dữ liệu một cách tự động và nhất quán.
+     *
+     * @return array<string, string> // Gợi ý kiểu: mảng map tên thuộc tính -> kiểu dữ liệu
+     */
+    protected function casts(): array
+    {
+        return [
+            // Ép kiểu 'email_verified_at' thành đối tượng Carbon (ngày giờ) khi truy cập
+            'email_verified_at' => 'datetime',
+            // Tự động hash giá trị được gán cho 'password' khi lưu vào DB
+            // và đảm bảo giá trị hash không bao giờ bị trả về khi truy cập thuộc tính này
+            'password' => 'hashed',
+            // Ép kiểu 'birthday' thành đối tượng Carbon (chỉ ngày) khi truy cập
+            'birthday' => 'date',
+        ];
+    }
 
     /**
      * Accessor (Getter) tùy chỉnh để lấy URL đầy đủ của avatar người dùng.
@@ -89,7 +123,7 @@ class User extends Authenticatable
      */
     public function receivedMessages()
     {
-         // Tham số thứ hai ('receiver_id') chỉ định tên cột khóa ngoại trong bảng 'messages' liên kết đến 'id' của User này.
+        // Tham số thứ hai ('receiver_id') chỉ định tên cột khóa ngoại trong bảng 'messages' liên kết đến 'id' của User này.
         return $this->hasMany(Message::class, 'receiver_id');
     }
 
@@ -129,17 +163,17 @@ class User extends Authenticatable
     public function getLastMessageWith($userId)
     {
         // Truy vấn trực tiếp model Message
-        return Message::where(function($query) use ($userId) {
+        return Message::where(function ($query) use ($userId) {
             // Điều kiện: (người gửi là tôi VÀ người nhận là $userId)
             $query->where('sender_id', $this->id)
-                  ->where('receiver_id', $userId);
-        })->orWhere(function($query) use ($userId) { // HOẶC
+                ->where('receiver_id', $userId);
+        })->orWhere(function ($query) use ($userId) { // HOẶC
             // Điều kiện: (người gửi là $userId VÀ người nhận là tôi)
             $query->where('sender_id', $userId)
-                  ->where('receiver_id', $this->id);
+                ->where('receiver_id', $this->id);
         })
-        ->latest() // Sắp xếp theo thời gian tạo giảm dần (lấy tin mới nhất)
-        ->first(); // Chỉ lấy bản ghi đầu tiên (tin nhắn mới nhất)
+            ->latest() // Sắp xếp theo thời gian tạo giảm dần (lấy tin mới nhất)
+            ->first(); // Chỉ lấy bản ghi đầu tiên (tin nhắn mới nhất)
     }
 
     /**
@@ -156,10 +190,10 @@ class User extends Authenticatable
         // Tham số thứ ba: Tên khóa ngoại trong bảng trung gian liên kết đến model hiện tại (User).
         // Tham số thứ tư: Tên khóa ngoại trong bảng trung gian liên kết đến model liên quan (ChatGroup).
         return $this->belongsToMany(ChatGroup::class, 'chat_group_members', 'user_id', 'group_id')
-                    // `withPivot` cho phép truy cập các cột bổ sung trong bảng trung gian khi lấy dữ liệu quan hệ.
-                    ->withPivot('is_admin_group_chat') // Thay đổi từ is_admin thành is_admin_group_chat
-                    // `withTimestamps` tự động quản lý cột 'created_at' và 'updated_at' trong bảng pivot khi attach/detach.
-                    ->withTimestamps();
+            // `withPivot` cho phép truy cập các cột bổ sung trong bảng trung gian khi lấy dữ liệu quan hệ.
+            ->withPivot('is_admin_group_chat') // Thay đổi từ is_admin thành is_admin_group_chat
+            // `withTimestamps` tự động quản lý cột 'created_at' và 'updated_at' trong bảng pivot khi attach/detach.
+            ->withTimestamps();
     }
 
     /**
@@ -173,14 +207,14 @@ class User extends Authenticatable
     {
         // Bắt đầu từ quan hệ `chatGroups` đã định nghĩa ở trên
         return $this->chatGroups()
-                    // Eager load (tải trước) các relationship của mỗi ChatGroup để tối ưu truy vấn
-                    ->with([
-                        'members', // Tải tất cả thành viên của nhóm
-                        'messages' => function($query) { // Tải tin nhắn, nhưng tùy chỉnh query
-                            $query->latest() // Sắp xếp tin nhắn mới nhất lên đầu
-                                  ->take(1); // Chỉ lấy 1 tin nhắn (tin nhắn mới nhất)
-                        }
-                    ])
-                    ->get(); // Lấy kết quả là một Collection các ChatGroup
+            // Eager load (tải trước) các relationship của mỗi ChatGroup để tối ưu truy vấn
+            ->with([
+                'members', // Tải tất cả thành viên của nhóm
+                'messages' => function ($query) { // Tải tin nhắn, nhưng tùy chỉnh query
+                    $query->latest() // Sắp xếp tin nhắn mới nhất lên đầu
+                        ->take(1); // Chỉ lấy 1 tin nhắn (tin nhắn mới nhất)
+                }
+            ])
+            ->get(); // Lấy kết quả là một Collection các ChatGroup
     }
 }
