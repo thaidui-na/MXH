@@ -143,6 +143,67 @@
     .post-card {
         animation: fadeInUp 0.5s ease forwards;
     }
+    /* Đảm bảo nút like và nút xem chi tiết nằm cùng một hàng */
+.d-flex {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* Điều chỉnh nút like */
+.btn-like {
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    color: #1877f2; /* Màu sắc của biểu tượng like */
+    font-size: 1.25rem; /* Kích thước font phù hợp */
+    display: flex;
+    align-items: center;
+    gap: 5px; /* Khoảng cách giữa biểu tượng và số like */
+}
+
+/* Hover effect khi di chuột vào nút like */
+.btn-like:hover {
+    color: #1562a1; /* Màu sắc khi hover */
+}
+
+/* Style cho biểu tượng like */
+.btn-like i {
+    margin-right: 5px;
+}
+
+/* Chỉnh màu số like */
+.btn-like span {
+    font-weight: bold;
+}
+
+/* Style cho nút xem chi tiết */
+.btn-view-post {
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 0.875rem;
+    transition: all 0.3s ease;
+    background-color: #3498db;
+    border-color: #3498db;
+    color: white;
+}
+
+.btn-view-post:hover {
+    background-color: #2980b9;
+    border-color: #2980b9;
+    transform: translateX(5px);
+}
+
+.btn-view-post i {
+    margin-right: 0.5rem;
+    transition: transform 0.3s ease;
+}
+
+.btn-view-post:hover i {
+    transform: translateX(3px);
+}
+
 </style>
 @endpush
 
@@ -179,11 +240,22 @@
                             <p class="post-excerpt">{{ Str::limit($post->content, 200) }}</p>
 
                             {{-- Cải thiện nút xem chi tiết --}}
-                            <div class="d-flex justify-content-end">
-                                <a href="{{ route('posts.show', $post) }}" class="btn btn-view-post">
-                                    <i class="fas fa-eye"></i> Xem chi tiết
-                                </a>
-                            </div>
+                            <div class="d-flex justify-content-between align-items-center">
+    {{-- Nút Like --}}
+    <form action="{{ route('posts.like', $post) }}" method="POST" style="margin: 0;">
+        @csrf
+        <button type="submit" class="btn-like">
+            <i class="fas fa-thumbs-up"></i>
+            {{ $post->likes->count() }}
+        </button>
+    </form>
+
+    {{-- Nút Xem chi tiết --}}
+    <a href="{{ route('posts.show', $post) }}" class="btn btn-view-post">
+        <i class="fas fa-eye"></i> Xem chi tiết
+    </a>
+</div>
+
                         </div>
                     </div>
                 </div>

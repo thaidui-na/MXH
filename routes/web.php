@@ -10,6 +10,7 @@ use App\Http\Controllers\ChatGroupController;
 use App\Http\Controllers\GroupMessageController;
 use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\PasswordController;
+use App\Http\Controllers\LikeController;
 
 // Route mặc định, hiển thị trang chào mừng
 Route::get('/', function () {
@@ -88,6 +89,11 @@ Route::middleware('auth')->group(function () {
 Route::get('/dashboard', function () {
     return redirect()->route('posts.index');
 })->middleware(['auth'])->name('dashboard');
+
+
+
+Route::post('/posts/{post}/like', [LikeController::class, 'toggle'])->name('posts.like');
+
 
 /**
  * PHẦN 5: ROUTES DÀNH CHO ADMIN

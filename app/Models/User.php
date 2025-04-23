@@ -217,4 +217,8 @@ class User extends Authenticatable
             ])
             ->get(); // Lấy kết quả là một Collection các ChatGroup
     }
+    public function likes() {
+        return $this->hasMany(Like::class);
+    }
+    
 }
