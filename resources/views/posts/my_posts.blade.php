@@ -69,6 +69,13 @@
     {{-- Phần danh sách bài viết --}}
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h4>Tất cả bài viết</h4>
+        <a href="{{ route('groups.my') }}" class="btn btn-primary">
+    <i class="bi bi-people-fill"></i> Nhóm của bạn
+</a>
+
+        <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#createGroupModal">
+        <i class="fas fa-users"></i> Tạo nhóm
+    </button>
         <a href="{{ route('posts.create') }}" class="btn btn-primary">
             <i class="fas fa-plus"></i> Tạo bài viết mới
         </a>
@@ -142,4 +149,42 @@
     }
 </style>
 @endpush
+<!-- Modal tạo nhóm -->
+<div class="modal fade" id="createGroupModal" tabindex="-1" aria-labelledby="createGroupModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <form action="{{ route('groups.store') }}" method="POST" enctype="multipart/form-data" class="modal-content">
+        @csrf
+        <div class="modal-header">
+            <h5 class="modal-title" id="createGroupModalLabel">Tạo nhóm mới</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+        </div>
+        <div class="modal-body">
+            <div class="mb-3">
+                <label for="name" class="form-label">Tên nhóm</label>
+                <input type="text" name="name" class="form-control" required>
+            </div>
+            <div class="mb-3">
+                <label for="description" class="form-label">Mô tả</label>
+                <textarea name="description" class="form-control" rows="3"></textarea>
+            </div>
+            <div class="mb-3">
+                <label for="image" class="form-label">Ảnh nhóm</label>
+                <input type="file" name="image" class="form-control" accept="image/*">
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Quyền riêng tư</label>
+                <select name="privacy" class="form-select">
+                    <option value="public">Công khai</option>
+                    <option value="private">Riêng tư</option>
+                </select>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+            <button type="submit" class="btn btn-primary">Tạo nhóm</button>
+        </div>
+    </form>
+  </div>
+</div>
+
 @endsection

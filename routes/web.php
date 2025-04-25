@@ -11,6 +11,7 @@ use App\Http\Controllers\GroupMessageController;
 use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\PasswordController;
 use App\Http\Controllers\LikeController;
+use App\Http\Controllers\GroupController;
 
 // Route mặc định, hiển thị trang chào mừng
 Route::get('/', function () {
@@ -93,6 +94,18 @@ Route::get('/dashboard', function () {
 
 
 Route::post('/posts/{post}/like', [LikeController::class, 'toggle'])->name('posts.like');
+
+//route nhóm
+
+
+Route::post('/groups', [GroupController::class, 'store'])->name('groups.store');
+//Tạo một trang để người dùng có thể xem danh sách các nhóm đã tạo, 
+Route::get('/groups', [GroupController::class, 'index'])->name('groups.index');
+//Cho phép người dùng xem thông tin chi tiết của nhóm và các bài viết trong nhóm.
+Route::get('/groups/{group}', [GroupController::class, 'show'])->name('groups.show');
+// route xem nhom của bạn
+Route::get('/my-groups', [GroupController::class, 'myGroups'])->name('groups.my');
+
 
 
 /**

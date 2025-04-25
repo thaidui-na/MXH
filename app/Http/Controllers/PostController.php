@@ -194,5 +194,6 @@ class PostController extends Controller
             ->route('posts.my_posts') // Route name của trang danh sách bài viết của tôi
             ->with('success', 'Bài viết đã được xóa thành công!'); // Gửi kèm thông báo thành công
     }
+    //Kiểm tra thành viên trước khi cho đăng bài
     
 } 
