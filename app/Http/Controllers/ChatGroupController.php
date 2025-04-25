@@ -161,14 +161,13 @@ class ChatGroupController extends Controller
         ]);
 
         // Kiểm tra xem người dùng hiện tại có phải là thành viên của nhóm này không
-        // Chỉ định rõ bảng cho cột is_admin_group_chat
+        // Sửa chỗ này: Không kiểm tra is_admin_group_chat, chỉ kiểm tra là thành viên
         $isMember = DB::table('chat_group_members')
             ->where([
                 'group_id' => $id,
                 'user_id' => auth()->id()
             ])
-            ->where('is_admin_group_chat', true)
-            ->exists();
+            ->exists();  // Bỏ điều kiện where('is_admin_group_chat', true)
 
         if (!$isMember) {
             \Log::warning('Người dùng không có quyền truy cập:', [

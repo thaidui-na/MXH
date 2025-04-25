@@ -110,35 +110,38 @@ class AdminController extends Controller
      */
     public function updateUser(Request $request, $id)
     {
-        // Tìm người dùng cần cập nhật bằng ID
+        // Tìm người dùng cần cập nhật
         $user = User::findOrFail($id);
 
-        // Validate dữ liệu đầu vào từ form
-        $request->validate([
-            'name' => 'required|string|max:255', // Tên là bắt buộc, dạng chuỗi, tối đa 255 ký tự
-            // Email là bắt buộc, dạng email, phải là duy nhất trong bảng 'users' ngoại trừ chính user này
+        // Validate dữ liệu
+        $rules = [
+            'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email,'.$id,
-            'is_admin' => 'boolean', // Quyền admin phải là true/false (hoặc 1/0)
-            'password' => 'nullable|min:6' // Mật khẩu có thể để trống (không đổi), nếu nhập phải ít nhất 6 ký tự
-        ]);
+            'is_admin' => 'nullable|boolean'
+        ];
 
-        // Cập nhật tên người dùng
+        // Thêm rule cho password nếu có nhập mật khẩu mới
+        if ($request->filled('password')) {
+            $rules['password'] = 'required|min:6|confirmed';
+        }
+
+        $request->validate($rules);
+
+        // Cập nhật thông tin cơ bản
         $user->name = $request->name;
-        // Cập nhật email người dùng
         $user->email = $request->email;
-        // Cập nhật quyền admin (true nếu checkbox 'is_admin' được check, ngược lại là false)
         $user->is_admin = $request->has('is_admin');
 
-        // Kiểm tra xem người dùng có nhập mật khẩu mới không
+        // Cập nhật mật khẩu nếu có
         if ($request->filled('password')) {
-            // Nếu có nhập, hash mật khẩu mới và cập nhật
             $user->password = Hash::make($request->password);
         }
 
-        // Lưu các thay đổi vào database
+        // Lưu thay đổi
         $user->save();
-        // Chuyển hướng về trang danh sách người dùng với thông báo thành công
-        return redirect()->route('admin.users')->with('success', 'Cập nhật người dùng thành công');
+
+        return redirect()->route('admin.users')
+            ->with('success', 'Cập nhật người dùng thành công');
     }
 
     /**

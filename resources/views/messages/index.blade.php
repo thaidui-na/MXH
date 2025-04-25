@@ -36,13 +36,12 @@
                             <div class="list-group list-group-flush" id="users-list">
                                 @foreach($users as $user)
                                     
-                                    /*
-
-                                    pass code ở đây
-
-                                    
-                                     */
-
+                                    @php
+                                        // Lấy số tin nhắn chưa đọc từ người dùng này
+                                        $unreadCount = auth()->user()->getUnreadMessagesFrom($user->id);
+                                        // Lấy tin nhắn cuối cùng
+                                        $lastMessage = auth()->user()->getLastMessageWith($user->id);
+                                    @endphp
 
                                     <a href="{{ route('messages.show', $user->id) }}" 
                                        class="list-group-item list-group-item-action user-chat-item {{ $selectedUser && $selectedUser->id == $user->id ? 'active' : '' }}"
