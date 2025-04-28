@@ -80,5 +80,9 @@ class Post extends Model
     public function likesCount() {
         return $this->likes()->count();
     }
-    
+    public function group()
+{
+    return $this->belongsTo(Group::class);
+}
+
 } 

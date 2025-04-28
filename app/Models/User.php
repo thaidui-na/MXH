@@ -221,20 +221,18 @@ class User extends Authenticatable
         return $this->hasMany(Like::class);
     }
     // Group.php
-public function user()
-{
-    return $this->belongsTo(User::class);
-}
-public function group()
-{
-    return $this->belongsTo(Group::class);
-}
-public function groups()
-{
-    return $this->belongsToMany(Group::class, 'group_user')
-                ->withPivot('can_post')
-                ->withTimestamps();
-}
+    public function groups()
+    {
+        return $this->belongsToMany(Group::class, 'group_user')
+            ->withPivot('role')
+            ->withTimestamps();
+    }
+    
+    public function myGroups()
+    {
+        return $this->hasMany(Group::class);
+    }
+    
 
 
 }

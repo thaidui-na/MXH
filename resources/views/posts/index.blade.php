@@ -213,10 +213,18 @@
 @endpush
 
 @section('content')
+
 <div class="container py-4">
     {{-- Thêm class page-title --}}
-    <h4 class="page-title mb-4">Bảng tin</h4>
     
+    <h4 class="page-title mb-4">Bảng tin</h4>
+    <div class="text-end " style="margin-bottom: 15px;">
+    <a href="{{ route('groups.index') }}" class="btn btn-primary">
+        <i class="bi bi-people-fill"></i> Nhóm của bạn
+    </a>
+</div>
+
+</a>
     @if($posts->count() > 0)
     <div class="row">
         @foreach($posts as $index => $post)

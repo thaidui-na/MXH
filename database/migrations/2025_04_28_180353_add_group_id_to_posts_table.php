@@ -14,9 +14,9 @@ return new class extends Migration
         Schema::table('posts', function (Blueprint $table) {
             $table->unsignedBigInteger('group_id')->nullable()->after('user_id');
     
-            // Nếu bạn muốn thiết lập quan hệ khóa ngoại:
-            $table->foreign('group_id')->references('id')->on('groups')->onDelete('set null');
+            $table->foreign('group_id')->references('id')->on('groups')->onDelete('cascade');
         });
+    
     }
 
     /**
@@ -25,8 +25,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('posts', function (Blueprint $table) {
-            $table->dropForeign(['group_id']);
-            $table->dropColumn('group_id');
+            //
         });
     }
 };

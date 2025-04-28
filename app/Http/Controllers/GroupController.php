@@ -3,51 +3,70 @@
 namespace App\Http\Controllers;
 
 use App\Models\Group;
+use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 
 class GroupController extends Controller
 {
-    public function store(Request $request)
-    {
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'privacy' => 'required|in:public,private',
-            'image' => 'nullable|image|max:2048',
-        ]);
-
-        $imagePath = null;
-        if ($request->hasFile('image')) {
-            $imagePath = $request->file('image')->store('group_images', 'public');
-        }
-
-        Group::create([
-            'user_id' => auth()->id(),
-            'name' => $request->name,
-            'description' => $request->description,
-            'privacy' => $request->privacy,
-            'image' => $imagePath,
-        ]);
-
-        return back()->with('success', 'Tạo nhóm thành công!');
-    }
     public function index()
+    {
+        $groups = Auth::user()->myGroups()->with('members')->get();
+        return view('groups.index', compact('groups'));
+    }
+
+    public function create()
+    {
+        return view('groups.create');
+    }
+
+    public function store(Request $request)
 {
-    $groups = Group::latest()->paginate(10);
-    return view('groups.index', compact('groups'));
-}
-public function show(Group $group)
-{
-    $posts = $group->posts()->latest()->paginate(5);
-    return view('groups.show', compact('group', 'posts'));
-}
-public function myGroups()
-{
-    $groups = Group::where('user_id', auth()->id())->latest()->paginate(6);
-    return view('groups.my', compact('groups'));
+    $request->validate([
+        'name' => 'required|max:255',
+        'description' => 'nullable',
+        'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg',
+        'privacy' => 'required|in:public,private',
+    ]);
+
+    $data = $request->only('name', 'description', 'privacy');
+    $data['user_id'] = Auth::id();
+
+    if ($request->hasFile('image')) {
+        $imageName = time().'_'.Str::slug($request->name).'.'.$request->image->extension();
+        $request->image->move(public_path('uploads/groups'), $imageName);
+        $data['image'] = 'uploads/groups/'.$imageName;
+    }
+
+    $group = Group::create($data);
+
+    // Thêm creator là admin
+    $group->members()->attach(Auth::id(), ['role' => 'admin']);
+
+    // Thêm user mẫu vào group
+    $sampleUserIds = [2, 3, 4]; // User mẫu
+
+    foreach ($sampleUserIds as $userId) {
+        $group->members()->attach($userId, ['role' => 'member']);
+    }
+
+    // Tạo bài đăng mẫu
+    foreach ($sampleUserIds as $userId) {
+        \App\Models\GroupPost::create([
+            'group_id' => $group->id,
+            'user_id' => $userId,
+            'content' => fake()->sentence(), // Nội dung ngẫu nhiên
+        ]);
+    }
+
+    return redirect()->route('groups.index')->with('success', 'Tạo nhóm thành công!');
 }
 
 
+    public function show(Group $group)
+    {
+        $group->load('members', 'posts');
+        return view('groups.show', compact('group'));
+    }
 }
-
