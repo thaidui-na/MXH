@@ -13,6 +13,7 @@ use App\Http\Controllers\PasswordController;
 use App\Http\Controllers\LikeController;
 use App\Http\Controllers\GroupController;
 use App\Http\Controllers\GroupPostController;
+use App\Http\Controllers\UserController;
 
 // Route mặc định, hiển thị trang chào mừng
 Route::get('/', function () {
@@ -104,6 +105,10 @@ Route::middleware('auth')->group(function () {
 });
 
 Route::post('/groups/{group}/posts', [GroupPostController::class, 'store'])->name('groups.posts.store');
+
+//tim kiem
+Route::get('/search-groups', [GroupController::class, 'search']);
+
 
 
 

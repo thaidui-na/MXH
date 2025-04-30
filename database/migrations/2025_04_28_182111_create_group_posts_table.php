@@ -12,6 +12,7 @@ class CreateGroupPostsTable extends Migration
             $table->id();
             $table->unsignedBigInteger('group_id');
             $table->unsignedBigInteger('user_id');
+           
             $table->text('content')->nullable();
             $table->string('image')->nullable();
             $table->timestamps();

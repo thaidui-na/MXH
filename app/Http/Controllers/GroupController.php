@@ -69,4 +69,17 @@ class GroupController extends Controller
         $group->load('members', 'posts');
         return view('groups.show', compact('group'));
     }
+
+    // tim kiem
+    public function search(Request $request)
+{
+    $query = $request->input('query');
+
+    $groups = Group::where('name', 'like', '%' . $query . '%')
+        ->limit(10)
+        ->get();
+
+    return response()->json($groups);
+}
+
 }

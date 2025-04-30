@@ -22,6 +22,8 @@ class DatabaseSeeder extends Seeder
 
         $this->call([
             UserSeeder::class,
+            GroupSeeder::class,        // 👈 thêm dòng này
+            GroupUserSeeder::class,    
         ]);
     }
 }

@@ -50,22 +50,45 @@
 
     {{-- Hiển thị danh sách bài viết --}}
     <div class="row">
-        @forelse($group->posts as $post)
-            <div class="col-md-6 mb-3">
-                <div class="card shadow-sm p-3">
-                    <div class="d-flex align-items-center mb-2">
-                        <img src="https://via.placeholder.com/40" class="rounded-circle me-2" alt="Avatar">
-                        <div>
-                            <strong>{{ $post->user->name }}</strong><br>
-                            <small class="text-muted">{{ $post->created_at->diffForHumans() }}</small>
-                        </div>
-                    </div>
-                    <p class="mb-0">{{ $post->content }}</p>
-                </div>
+    @foreach ($group->posts as $post)
+    <div class="card mb-3 shadow-sm">
+        <div class="card-body">
+            <h5>
+                <a href="{{ route('groups.show', $post->user->id) }}">{{ $post->user->name }}</a>
+            </h5>
+            <p>{{ $post->content }}</p>
+
+            {{-- Nút hành động giống Facebook --}}
+            <div class="d-flex justify-content-between">
+            <form action="{{ route('posts.like', $post) }}" method="POST" style="margin: 0;">
+    @csrf
+    <button type="submit" class="btn-like" style="background-color:rgb(198, 202, 200); color: white; border: 2px solid white; padding: 10px 20px; border-radius: 5px; cursor: pointer;">
+        <i class="fas fa-thumbs-up"></i>
+        {{ $post->likes->count() }}
+    </button>
+</form>
+
+                <button class="btn btn-sm btn-outline-secondary">💬 Bình luận</button>
+                <button class="btn btn-sm btn-outline-secondary">🔁 Chia sẻ</button>
             </div>
-        @empty
-            <p class="text-center text-muted">Chưa có bài viết nào.</p>
-        @endforelse
+
+            <hr>
+
+            <p class="fw-bold mb-1">Bình luận:</p>
+            <ul class="list-unstyled">
+                @foreach ($post->comments as $comment)
+                    <li class="mb-1">
+                        <strong>{{ $comment->user->name }}:</strong> {{ $comment->content }}
+                    </li>
+                @endforeach
+            </ul>
+
+            <p class="text-muted small">Đã chia sẻ {{ $post->shares->count() }} lần</p>
+        </div>
+    </div>
+@endforeach
+
+
     </div>
 
 </div>
