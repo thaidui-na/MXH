@@ -31,4 +31,18 @@ class CommentController extends Controller
         return redirect()->route('comments.index', ['post' => $postId])
                          ->with('success', 'Bình luận đã được gửi!');
     }
+
+    public function destroy($commentId)
+    {
+        $comment = \App\Models\Comment::findOrFail($commentId);
+
+        // Admin xóa được tất cả, user chỉ xóa được bình luận của mình
+        if (!auth()->user()->is_admin && $comment->user_id !== auth()->id()) {
+            abort(403, 'Bạn không có quyền xóa bình luận này.');
+        }
+
+        $comment->delete();
+
+        return back()->with('success', 'Đã xóa bình luận!');
+    }
 }

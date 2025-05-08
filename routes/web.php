@@ -115,6 +115,8 @@ Route::middleware(['web', 'auth'])->prefix('admin')->group(function () {
     Route::get('/posts/{id}/edit', [AdminController::class, 'editPost'])->name('admin.posts.edit'); // Form sửa post
     Route::put('/posts/{id}', [AdminController::class, 'updatePost'])->name('admin.posts.update'); // Cập nhật post
     Route::delete('/posts/{id}', [AdminController::class, 'deletePost'])->name('admin.posts.delete'); // Xóa post
+
+    Route::delete('/comments/{comment}', [CommentController::class, 'destroy'])->name('admin.comments.destroy');
 });
 
 // Route hiển thị danh sách bình luận cho một bài viết (ai đăng nhập cũng dùng được)

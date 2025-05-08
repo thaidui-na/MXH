@@ -24,6 +24,13 @@
                 <strong>{{ $comment->user->name ?? 'Ẩn danh' }}:</strong> {{ $comment->content }}
                 <br>
                 <small class="text-muted">{{ $comment->created_at->diffForHumans() }}</small>
+                @if(auth()->check() && (auth()->user()->is_admin || auth()->id() === $comment->user_id))
+                    <form action="{{ route('admin.comments.destroy', $comment->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Bạn có chắc chắn muốn xóa bình luận này?');">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit" class="btn btn-sm btn-danger ms-2">Xóa</button>
+                    </form>
+                @endif
             </li>
         @empty
             <li class="list-group-item text-muted">Chưa có bình luận nào.</li>
