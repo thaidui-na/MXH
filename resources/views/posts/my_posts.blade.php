@@ -34,6 +34,9 @@
                                 <a href="{{ route('posts.show', $post) }}" class="btn btn-sm btn-info me-2">
                                     <i class="fas fa-eye"></i> Xem
                                 </a>
+                                <a href="{{ route('comments.index', $post->id) }}" class="btn btn-sm btn-secondary me-2">
+                                    <i class="fas fa-comments"></i> Bình luận
+                                </a>
                                 <a href="{{ route('posts.edit', $post) }}" class="btn btn-sm btn-warning me-2">
                                     <i class="fas fa-edit"></i> Sửa
                                 </a>

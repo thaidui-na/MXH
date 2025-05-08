@@ -32,6 +32,9 @@
                         <a href="{{ url()->previous() }}" class="btn btn-secondary">
                             <i class="fas fa-arrow-left"></i> Quay lại
                         </a>
+                        <a href="{{ route('comments.index', $post->id) }}" class="btn btn-secondary">
+                            <i class="fas fa-comments"></i> Bình luận
+                        </a>
                         
                         @if($post->user_id === auth()->id())
                             <div>
