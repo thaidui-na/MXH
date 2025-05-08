@@ -116,6 +116,7 @@ Route::middleware(['web', 'auth'])->prefix('admin')->group(function () {
     Route::put('/posts/{id}', [AdminController::class, 'updatePost'])->name('admin.posts.update'); // Cập nhật post
     Route::delete('/posts/{id}', [AdminController::class, 'deletePost'])->name('admin.posts.delete'); // Xóa post
 
+    // Routes quản lý comments (CRUD)
     Route::delete('/comments/{comment}', [CommentController::class, 'destroy'])->name('admin.comments.destroy');
 });
 
@@ -124,3 +125,8 @@ Route::get('/posts/{post}/comments', [CommentController::class, 'index'])->name(
 
 // Route lưu bình luận mới cho một bài viết
 Route::post('/posts/{post}/comments', [CommentController::class, 'store'])->name('comments.store')->middleware('auth');
+
+// Hiển thị form sửa bình luận
+Route::get('/comments/{comment}/edit', [CommentController::class, 'edit'])->name('comments.edit')->middleware('auth');
+// Xử lý cập nhật bình luận
+Route::put('/comments/{comment}', [CommentController::class, 'update'])->name('comments.update')->middleware('auth');

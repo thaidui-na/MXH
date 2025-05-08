@@ -25,6 +25,7 @@
                 <br>
                 <small class="text-muted">{{ $comment->created_at->diffForHumans() }}</small>
                 @if(auth()->check() && (auth()->user()->is_admin || auth()->id() === $comment->user_id))
+                    <a href="{{ route('comments.edit', $comment->id) }}" class="btn btn-sm btn-warning ms-2">Sửa</a>
                     <form action="{{ route('admin.comments.destroy', $comment->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Bạn có chắc chắn muốn xóa bình luận này?');">
                         @csrf
                         @method('DELETE')
