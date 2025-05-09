@@ -10,9 +10,17 @@ use Illuminate\Support\Facades\Storage;
 
 class GroupController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $groups = Group::withCount('members')->latest()->paginate(10);
+        $query = Group::withCount('members');
+        if ($request->filled('q')) {
+            $q = $request->q;
+            $query->where(function($sub) use ($q) {
+                $sub->where('name', 'like', "%$q%")
+                     ->orWhere('description', 'like', "%$q%") ;
+            });
+        }
+        $groups = $query->with(['members'])->latest()->paginate(10);
         return view('groups.index', compact('groups'));
     }
 
@@ -237,5 +245,23 @@ class GroupController extends Controller
 
         return redirect()->route('groups.show', $group)
             ->with('success', 'Đăng bài thành công!');
+    }
+
+    /**
+     * API tìm kiếm nhóm cho autocomplete
+     */
+    public function searchAjax(Request $request)
+    {
+        $q = $request->q;
+        $groups = Group::query()
+            ->when($q, function($query) use ($q) {
+                $query->where(function($sub) use ($q) {
+                    $sub->where('name', 'like', "%$q%")
+                         ->orWhere('description', 'like', "%$q%") ;
+                });
+            })
+            ->limit(10)
+            ->get(['id', 'name', 'cover_image', 'avatar']);
+        return response()->json($groups);
     }
 } 
