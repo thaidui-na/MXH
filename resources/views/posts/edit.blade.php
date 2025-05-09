@@ -1,4 +1,3 @@
-
 @extends('layouts.app')
 
 @section('title', 'Chỉnh sửa bài viết')

@@ -6,220 +6,136 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Illuminate\Support\Facades\Storage;
 
-/**
- * Model đại diện cho một người dùng (User) trong hệ thống.
- * Kế thừa từ Authenticatable để hỗ trợ các chức năng đăng nhập, xác thực.
- * Liên kết với bảng 'users' trong database.
- */
 class User extends Authenticatable
 {
-    /**
-     * Sử dụng các trait cần thiết.
-     * HasFactory: Cho phép sử dụng model factories để tạo dữ liệu mẫu.
-     * Notifiable: Cho phép gửi thông báo (notifications) đến người dùng này.
-     */
+    /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable;
 
     /**
-     * Các thuộc tính có thể được gán hàng loạt (mass assignable).
-     * Chỉ các trường trong mảng này mới có thể được gán giá trị khi dùng `User::create([...])` hoặc `$user->update([...])`.
+     * The attributes that are mass assignable.
      *
-     * @var list<string> // Gợi ý kiểu: một danh sách các chuỗi
+     * @var list<string>
      */
     protected $fillable = [
-        'name',         // Tên của người dùng
-        'email',        // Địa chỉ email (thường dùng để đăng nhập)
-        'password',     // Mật khẩu (sẽ được hash tự động nhờ $casts)
-        'avatar',       // Đường dẫn tới file avatar của người dùng (có thể null)
-        'phone',        // Số điện thoại của người dùng (có thể null)
-        'bio',          // Giới thiệu ngắn về người dùng (có thể null)
-        'birthday'      // Ngày sinh của người dùng (có thể null)
+        'name',
+        'email',
+        'password',
+        'avatar',
+        'phone',
+        'bio',
+        'birthday'
     ];
 
     /**
-     * Các thuộc tính sẽ bị ẩn khi model được chuyển đổi thành mảng hoặc JSON.
-     * Dùng để bảo mật, không trả về các thông tin nhạy cảm như password.
+     * The attributes that should be hidden for serialization.
      *
-     * @var list<string> // Gợi ý kiểu: một danh sách các chuỗi
+     * @var list<string>
      */
     protected $hidden = [
-        'password',        // Ẩn mật khẩu đã hash
-        'remember_token', // Ẩn token dùng cho chức năng "Remember Me"
+        'password',
+        'remember_token',
     ];
 
     /**
-     * Định nghĩa cách các thuộc tính sẽ được ép kiểu (cast) khi truy cập hoặc gán giá trị.
-     * Giúp xử lý dữ liệu một cách tự động và nhất quán.
+     * Get the attributes that should be cast.
      *
-     * @return array<string, string> // Gợi ý kiểu: mảng map tên thuộc tính -> kiểu dữ liệu
+     * @return array<string, string>
      */
-    protected $casts = [
-        // Ép kiểu 'email_verified_at' thành đối tượng Carbon (ngày giờ) khi truy cập
-        'email_verified_at' => 'datetime',
-        // Tự động hash giá trị được gán cho 'password' khi lưu vào DB
-        // và đảm bảo giá trị hash không bao giờ bị trả về khi truy cập thuộc tính này
-        'password' => 'hashed',
-        // Ép kiểu 'birthday' thành đối tượng Carbon (chỉ ngày) khi truy cập
-        'birthday' => 'date',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'email_verified_at' => 'datetime',
+            'password' => 'hashed',
+            'birthday' => 'date',
+        ];
+    }
 
-    /**
-     * Accessor (Getter) tùy chỉnh để lấy URL đầy đủ của avatar người dùng.
-     * Phương thức này sẽ được gọi tự động khi bạn truy cập thuộc tính ảo `avatar_url` (ví dụ: `$user->avatar_url`).
-     * Tên phương thức phải theo quy ước: get{TênThuộcTínhCamelCase}Attribute.
-     *
-     * @return string URL của avatar (có thể là avatar thật hoặc avatar mặc định)
-     */
+    // Accessor để lấy URL avatar
     public function getAvatarUrlAttribute()
     {
-        return $this->avatar ? Storage::url($this->avatar) : asset('images/default-avatar.jpg');
+        if ($this->avatar) {
+            return asset('storage/' . $this->avatar);
+        }
+        // Avatar mặc định nếu chưa upload
+        return 'https://ui-avatars.com/api/?name=' . urlencode($this->name) . '&color=7F9CF5&background=EBF4FF';
     }
 
     /**
-     * Định nghĩa quan hệ một-nhiều: Một người dùng (User) có thể có nhiều bài viết (Post).
-     *
-     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     * Quan hệ một-nhiều với Post
+     * Một user có thể có nhiều bài viết
      */
     public function posts()
     {
-        // `hasMany` định nghĩa quan hệ một-nhiều.
-        // Tham số thứ nhất: Tên lớp Model liên quan (Post).
-        // Laravel sẽ tự động tìm khóa ngoại `user_id` trong bảng `posts`.
         return $this->hasMany(Post::class);
     }
 
     /**
-     * Định nghĩa quan hệ một-nhiều: Một người dùng (User) có thể gửi nhiều tin nhắn 1-1 (Message).
-     * Liên kết qua khóa ngoại 'sender_id' trong bảng 'messages'.
-     *
-     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     * Lấy tin nhắn đã gửi
      */
     public function sentMessages()
     {
-        // Tham số thứ hai ('sender_id') chỉ định tên cột khóa ngoại trong bảng 'messages' liên kết đến 'id' của User này.
         return $this->hasMany(Message::class, 'sender_id');
     }
 
     /**
-     * Định nghĩa quan hệ một-nhiều: Một người dùng (User) có thể nhận nhiều tin nhắn 1-1 (Message).
-     * Liên kết qua khóa ngoại 'receiver_id' trong bảng 'messages'.
-     *
-     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     * Lấy tin nhắn đã nhận
      */
     public function receivedMessages()
     {
-        // Tham số thứ hai ('receiver_id') chỉ định tên cột khóa ngoại trong bảng 'messages' liên kết đến 'id' của User này.
         return $this->hasMany(Message::class, 'receiver_id');
     }
 
     /**
-     * Định nghĩa quan hệ để lấy các tin nhắn chưa đọc mà người dùng này đã nhận.
-     * Thực chất là một cách lọc dựa trên quan hệ `receivedMessages`.
-     *
-     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     * Lấy số tin nhắn chưa đọc
      */
     public function unreadMessages()
     {
-        // Bắt đầu từ quan hệ `receivedMessages` và thêm điều kiện lọc `where`
-        return $this->receivedMessages()->where('is_read', false); // Chỉ lấy tin nhắn có is_read = false
+        return $this->receivedMessages()->where('is_read', false);
     }
 
     /**
-     * Phương thức helper để đếm số lượng tin nhắn chưa đọc từ một người gửi cụ thể.
-     *
-     * @param int $senderId ID của người gửi cần kiểm tra
-     * @return int Số lượng tin nhắn chưa đọc từ người gửi đó
+     * Lấy số tin nhắn chưa đọc từ một người dùng cụ thể
      */
     public function getUnreadMessagesFrom($senderId)
     {
-        // Bắt đầu từ quan hệ `receivedMessages` (tin nhắn user này nhận)
         return $this->receivedMessages()
-            ->where('sender_id', $senderId) // Lọc theo ID người gửi
-            ->where('is_read', false)      // Chỉ lấy tin nhắn chưa đọc
-            ->count();                    // Đếm số lượng kết quả
+            ->where('sender_id', $senderId)
+            ->where('is_read', false)
+            ->count();
     }
 
     /**
-     * Phương thức helper để lấy tin nhắn cuối cùng (gửi hoặc nhận) giữa người dùng này và một người dùng khác.
-     *
-     * @param int $userId ID của người dùng khác
-     * @return \App\Models\Message|null Trả về đối tượng Message cuối cùng, hoặc null nếu không có tin nhắn nào.
+     * Lấy tin nhắn cuối cùng với một người dùng
      */
     public function getLastMessageWith($userId)
     {
-        // Truy vấn trực tiếp model Message
-        return Message::where(function ($query) use ($userId) {
-            // Điều kiện: (người gửi là tôi VÀ người nhận là $userId)
+        return Message::where(function($query) use ($userId) {
             $query->where('sender_id', $this->id)
-                ->where('receiver_id', $userId);
-        })->orWhere(function ($query) use ($userId) { // HOẶC
-            // Điều kiện: (người gửi là $userId VÀ người nhận là tôi)
+                  ->where('receiver_id', $userId);
+        })->orWhere(function($query) use ($userId) {
             $query->where('sender_id', $userId)
-                ->where('receiver_id', $this->id);
-        })
-            ->latest() // Sắp xếp theo thời gian tạo giảm dần (lấy tin mới nhất)
-            ->first(); // Chỉ lấy bản ghi đầu tiên (tin nhắn mới nhất)
+                  ->where('receiver_id', $this->id);
+        })->latest()->first();
     }
 
     /**
-     * Định nghĩa quan hệ nhiều-nhiều: Một người dùng (User) có thể tham gia nhiều nhóm chat (ChatGroup).
-     * Liên kết thông qua bảng trung gian (pivot table) 'chat_group_members'.
-     *
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
+     * Quan hệ với các nhóm chat
      */
     public function chatGroups()
     {
-        // `belongsToMany` xác định quan hệ nhiều-nhiều.
-        // Tham số thứ nhất: Tên lớp Model liên quan (ChatGroup).
-        // Tham số thứ hai: Tên bảng trung gian.
-        // Tham số thứ ba: Tên khóa ngoại trong bảng trung gian liên kết đến model hiện tại (User).
-        // Tham số thứ tư: Tên khóa ngoại trong bảng trung gian liên kết đến model liên quan (ChatGroup).
         return $this->belongsToMany(ChatGroup::class, 'chat_group_members', 'user_id', 'group_id')
-            // `withPivot` cho phép truy cập các cột bổ sung trong bảng trung gian khi lấy dữ liệu quan hệ.
-            ->withPivot('is_admin_group_chat') // Thay đổi từ is_admin thành is_admin_group_chat
-            // `withTimestamps` tự động quản lý cột 'created_at' và 'updated_at' trong bảng pivot khi attach/detach.
-            ->withTimestamps();
+                    ->withPivot('is_admin')
+                    ->withTimestamps();
     }
 
     /**
-     * Accessor (Getter) tùy chỉnh để lấy danh sách các nhóm chat mà người dùng này là thành viên.
-     * Kèm theo thông tin thành viên và tin nhắn cuối cùng của mỗi nhóm để hiển thị tóm tắt.
-     * Sẽ được gọi khi bạn truy cập thuộc tính ảo `$user->groups`.
-     *
-     * @return \Illuminate\Database\Eloquent\Collection Collection các đối tượng ChatGroup
+     * Lấy các nhóm chat mà user là thành viên
      */
-    public function getGroupsAttribute() // Tên phương thức: get{TênThuộcTínhCamelCase}Attribute
+    public function getGroupsAttribute()
     {
-        // Bắt đầu từ quan hệ `chatGroups` đã định nghĩa ở trên
-        return $this->chatGroups()
-            // Eager load (tải trước) các relationship của mỗi ChatGroup để tối ưu truy vấn
-            ->with([
-                'members', // Tải tất cả thành viên của nhóm
-                'messages' => function ($query) { // Tải tin nhắn, nhưng tùy chỉnh query
-                    $query->latest() // Sắp xếp tin nhắn mới nhất lên đầu
-                        ->take(1); // Chỉ lấy 1 tin nhắn (tin nhắn mới nhất)
-                }
-            ])
-            ->get(); // Lấy kết quả là một Collection các ChatGroup
-    }
-
-    /**
-     * Get the groups created by the user.
-     */
-    public function groups()
-    {
-        return $this->hasMany(Group::class, 'created_by');
-    }
-
-    /**
-     * Get the groups that the user is a member of.
-     */
-    public function joinedGroups()
-    {
-        return $this->belongsToMany(Group::class, 'group_members')
-            ->withPivot('role', 'is_approved')
-            ->withTimestamps();
+        return $this->chatGroups()->with(['members', 'messages' => function($query) {
+            $query->latest()->take(1);
+        }])->get();
     }
 }

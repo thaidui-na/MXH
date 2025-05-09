@@ -68,11 +68,8 @@
 
             <!-- Form cập nhật thông tin cá nhân -->
             <div class="card mb-4">
-                <div class="card-header d-flex justify-content-between align-items-center">
+                <div class="card-header">
                     <h5 class="mb-0">Thông tin cá nhân</h5>
-                    <a href="{{ route('groups.create') }}" class="btn btn-success">
-                        <i class="fas fa-users"></i> Tạo nhóm mới
-                    </a>
                 </div>
                 <div class="card-body">
                     <form action="{{ route('profile.update') }}" method="POST" enctype="multipart/form-data">
@@ -82,13 +79,8 @@
                         <!-- Upload avatar -->
                         <div class="mb-3">
                             <label for="avatar" class="form-label">Avatar</label>
-                            @if(auth()->user()->avatar)
-                                <div class="mb-2">
-                                    <img src="{{ Storage::url(auth()->user()->avatar) }}" alt="Current Avatar" class="rounded-circle" style="width: 100px; height: 100px; object-fit: cover;">
-                                </div>
-                            @endif
                             <input type="file" class="form-control @error('avatar') is-invalid @enderror" 
-                                   id="avatar" name="avatar" accept="image/*">
+                                   id="avatar" name="avatar">
                             @error('avatar')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
@@ -146,6 +138,45 @@
                         </div>
 
                         <button type="submit" class="btn btn-primary">Cập nhật thông tin</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Form đổi mật khẩu -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Đổi mật khẩu</h5>
+                </div>
+                <div class="card-body">
+                    <form action="{{ route('profile.password') }}" method="POST">
+                        @csrf
+                        @method('PUT')
+
+                        <div class="mb-3">
+                            <label for="current_password" class="form-label">Mật khẩu hiện tại</label>
+                            <input type="password" class="form-control @error('current_password') is-invalid @enderror" 
+                                   id="current_password" name="current_password">
+                            @error('current_password')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="password" class="form-label">Mật khẩu mới</label>
+                            <input type="password" class="form-control @error('password') is-invalid @enderror" 
+                                   id="password" name="password">
+                            @error('password')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="password_confirmation" class="form-label">Xác nhận mật khẩu mới</label>
+                            <input type="password" class="form-control" 
+                                   id="password_confirmation" name="password_confirmation">
+                        </div>
+
+                        <button type="submit" class="btn btn-primary">Đổi mật khẩu</button>
                     </form>
                 </div>
             </div>

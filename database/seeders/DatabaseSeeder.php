@@ -19,10 +19,5 @@ class DatabaseSeeder extends Seeder
             'name' => 'Test User',
             'email' => 'test@example.com',
         ]);
-
-        // Chạy GroupDemoSeeder
-        $this->call([
-            GroupDemoSeeder::class
-        ]);
     }
 }

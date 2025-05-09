@@ -19,7 +19,7 @@ return new class extends Migration
             $table->foreignId('user_id')
                   ->constrained('users')
                   ->onDelete('cascade');
-            $table->boolean('is_admin_group_chat')->default(false);
+            $table->boolean('is_admin')->default(false);
             $table->timestamps();
 
             $table->unique(['group_id', 'user_id']);

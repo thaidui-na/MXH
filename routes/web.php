@@ -10,7 +10,10 @@ use App\Http\Controllers\ChatGroupController;
 use App\Http\Controllers\GroupMessageController;
 use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\PasswordController;
-use App\Http\Controllers\GroupController;
+use App\Http\Controllers\CommentReplyController;
+use App\Http\Controllers\CommentController;
+
+
 
 // Route mặc định, hiển thị trang chào mừng
 Route::get('/', function () {
@@ -71,15 +74,6 @@ Route::middleware('auth')->group(function () {
         ->name('group.messages.store'); // Gửi tin nhắn vào nhóm
     Route::get('chat-groups/{group}/messages/check', [GroupMessageController::class, 'checkNewMessages'])
         ->name('group.messages.check'); // Kiểm tra tin nhắn mới trong nhóm
-
-    // Routes quản lý nhóm
-    Route::resource('groups', GroupController::class);
-    Route::post('groups/{group}/join', [GroupController::class, 'join'])->name('groups.join');
-    Route::post('groups/{group}/leave', [GroupController::class, 'leave'])->name('groups.leave');
-    Route::post('groups/{group}/post', [GroupController::class, 'post'])->name('groups.post');
-    Route::get('groups/{group}/members', [GroupController::class, 'members'])->name('groups.members');
-    Route::put('groups/{group}/members/{member}', [GroupController::class, 'updateMember'])->name('groups.members.update');
-    Route::delete('groups/{group}/members/{member}', [GroupController::class, 'removeMember'])->name('groups.members.remove');
 });
 
 /**
@@ -106,7 +100,7 @@ Route::get('/dashboard', function () {
  * - User có quyền admin (AdminMiddleware)
  * - Prefix tất cả routes với 'admin'
  */
-Route::middleware(['web', 'auth', \App\Http\Middleware\AdminMiddleware::class])->prefix('admin')->group(function () {
+Route::middleware(['web', 'auth'])->prefix('admin')->group(function () {
     // Trang dashboard của admin
     Route::get('/', [AdminController::class, 'index'])->name('admin.dashboard');
 
@@ -121,4 +115,18 @@ Route::middleware(['web', 'auth', \App\Http\Middleware\AdminMiddleware::class])-
     Route::get('/posts/{id}/edit', [AdminController::class, 'editPost'])->name('admin.posts.edit'); // Form sửa post
     Route::put('/posts/{id}', [AdminController::class, 'updatePost'])->name('admin.posts.update'); // Cập nhật post
     Route::delete('/posts/{id}', [AdminController::class, 'deletePost'])->name('admin.posts.delete'); // Xóa post
+
+    //Thêm bình luận
+    
+Route::get('/posts/{post}/comments', [CommentController::class, 'index'])->name('comments.index');
+
+// Route lưu bình luận mới cho một bài viết
+Route::post('/posts/{post}/comments', [CommentController::class, 'store'])->name('comments.store');
+
 });
+
+// Route hiển thị danh sách bình luận cho một bài viết (ai đăng nhập cũng dùng được)
+Route::get('/posts/{post}/comments', [CommentController::class, 'index'])->name('comments.index')->middleware('auth');
+
+// Route lưu bình luận mới cho một bài viết
+Route::post('/posts/{post}/comments', [CommentController::class, 'store'])->name('comments.store')->middleware('auth');
