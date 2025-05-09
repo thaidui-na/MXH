@@ -13,32 +13,32 @@
                         @csrf
                         <div class="mb-3">
                             <label for="name">Họ tên</label>
-                            <input type="text" class="form-control @error('name') is-invalid @enderror" 
-                                   id="name" name="name" value="{{ old('name') }}" required>
+                            <input type="text" class="form-control @error('name') is-invalid @enderror"
+                                id="name" name="name" value="{{ old('name') }}" required>
                             @error('name')
-                                <span class="invalid-feedback">{{ $message }}</span>
+                            <span class="invalid-feedback">{{ $message }}</span>
                             @enderror
                         </div>
                         <div class="mb-3">
                             <label for="email">Email</label>
-                            <input type="email" class="form-control @error('email') is-invalid @enderror" 
-                                   id="email" name="email" value="{{ old('email') }}" required>
+                            <input type="email" class="form-control @error('email') is-invalid @enderror"
+                                id="email" name="email" value="{{ old('email') }}" required>
                             @error('email')
-                                <span class="invalid-feedback">{{ $message }}</span>
+                            <span class="invalid-feedback">{{ $message }}</span>
                             @enderror
                         </div>
                         <div class="mb-3">
                             <label for="password">Mật khẩu</label>
-                            <input type="password" class="form-control @error('password') is-invalid @enderror" 
-                                   id="password" name="password" required>
+                            <input type="password" class="form-control @error('password') is-invalid @enderror"
+                                id="password" name="password" required>
                             @error('password')
-                                <span class="invalid-feedback">{{ $message }}</span>
+                            <span class="invalid-feedback">{{ $message }}</span>
                             @enderror
                         </div>
                         <div class="mb-3">
                             <label for="password_confirmation">Xác nhận mật khẩu</label>
-                            <input type="password" class="form-control" 
-                                   id="password_confirmation" name="password_confirmation" required>
+                            <input type="password" class="form-control"
+                                id="password_confirmation" name="password_confirmation" required>
                         </div>
                         <button type="submit" class="btn btn-primary">Đăng ký</button>
                     </form>
@@ -47,4 +47,4 @@
         </div>
     </div>
 </div>
-@endsection 
+@endsection

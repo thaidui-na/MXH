@@ -9,6 +9,8 @@
     
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
@@ -43,5 +45,51 @@
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"></script>
     @stack('scripts')
+
+    {{-- ======= JavaScript Bổ Sung ======= --}}
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // --- Header Scroll Effect ---
+            const navbar = document.querySelector('.navbar.fixed-top');
+            if (navbar) {
+                const scrollThreshold = 50; // Ngưỡng cuộn để thay đổi header
+
+                const handleScroll = () => {
+                    if (window.scrollY > scrollThreshold) {
+                        navbar.classList.add('navbar-scrolled');
+                    } else {
+                        navbar.classList.remove('navbar-scrolled');
+                    }
+                };
+
+                window.addEventListener('scroll', handleScroll);
+                handleScroll(); // Kiểm tra trạng thái ban đầu khi tải trang
+            }
+
+            // --- Back to Top Button ---
+            const backToTopButton = document.getElementById('back-to-top-btn');
+
+            if (backToTopButton) {
+                const scrollThresholdBtn = 300; // Ngưỡng cuộn để hiện nút
+
+                const toggleBackToTopButton = () => {
+                    if (window.scrollY > scrollThresholdBtn) {
+                        backToTopButton.classList.add('show');
+                    } else {
+                        backToTopButton.classList.remove('show');
+                    }
+                };
+
+                const scrollToTop = () => {
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                };
+
+                window.addEventListener('scroll', toggleBackToTopButton);
+                backToTopButton.addEventListener('click', scrollToTop);
+                toggleBackToTopButton(); // Kiểm tra trạng thái ban đầu
+            }
+        });
+    </script>
+    {{-- ================================ --}}
 </body>
 </html> 
