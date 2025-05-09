@@ -109,6 +109,10 @@
                                 <div class="card-body">
                                     <div class="d-flex justify-content-between">
                                         <h5 class="card-title">{{ $post->title }}</h5>
+                                        <div class="text-muted">
+                                            <i class="fas fa-heart text-danger"></i>
+                                            <span>{{ $post->likes()->count() }} lượt thích</span>
+                                        </div>
                                     </div>
                                     <p class="card-text text-muted small">
                                         Đăng ngày {{ $post->created_at->format('d/m/Y H:i') }}

@@ -66,6 +66,17 @@ class User extends Authenticatable
     ];
 
     /**
+     * Lấy tổng số lượt thích của tất cả bài viết của người dùng
+     */
+    public function getTotalLikesAttribute()
+    {
+        return $this->posts()
+            ->withCount('likes')
+            ->get()
+            ->sum('likes_count');
+    }
+
+    /**
      * Accessor (Getter) tùy chỉnh để lấy URL đầy đủ của avatar người dùng.
      * Phương thức này sẽ được gọi tự động khi bạn truy cập thuộc tính ảo `avatar_url` (ví dụ: `$user->avatar_url`).
      * Tên phương thức phải theo quy ước: get{TênThuộcTínhCamelCase}Attribute.

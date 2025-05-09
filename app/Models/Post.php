@@ -43,6 +43,36 @@ class Post extends Model
     }
 
     /**
+     * Get the likes for the post.
+     */
+    public function likes()
+    {
+        return $this->belongsToMany(User::class, 'likes', 'post_id', 'user_id')
+            ->withTimestamps();
+    }
+
+    /**
+     * Check if the post is liked by a specific user.
+     *
+     * @param int $userId
+     * @return bool
+     */
+    public function isLikedBy($userId)
+    {
+        return $this->likes()->where('user_id', $userId)->exists();
+    }
+
+    /**
+     * Get the total number of likes for the post.
+     *
+     * @return int
+     */
+    public function getLikesCount()
+    {
+        return $this->likes()->count();
+    }
+
+    /**
      * Định nghĩa một Local Query Scope để lọc các bài viết công khai.
      * Cho phép tái sử dụng logic query này một cách dễ dàng.
      * Cách dùng: Post::public()->get();

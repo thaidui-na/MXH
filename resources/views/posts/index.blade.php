@@ -1,4 +1,3 @@
-@ -1,222 +0,0 @@
 @extends('layouts.app')
 
 @section('title', 'Bảng tin')
@@ -198,13 +197,15 @@
             opacity: 0;
             transform: translateY(20px);
         }
+
         to {
             opacity: 1;
             transform: translateY(0);
         }
     }
 
-    .post-card, .group-card {
+    .post-card,
+    .group-card {
         animation: fadeInUp 0.5s ease forwards;
     }
 </style>
@@ -230,80 +231,85 @@
         <div class="tab-pane fade show active" id="posts-pane" role="tabpanel" aria-labelledby="posts-tab">
             {{-- Hiển thị bài viết --}}
             @if($posts->count() > 0)
-                <h5 class="mb-3">Bài viết mới nhất</h5>
-                <div class="row">
-                    @foreach($posts as $index => $post)
-                        <div class="col-md-12" style="animation-delay: {{ $index * 0.1 }}s;">
-                            <div class="card post-card">
-                                <div class="card-body">
-                                    <a href="{{ route('posts.show', $post) }}" class="text-decoration-none">
-                                        <h5 class="post-title">{{ $post->title }}</h5>
-                                    </a>
-                                    <div class="post-meta">
-                                        <span>
-                                            <i class="fas fa-user-circle"></i>
-                                            {{ $post->user->name }}
-                                        </span>
-                                        <span>
-                                            <i class="fas fa-clock"></i>
-                                            {{ $post->created_at->format('d/m/Y H:i') }}
-                                        </span>
-                                    </div>
-                                    <p class="post-excerpt">{{ Str::limit($post->content, 200) }}</p>
-                                    <div class="d-flex justify-content-end">
-                                        <a href="{{ route('posts.show', $post) }}" class="btn btn-view-post">
-                                            <i class="fas fa-eye"></i> Xem chi tiết
-                                        </a>
-                                    </div>
-                                </div>
+            <h5 class="mb-3">Bài viết mới nhất</h5>
+            <div class="row">
+                @foreach($posts as $index => $post)
+                <div class="col-md-12" style="animation-delay: {{ $index * 0.1 }}s;">
+                    <div class="card post-card">
+                        <div class="card-body">
+                            <a href="{{ route('posts.show', $post) }}" class="text-decoration-none">
+                                <h5 class="post-title">{{ $post->title }}</h5>
+                            </a>
+                            <div class="post-meta">
+                                <span>
+                                    <i class="fas fa-user-circle"></i>
+                                    {{ $post->user->name }}
+                                </span>
+                                <span>
+                                    <i class="fas fa-clock"></i>
+                                    {{ $post->created_at->format('d/m/Y H:i') }}
+                                </span>
+                            </div>
+                            <p class="post-excerpt">{{ Str::limit($post->content, 200) }}</p>
+                            <div class="d-flex justify-content-end">
+                                <button class="btn btn-sm btn-outline-danger me-2 like-button {{ $post->isLikedBy(auth()->id()) ? 'active' : '' }}"
+                                    data-post-id="{{ $post->id }}">
+                                    <i class="fas fa-heart {{ $post->isLikedBy(auth()->id()) ? 'text-danger' : 'text-muted' }}"></i>
+                                    <span class="like-count ms-1">{{ $post->getLikesCount() }}</span>
+                                </button>
+                                <a href="{{ route('posts.show', $post) }}" class="btn btn-view-post">
+                                    <i class="fas fa-eye"></i> Xem chi tiết
+                                </a>
                             </div>
                         </div>
-                    @endforeach
+                    </div>
                 </div>
-                <div class="d-flex justify-content-center mt-4">
-                    {{ $posts->links() }}
-                </div>
+                @endforeach
+            </div>
+            <div class="d-flex justify-content-center mt-4">
+                {{ $posts->links() }}
+            </div>
             @else
-                <div class="alert custom-alert">
-                    Chưa có bài viết nào được đăng. <a href="{{ route('posts.create') }}">Hãy là người đầu tiên đăng bài</a>
-                </div>
+            <div class="alert custom-alert">
+                Chưa có bài viết nào được đăng. <a href="{{ route('posts.create') }}">Hãy là người đầu tiên đăng bài</a>
+            </div>
             @endif
         </div>
         {{-- Tab Nhóm của tôi --}}
         <div class="tab-pane fade" id="groups-pane" role="tabpanel" aria-labelledby="groups-tab">
             @if($groups->count() > 0)
-                <h5 class="mb-3">Nhóm của bạn</h5>
-                <div class="row mb-4">
-                    @foreach($groups as $group)
-                        <div class="col-md-4">
-                            <div class="group-card">
-                                <img src="{{ $group->cover_image ? Storage::url($group->cover_image) : asset('images/default-cover.jpg') }}" class="group-cover" alt="Cover">
-                                <img src="{{ $group->avatar ? Storage::url($group->avatar) : asset('images/default-avatar.jpg') }}" class="group-avatar" alt="Avatar">
-                                <div class="group-info">
-                                    <h5 class="group-title">{{ $group->name }}</h5>
-                                    <p class="group-description">{{ Str::limit($group->description, 100) }}</p>
-                                    <div class="group-meta">
-                                        <span>
-                                            <i class="fas fa-users"></i> {{ $group->members_count }} thành viên
-                                        </span>
-                                        <span class="badge {{ $group->is_private ? 'bg-secondary' : 'bg-success' }} group-badge">
-                                            {{ $group->is_private ? 'Riêng tư' : 'Công khai' }}
-                                        </span>
-                                    </div>
-                                    <div class="d-grid mt-3">
-                                        <a href="{{ route('groups.show', $group) }}" class="btn btn-outline-primary">
-                                            Xem chi tiết
-                                        </a>
-                                    </div>
-                                </div>
+            <h5 class="mb-3">Nhóm của bạn</h5>
+            <div class="row mb-4">
+                @foreach($groups as $group)
+                <div class="col-md-4">
+                    <div class="group-card">
+                        <img src="{{ $group->cover_image ? Storage::url($group->cover_image) : asset('images/default-cover.jpg') }}" class="group-cover" alt="Cover">
+                        <img src="{{ $group->avatar ? Storage::url($group->avatar) : asset('images/default-avatar.jpg') }}" class="group-avatar" alt="Avatar">
+                        <div class="group-info">
+                            <h5 class="group-title">{{ $group->name }}</h5>
+                            <p class="group-description">{{ Str::limit($group->description, 100) }}</p>
+                            <div class="group-meta">
+                                <span>
+                                    <i class="fas fa-users"></i> {{ $group->members_count }} thành viên
+                                </span>
+                                <span class="badge {{ $group->is_private ? 'bg-secondary' : 'bg-success' }} group-badge">
+                                    {{ $group->is_private ? 'Riêng tư' : 'Công khai' }}
+                                </span>
+                            </div>
+                            <div class="d-grid mt-3">
+                                <a href="{{ route('groups.show', $group) }}" class="btn btn-outline-primary">
+                                    Xem chi tiết
+                                </a>
                             </div>
                         </div>
-                    @endforeach
+                    </div>
                 </div>
+                @endforeach
+            </div>
             @else
-                <div class="alert custom-alert">
-                    Bạn chưa tham gia nhóm nào. <a href="{{ route('groups.create') }}">Tạo nhóm mới</a>
-                </div>
+            <div class="alert custom-alert">
+                Bạn chưa tham gia nhóm nào. <a href="{{ route('groups.create') }}">Tạo nhóm mới</a>
+            </div>
             @endif
         </div>
     </div>
@@ -312,18 +318,57 @@
 {{-- Thêm JavaScript cho hiệu ứng và tab --}}
 @push('scripts')
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Hiệu ứng hover cho card
-    const cards = document.querySelectorAll('.post-card, .group-card');
-    cards.forEach(card => {
-        card.addEventListener('mouseenter', function() {
-            this.style.transform = 'translateY(-5px)';
+    document.addEventListener('DOMContentLoaded', function() {
+        // Hiệu ứng hover cho card
+        const cards = document.querySelectorAll('.post-card, .group-card');
+        cards.forEach(card => {
+            card.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateY(-5px)';
+            });
+            card.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateY(0)';
+            });
         });
-        card.addEventListener('mouseleave', function() {
-            this.style.transform = 'translateY(0)';
+
+        const likeButtons = document.querySelectorAll('.like-button');
+
+        likeButtons.forEach(button => {
+            button.addEventListener('click', async function() {
+                const postId = this.dataset.postId;
+                const icon = this.querySelector('i');
+                const countSpan = this.querySelector('.like-count');
+
+                try {
+                    const response = await fetch(`/posts/${postId}/like`, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json'
+                        }
+                    });
+
+                    const data = await response.json();
+
+                    if (response.ok) {
+                        // Update like count
+                        countSpan.textContent = data.likesCount;
+
+                        // Update icon color
+                        if (data.liked) {
+                            icon.classList.remove('text-muted');
+                            icon.classList.add('text-danger');
+                        } else {
+                            icon.classList.remove('text-danger');
+                            icon.classList.add('text-muted');
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                }
+            });
         });
     });
-});
 </script>
 @endpush
-@endsection 
+@endsection
