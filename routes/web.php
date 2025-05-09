@@ -80,6 +80,9 @@ Route::middleware('auth')->group(function () {
     Route::get('groups/{group}/members', [GroupController::class, 'members'])->name('groups.members');
     Route::put('groups/{group}/members/{member}', [GroupController::class, 'updateMember'])->name('groups.members.update');
     Route::delete('groups/{group}/members/{member}', [GroupController::class, 'removeMember'])->name('groups.members.remove');
+
+    // API tìm kiếm nhóm cho autocomplete
+    Route::middleware('auth')->get('/api/groups/search', [App\Http\Controllers\GroupController::class, 'searchAjax'])->name('groups.searchAjax');
 });
 
 /**

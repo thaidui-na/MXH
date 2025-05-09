@@ -145,11 +145,26 @@
         </div>
         {{-- Tab Nhóm --}}
         <div class="tab-pane fade" id="groups-pane" role="tabpanel" aria-labelledby="groups-tab">
+            <form method="GET" action="{{ route('posts.my_posts') }}" class="mb-4">
+                <div class="input-group">
+                    <input type="text" name="q" class="form-control" placeholder="Tìm kiếm nhóm..." value="{{ request('q') }}">
+                    <button class="btn btn-outline-secondary" type="submit"><i class="fas fa-search"></i> Tìm kiếm</button>
+                </div>
+            </form>
             @php
-                $groups = auth()->user()->joinedGroups()->withCount('members')->latest()->get();
+                $q = request('q');
+                $groups = \App\Models\Group::withCount('members')->with(['members'])
+                    ->when($q, function($query) use ($q) {
+                        $query->where(function($sub) use ($q) {
+                            $sub->where('name', 'like', "%$q%")
+                                 ->orWhere('description', 'like', "%$q%") ;
+                        });
+                    })
+                    ->latest()->get();
+                $joinedGroupIds = auth()->user()->joinedGroups()->pluck('groups.id')->toArray();
             @endphp
             @if($groups->count() > 0)
-                <h5 class="mb-3">Nhóm của bạn</h5>
+                <h5 class="mb-3">Kết quả nhóm</h5>
                 <div class="row mb-4">
                     @foreach($groups as $group)
                         <div class="col-md-4">
@@ -172,9 +187,17 @@
                                         </span>
                                     </div>
                                     <div class="d-grid mt-3">
-                                        <a href="{{ route('groups.show', $group) }}" class="btn btn-outline-primary">
+                                        <a href="{{ route('groups.show', $group) }}" class="btn btn-outline-primary mb-2">
                                             Xem chi tiết
                                         </a>
+                                        @if(!in_array($group->id, $joinedGroupIds))
+                                            <form method="POST" action="{{ route('groups.join', $group->id) }}">
+                                                @csrf
+                                                <button type="submit" class="btn btn-success">Tham gia nhóm</button>
+                                            </form>
+                                        @else
+                                            <button class="btn btn-secondary" disabled>Đã tham gia</button>
+                                        @endif
                                     </div>
                                 </div>
                             </div>
@@ -183,7 +206,7 @@
                 </div>
             @else
                 <div class="alert alert-info">
-                    Bạn chưa tham gia nhóm nào. <a href="{{ route('groups.create') }}">Tạo nhóm mới</a>
+                    Không tìm thấy nhóm nào phù hợp. <a href="{{ route('groups.create') }}">Tạo nhóm mới</a>
                 </div>
             @endif
         </div>
@@ -203,5 +226,57 @@
         background-color: #e9ecef;
     }
 </style>
+@endpush
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const input = document.querySelector('input[name="q"]');
+    const autocompleteBox = document.createElement('div');
+    autocompleteBox.className = 'autocomplete-group-list list-group position-absolute w-100';
+    autocompleteBox.style.zIndex = 1000;
+    input.parentNode.appendChild(autocompleteBox);
+    let timer;
+    input.addEventListener('input', function() {
+        clearTimeout(timer);
+        const q = this.value.trim();
+        if (q.length < 2) {
+            autocompleteBox.innerHTML = '';
+            autocompleteBox.style.display = 'none';
+            return;
+        }
+        timer = setTimeout(() => {
+            fetch('/api/groups/search?q=' + encodeURIComponent(q))
+                .then(res => res.json())
+                .then(groups => {
+                    if (groups.length === 0) {
+                        autocompleteBox.innerHTML = '<div class="list-group-item">Không tìm thấy nhóm nào</div>';
+                        autocompleteBox.style.display = 'block';
+                        return;
+                    }
+                    autocompleteBox.innerHTML = groups.map(group => `
+                        <a href="/groups/${group.id}" class="list-group-item list-group-item-action d-flex align-items-center">
+                            <img src="${group.avatar ? '/storage/' + group.avatar : '/images/default-avatar.jpg'}" class="rounded-circle me-2" style="width:32px;height:32px;object-fit:cover;">
+                            <span>${group.name}</span>
+                        </a>
+                    `).join('');
+                    autocompleteBox.style.display = 'block';
+                });
+        }, 200);
+    });
+    // Ẩn autocomplete khi click ra ngoài
+    document.addEventListener('click', function(e) {
+        if (!autocompleteBox.contains(e.target) && e.target !== input) {
+            autocompleteBox.style.display = 'none';
+        }
+    });
+    // Hiển thị lại khi focus vào input nếu có dữ liệu
+    input.addEventListener('focus', function() {
+        if (autocompleteBox.innerHTML.trim() !== '') {
+            autocompleteBox.style.display = 'block';
+        }
+    });
+});
+</script>
 @endpush
 @endsection
