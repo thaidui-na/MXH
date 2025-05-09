@@ -32,6 +32,69 @@
         border-bottom: 2px solid #eee;
     }
 
+    /* Style cho card nhóm */
+    .group-card {
+        border: none;
+        border-radius: 15px;
+        box-shadow: 0 2px 15px rgba(0, 0, 0, 0.08);
+        transition: all 0.3s ease;
+        margin-bottom: 1.5rem;
+        background: #fff;
+        overflow: hidden;
+    }
+
+    .group-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.12);
+    }
+
+    .group-cover {
+        height: 150px;
+        object-fit: cover;
+        width: 100%;
+    }
+
+    .group-avatar {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        border: 3px solid white;
+        margin-top: -30px;
+        margin-left: 20px;
+        object-fit: cover;
+    }
+
+    .group-info {
+        padding: 20px;
+    }
+
+    .group-title {
+        color: #2c3e50;
+        font-weight: 600;
+        font-size: 1.25rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .group-description {
+        color: #6c757d;
+        font-size: 0.9rem;
+        margin-bottom: 1rem;
+    }
+
+    .group-meta {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        color: #6c757d;
+        font-size: 0.875rem;
+    }
+
+    .group-badge {
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.75rem;
+    }
+
     /* Style cho tiêu đề bài viết */
     .post-title {
         color: #2c3e50;
@@ -141,7 +204,7 @@
         }
     }
 
-    .post-card {
+    .post-card, .group-card {
         animation: fadeInUp 0.5s ease forwards;
     }
 </style>
@@ -149,66 +212,109 @@
 
 @section('content')
 <div class="container py-4">
-    {{-- Thêm class page-title --}}
-    <h4 class="page-title mb-4">Bảng tin</h4>
-    
-    @if($posts->count() > 0)
-        <div class="row">
-            @foreach($posts as $index => $post)
-                {{-- Thêm animation-delay cho từng card --}}
-                <div class="col-md-12" style="animation-delay: {{ $index * 0.1 }}s;">
-                    <div class="card post-card">
-                        <div class="card-body">
-                            {{-- Thêm link cho tiêu đề --}}
-                            <a href="{{ route('posts.show', $post) }}" class="text-decoration-none">
-                                <h5 class="post-title">{{ $post->title }}</h5>
-                            </a>
-
-                            {{-- Cải thiện hiển thị meta info --}}
-                            <div class="post-meta">
-                                <span>
-                                    <i class="fas fa-user-circle"></i>
-                                    {{ $post->user->name }}
-                                </span>
-                                <span>
-                                    <i class="fas fa-clock"></i>
-                                    {{ $post->created_at->format('d/m/Y H:i') }}
-                                </span>
-                            </div>
-
-                            {{-- Thêm class cho phần nội dung --}}
-                            <p class="post-excerpt">{{ Str::limit($post->content, 200) }}</p>
-
-                            {{-- Cải thiện nút xem chi tiết --}}
-                            <div class="d-flex justify-content-end">
-                                <a href="{{ route('posts.show', $post) }}" class="btn btn-view-post">
-                                    <i class="fas fa-eye"></i> Xem chi tiết
-                                </a>
+    {{-- Tabs chuyển đổi --}}
+    <ul class="nav nav-tabs mb-4" id="feedTab" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="posts-tab" data-bs-toggle="tab" data-bs-target="#posts-pane" type="button" role="tab" aria-controls="posts-pane" aria-selected="true">
+                <i class="fas fa-newspaper"></i> Bài viết
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="groups-tab" data-bs-toggle="tab" data-bs-target="#groups-pane" type="button" role="tab" aria-controls="groups-pane" aria-selected="false">
+                <i class="fas fa-users"></i> Nhóm của tôi
+            </button>
+        </li>
+    </ul>
+    <div class="tab-content" id="feedTabContent">
+        {{-- Tab Bài viết --}}
+        <div class="tab-pane fade show active" id="posts-pane" role="tabpanel" aria-labelledby="posts-tab">
+            {{-- Hiển thị bài viết --}}
+            @if($posts->count() > 0)
+                <h5 class="mb-3">Bài viết mới nhất</h5>
+                <div class="row">
+                    @foreach($posts as $index => $post)
+                        <div class="col-md-12" style="animation-delay: {{ $index * 0.1 }}s;">
+                            <div class="card post-card">
+                                <div class="card-body">
+                                    <a href="{{ route('posts.show', $post) }}" class="text-decoration-none">
+                                        <h5 class="post-title">{{ $post->title }}</h5>
+                                    </a>
+                                    <div class="post-meta">
+                                        <span>
+                                            <i class="fas fa-user-circle"></i>
+                                            {{ $post->user->name }}
+                                        </span>
+                                        <span>
+                                            <i class="fas fa-clock"></i>
+                                            {{ $post->created_at->format('d/m/Y H:i') }}
+                                        </span>
+                                    </div>
+                                    <p class="post-excerpt">{{ Str::limit($post->content, 200) }}</p>
+                                    <div class="d-flex justify-content-end">
+                                        <a href="{{ route('posts.show', $post) }}" class="btn btn-view-post">
+                                            <i class="fas fa-eye"></i> Xem chi tiết
+                                        </a>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                    </div>
+                    @endforeach
                 </div>
-            @endforeach
+                <div class="d-flex justify-content-center mt-4">
+                    {{ $posts->links() }}
+                </div>
+            @else
+                <div class="alert custom-alert">
+                    Chưa có bài viết nào được đăng. <a href="{{ route('posts.create') }}">Hãy là người đầu tiên đăng bài</a>
+                </div>
+            @endif
         </div>
-        
-        {{-- Phân trang đã được style tự động qua CSS ở trên --}}
-        <div class="d-flex justify-content-center mt-4">
-            {{ $posts->links() }}
+        {{-- Tab Nhóm của tôi --}}
+        <div class="tab-pane fade" id="groups-pane" role="tabpanel" aria-labelledby="groups-tab">
+            @if($groups->count() > 0)
+                <h5 class="mb-3">Nhóm của bạn</h5>
+                <div class="row mb-4">
+                    @foreach($groups as $group)
+                        <div class="col-md-4">
+                            <div class="group-card">
+                                <img src="{{ $group->cover_image ? Storage::url($group->cover_image) : asset('images/default-cover.jpg') }}" class="group-cover" alt="Cover">
+                                <img src="{{ $group->avatar ? Storage::url($group->avatar) : asset('images/default-avatar.jpg') }}" class="group-avatar" alt="Avatar">
+                                <div class="group-info">
+                                    <h5 class="group-title">{{ $group->name }}</h5>
+                                    <p class="group-description">{{ Str::limit($group->description, 100) }}</p>
+                                    <div class="group-meta">
+                                        <span>
+                                            <i class="fas fa-users"></i> {{ $group->members_count }} thành viên
+                                        </span>
+                                        <span class="badge {{ $group->is_private ? 'bg-secondary' : 'bg-success' }} group-badge">
+                                            {{ $group->is_private ? 'Riêng tư' : 'Công khai' }}
+                                        </span>
+                                    </div>
+                                    <div class="d-grid mt-3">
+                                        <a href="{{ route('groups.show', $group) }}" class="btn btn-outline-primary">
+                                            Xem chi tiết
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            @else
+                <div class="alert custom-alert">
+                    Bạn chưa tham gia nhóm nào. <a href="{{ route('groups.create') }}">Tạo nhóm mới</a>
+                </div>
+            @endif
         </div>
-    @else
-        {{-- Thêm class custom-alert --}}
-        <div class="alert custom-alert">
-            Chưa có bài viết nào được đăng. <a href="{{ route('posts.create') }}">Hãy là người đầu tiên đăng bài</a>
-        </div>
-    @endif
+    </div>
 </div>
 
-{{-- Thêm JavaScript cho hiệu ứng --}}
+{{-- Thêm JavaScript cho hiệu ứng và tab --}}
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Thêm hiệu ứng hover cho các card
-    const cards = document.querySelectorAll('.post-card');
+    // Hiệu ứng hover cho card
+    const cards = document.querySelectorAll('.post-card, .group-card');
     cards.forEach(card => {
         card.addEventListener('mouseenter', function() {
             this.style.transform = 'translateY(-5px)';

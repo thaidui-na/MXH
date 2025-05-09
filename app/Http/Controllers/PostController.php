@@ -28,8 +28,14 @@ class PostController extends Controller
                     ->latest() // Sắp xếp theo thứ tự mới nhất lên đầu (dựa vào cột created_at hoặc updated_at)
                     ->paginate(10); // Phân trang kết quả, mỗi trang hiển thị 10 bài viết
 
+        // Lấy các nhóm mà người dùng đã tham gia
+        $groups = auth()->user()->joinedGroups()
+            ->withCount('members')
+            ->latest()
+            ->get();
+
         // Trả về view 'posts.index' và truyền biến 'posts' chứa dữ liệu bài viết vào view
-        return view('posts.index', compact('posts'));
+        return view('posts.index', compact('posts', 'groups'));
     }
 
     /**
