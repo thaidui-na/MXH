@@ -68,8 +68,11 @@
 
             <!-- Form cập nhật thông tin cá nhân -->
             <div class="card mb-4">
-                <div class="card-header">
+                <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">Thông tin cá nhân</h5>
+                    <a href="{{ route('groups.create') }}" class="btn btn-success">
+                        <i class="fas fa-users"></i> Tạo nhóm mới
+                    </a>
                 </div>
                 <div class="card-body">
                     <form action="{{ route('profile.update') }}" method="POST" enctype="multipart/form-data">
@@ -79,8 +82,13 @@
                         <!-- Upload avatar -->
                         <div class="mb-3">
                             <label for="avatar" class="form-label">Avatar</label>
+                            @if(auth()->user()->avatar)
+                                <div class="mb-2">
+                                    <img src="{{ Storage::url(auth()->user()->avatar) }}" alt="Current Avatar" class="rounded-circle" style="width: 100px; height: 100px; object-fit: cover;">
+                                </div>
+                            @endif
                             <input type="file" class="form-control @error('avatar') is-invalid @enderror" 
-                                   id="avatar" name="avatar">
+                                   id="avatar" name="avatar" accept="image/*">
                             @error('avatar')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror

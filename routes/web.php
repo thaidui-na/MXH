@@ -10,6 +10,7 @@ use App\Http\Controllers\ChatGroupController;
 use App\Http\Controllers\GroupMessageController;
 use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\PasswordController;
+use App\Http\Controllers\GroupController;
 
 // Route mặc định, hiển thị trang chào mừng
 Route::get('/', function () {
@@ -70,6 +71,15 @@ Route::middleware('auth')->group(function () {
         ->name('group.messages.store'); // Gửi tin nhắn vào nhóm
     Route::get('chat-groups/{group}/messages/check', [GroupMessageController::class, 'checkNewMessages'])
         ->name('group.messages.check'); // Kiểm tra tin nhắn mới trong nhóm
+
+    // Routes quản lý nhóm
+    Route::resource('groups', GroupController::class);
+    Route::post('groups/{group}/join', [GroupController::class, 'join'])->name('groups.join');
+    Route::post('groups/{group}/leave', [GroupController::class, 'leave'])->name('groups.leave');
+    Route::post('groups/{group}/post', [GroupController::class, 'post'])->name('groups.post');
+    Route::get('groups/{group}/members', [GroupController::class, 'members'])->name('groups.members');
+    Route::put('groups/{group}/members/{member}', [GroupController::class, 'updateMember'])->name('groups.members.update');
+    Route::delete('groups/{group}/members/{member}', [GroupController::class, 'removeMember'])->name('groups.members.remove');
 });
 
 /**

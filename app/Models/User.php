@@ -6,6 +6,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Storage;
 
 /**
  * Model đại diện cho một người dùng (User) trong hệ thống.
@@ -18,7 +19,6 @@ class User extends Authenticatable
      * Sử dụng các trait cần thiết.
      * HasFactory: Cho phép sử dụng model factories để tạo dữ liệu mẫu.
      * Notifiable: Cho phép gửi thông báo (notifications) đến người dùng này.
-     * @use HasFactory<\Database\Factories\UserFactory> // Docblock gợi ý kiểu cho factory liên quan
      */
     use HasFactory, Notifiable;
 
@@ -28,8 +28,6 @@ class User extends Authenticatable
      *
      * @var list<string> // Gợi ý kiểu: một danh sách các chuỗi
      */
-
-
     protected $fillable = [
         'name',         // Tên của người dùng
         'email',        // Địa chỉ email (thường dùng để đăng nhập)
@@ -57,18 +55,15 @@ class User extends Authenticatable
      *
      * @return array<string, string> // Gợi ý kiểu: mảng map tên thuộc tính -> kiểu dữ liệu
      */
-    protected function casts(): array
-    {
-        return [
-            // Ép kiểu 'email_verified_at' thành đối tượng Carbon (ngày giờ) khi truy cập
-            'email_verified_at' => 'datetime',
-            // Tự động hash giá trị được gán cho 'password' khi lưu vào DB
-            // và đảm bảo giá trị hash không bao giờ bị trả về khi truy cập thuộc tính này
-            'password' => 'hashed',
-            // Ép kiểu 'birthday' thành đối tượng Carbon (chỉ ngày) khi truy cập
-            'birthday' => 'date',
-        ];
-    }
+    protected $casts = [
+        // Ép kiểu 'email_verified_at' thành đối tượng Carbon (ngày giờ) khi truy cập
+        'email_verified_at' => 'datetime',
+        // Tự động hash giá trị được gán cho 'password' khi lưu vào DB
+        // và đảm bảo giá trị hash không bao giờ bị trả về khi truy cập thuộc tính này
+        'password' => 'hashed',
+        // Ép kiểu 'birthday' thành đối tượng Carbon (chỉ ngày) khi truy cập
+        'birthday' => 'date',
+    ];
 
     /**
      * Accessor (Getter) tùy chỉnh để lấy URL đầy đủ của avatar người dùng.
@@ -79,15 +74,7 @@ class User extends Authenticatable
      */
     public function getAvatarUrlAttribute()
     {
-        // Kiểm tra xem người dùng có file avatar được lưu trong thuộc tính 'avatar' không
-        if ($this->avatar) {
-            // Nếu có, tạo URL đầy đủ trỏ đến file trong thư mục 'storage' (public disk)
-            // Sử dụng hàm `asset()` để tạo URL đúng
-            return asset('storage/' . $this->avatar);
-        }
-        // Nếu không có avatar được upload, tạo URL đến dịch vụ avatar mặc định (ui-avatars.com)
-        // Sử dụng tên người dùng để tạo avatar chữ cái với màu sắc ngẫu nhiên
-        return 'https://ui-avatars.com/api/?name=' . urlencode($this->name) . '&color=7F9CF5&background=EBF4FF';
+        return $this->avatar ? Storage::url($this->avatar) : asset('images/default-avatar.jpg');
     }
 
     /**
@@ -216,5 +203,23 @@ class User extends Authenticatable
                 }
             ])
             ->get(); // Lấy kết quả là một Collection các ChatGroup
+    }
+
+    /**
+     * Get the groups created by the user.
+     */
+    public function groups()
+    {
+        return $this->hasMany(Group::class, 'created_by');
+    }
+
+    /**
+     * Get the groups that the user is a member of.
+     */
+    public function joinedGroups()
+    {
+        return $this->belongsToMany(Group::class, 'group_members')
+            ->withPivot('role', 'is_approved')
+            ->withTimestamps();
     }
 }
