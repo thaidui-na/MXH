@@ -40,4 +40,13 @@ class Post extends Model
     {
         return $query->orderBy('created_at', 'desc');
     }
+
+    /**
+     * Định nghĩa quan hệ với Comment
+     * Một bài viết có thể có nhiều bình luận
+     */
+    public function comments()
+    {
+        return $this->hasMany(Comment::class);
+    }
 } 

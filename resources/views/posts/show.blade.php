@@ -33,7 +33,10 @@
                             <i class="fas fa-arrow-left"></i> Quay lại
                         </a>
                         <a href="{{ route('comments.index', $post->id) }}" class="btn btn-secondary">
-                            <i class="fas fa-comments"></i> Bình luận
+                            <i class="fas fa-comments"></i>
+                            @if($post->comments->count() > 0)
+                                <span class="badge bg-light text-dark ms-1">{{ $post->comments->count() }} bình luận</span>
+                            @endif
                         </a>
                         
                         @if($post->user_id === auth()->id())

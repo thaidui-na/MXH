@@ -29,6 +29,7 @@ class PostController extends Controller
     {
         // Lấy bài viết của user đăng nhập
         $posts = auth()->user()->posts()
+                    ->with('comments') // Eager load comments
                     ->latest()
                     ->paginate(10);
 
@@ -77,6 +78,9 @@ class PostController extends Controller
         if (!$post->is_public && $post->user_id !== auth()->id()) {
             abort(403, 'Bạn không có quyền xem bài viết này.');
         }
+
+        // Eager load comments
+        $post->load('comments');
 
         return view('posts.show', compact('post'));
     }
