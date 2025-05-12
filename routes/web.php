@@ -11,6 +11,7 @@ use App\Http\Controllers\GroupMessageController;
 use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\PasswordController;
 use App\Http\Controllers\GroupController;
+use App\Http\Controllers\FollowController;
 
 // Route mặc định, hiển thị trang chào mừng
 Route::get('/', function () {
@@ -83,6 +84,10 @@ Route::middleware('auth')->group(function () {
 
     // API tìm kiếm nhóm cho autocomplete
     Route::middleware('auth')->get('/api/groups/search', [App\Http\Controllers\GroupController::class, 'searchAjax'])->name('groups.searchAjax');
+
+    // Routes follow/unfollow
+    Route::post('/users/{user}/follow', [FollowController::class, 'follow'])->name('users.follow');
+    Route::post('/users/{user}/unfollow', [FollowController::class, 'unfollow'])->name('users.unfollow');
 });
 
 /**
