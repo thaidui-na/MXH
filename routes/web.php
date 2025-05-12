@@ -94,6 +94,8 @@ Route::post('/group-comments', [GroupCommentController::class, 'store'])->name('
 
 // Route like bài viết
 Route::post('/posts/{post}/like', [PostController::class, 'like'])->name('posts.like');
+});
+
 /**
  * PHẦN 4: ROUTES XỬ LÝ ĐỔI MẬT KHẨU
  * Yêu cầu user đã đăng nhập
