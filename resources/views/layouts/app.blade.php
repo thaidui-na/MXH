@@ -86,6 +86,69 @@
             position: relative;
             width: 300px;
         }
+
+        /* Style cho nút like */
+        .like-button {
+            transition: all 0.3s ease;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            border: 1px solid #e0e0e0;
+            background-color: white;
+        }
+
+        .like-button i {
+            font-size: 1.1rem;
+            margin-right: 0.3rem;
+            transition: all 0.3s ease;
+        }
+
+        .like-button.active {
+            background-color: #ffebee;
+            border-color: #ffcdd2;
+        }
+
+        .like-button.active i {
+            color: #e53935 !important;
+            transform: scale(1.1);
+        }
+
+        .like-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .like-button:hover i {
+            transform: scale(1.1);
+        }
+
+        .like-count {
+            font-weight: 500;
+            margin-left: 0.3rem;
+        }
+
+        /* Animation cho nút like */
+        @keyframes heartBeat {
+            0% {
+                transform: scale(1);
+            }
+            14% {
+                transform: scale(1.3);
+            }
+            28% {
+                transform: scale(1);
+            }
+            42% {
+                transform: scale(1.3);
+            }
+            70% {
+                transform: scale(1);
+            }
+        }
+
+        .like-button.active i {
+            animation: heartBeat 1.3s ease-in-out;
+        }
     </style>
     
     @stack('styles')
