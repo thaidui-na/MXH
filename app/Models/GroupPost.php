@@ -46,8 +46,13 @@ class GroupPost extends Model
                $this->group->hasModerator($userId);
     }
 
-    public function comments()
+    public function likes()
     {
-        return $this->hasMany(GroupComment::class);
+        return $this->hasMany(GroupPostLike::class, 'group_post_id');
+    }
+
+    public function isLikedBy($userId)
+    {
+        return $this->likes()->where('user_id', $userId)->exists();
     }
 }

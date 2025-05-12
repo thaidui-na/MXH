@@ -81,43 +81,56 @@
                         @foreach($group->posts as $post)
                             <div class="card mb-3 post-card">
                                 <div class="card-body">
-                                    <div class="d-flex align-items-center mb-2">
-                                        <img src="{{ $post->user->avatar_url }}" class="rounded-circle me-2" style="width: 40px; height: 40px; object-fit: cover;">
-                                        <div>
-                                            <strong>{{ $post->user->name }}</strong><br>
-                                            <small class="text-muted">{{ $post->created_at->diffForHumans() }}</small>
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <div class="d-flex align-items-center">
+                                            <img src="{{ $post->user->avatar ? Storage::url($post->user->avatar) : asset('images/default-avatar.jpg') }}" 
+                                                 class="rounded-circle me-2" 
+                                                 style="width: 40px; height: 40px; object-fit: cover;">
+                                            <div>
+                                                <h6 class="mb-0">{{ $post->user->name }}</h6>
+                                                <small class="text-muted">{{ $post->created_at->diffForHumans() }}</small>
+                                            </div>
                                         </div>
+                                        @if($post->user_id == auth()->id() || $group->hasAdmin(auth()->id()))
+                                            <div class="dropdown">
+                                                <button class="btn btn-link text-dark" type="button" data-bs-toggle="dropdown">
+                                                    <i class="fas fa-ellipsis-v"></i>
+                                                </button>
+                                                <ul class="dropdown-menu">
+                                                    @if($post->user_id == auth()->id())
+                                                        <li>
+                                                            <form action="{{ route('groups.posts.destroy', ['group' => $group->id, 'post' => $post->id]) }}" method="POST" class="d-inline">
+                                                                @csrf
+                                                                @method('DELETE')
+                                                                <button type="submit" class="dropdown-item text-danger" onclick="return confirm('Bạn có chắc chắn muốn xóa bài viết này?')">
+                                                                    <i class="fas fa-trash"></i> Xóa
+                                                                </button>
+                                                            </form>
+                                                        </li>
+                                                    @endif
+                                                    @if($group->hasAdmin(auth()->id()))
+                                                        <li>
+                                                            <form action="{{ route('groups.posts.destroy', ['group' => $group->id, 'post' => $post->id]) }}" method="POST" class="d-inline">
+                                                                @csrf
+                                                                @method('DELETE')
+                                                                <button type="submit" class="dropdown-item text-danger" onclick="return confirm('Bạn có chắc chắn muốn xóa bài viết này?')">
+                                                                    <i class="fas fa-trash"></i> Xóa bài viết
+                                                                </button>
+                                                            </form>
+                                                        </li>
+                                                    @endif
+                                                </ul>
+                                            </div>
+                                        @endif
                                     </div>
-                                    <h5 class="card-title">{{ $post->title }}</h5>
                                     <p class="card-text">{{ $post->content }}</p>
-
-                                    <!-- Nút Bình luận -->
-                                    <button class="btn btn-link p-0" type="button" data-bs-toggle="collapse" data-bs-target="#comments-{{ $post->id }}">
-                                        <i class="fas fa-comment"></i> Bình luận ({{ $post->comments->count() }})
-                                    </button>
-
-                                    <!-- Khối bình luận (ẩn/hiện) -->
-                                    <div class="collapse mt-2" id="comments-{{ $post->id }}">
-                                        <div class="group-comments">
-                                            <h6 class="mb-2">Bình luận</h6>
-                                            @foreach($post->comments as $comment)
-                                                <div class="mb-2">
-                                                    <strong>{{ $comment->user->name }}</strong>:
-                                                    {{ $comment->content }}
-                                                    <span class="text-muted small">({{ $comment->created_at->format('d/m/Y H:i') }})</span>
-                                                </div>
-                                            @endforeach
-
-                                            <!-- Form bình luận -->
-                                            @auth
-                                                <form action="{{ route('group-comments.store') }}" method="POST" class="d-flex mt-2">
-                                                    @csrf
-                                                    <input type="hidden" name="group_post_id" value="{{ $post->id }}">
-                                                    <input type="text" name="content" class="form-control me-2" placeholder="Viết bình luận..." required>
-                                                    <button type="submit" class="btn btn-primary">Gửi</button>
-                                                </form>
-                                            @endauth
-                                        </div>
+                                    @if($post->image)
+                                        <img src="{{ Storage::url($post->image) }}" class="img-fluid rounded mb-3" alt="Post image">
+                                    @endif
+                                    <div class="post-actions mt-2">
+                                        <button class="btn btn-sm btn-outline-primary like-button" data-post-id="{{ $post->id }}" data-is-liked="{{ $post->isLikedBy(auth()->id()) ? 'true' : 'false' }}">
+                                            <i class="fas fa-heart"></i> <span class="like-count">{{ $post->likes()->count() }}</span>
+                                        </button>
                                     </div>
                                 </div>
                             </div>
@@ -128,6 +141,13 @@
                 </div>
                 {{-- Tab Thành viên --}}
                 <div class="tab-pane fade" id="members-pane" role="tabpanel" aria-labelledby="members-tab">
+                    @if($group->hasAdmin(auth()->id()))
+                        <div class="mb-3">
+                            <a href="{{ route('groups.members', $group) }}" class="btn btn-primary">
+                                <i class="fas fa-users-cog"></i> Quản lý thành viên
+                            </a>
+                        </div>
+                    @endif
                     <div class="row">
                         @foreach($group->members as $member)
                             <div class="col-md-4 mb-3">
@@ -148,4 +168,39 @@
         </div>
     </div>
 </div>
-@endsection 
+@endsection
+
+@push('scripts')
+<script>
+$(document).ready(function() {
+    $('.like-button').click(function() {
+        var button = $(this);
+        var postId = button.data('post-id');
+        var groupId = {{ $group->id }};
+        var isLiked = button.data('is-liked') === 'true';
+
+        $.ajax({
+            url: '/groups/' + groupId + '/posts/' + postId + '/like',
+            type: 'POST',
+            data: {
+                _token: '{{ csrf_token() }}'
+            },
+            success: function(response) {
+                if (response.success) {
+                    button.data('is-liked', response.isLiked);
+                    button.find('.like-count').text(response.likeCount);
+                    if (response.isLiked) {
+                        button.addClass('btn-primary').removeClass('btn-outline-primary');
+                    } else {
+                        button.addClass('btn-outline-primary').removeClass('btn-primary');
+                    }
+                }
+            },
+            error: function(xhr) {
+                alert('Có lỗi xảy ra khi thực hiện thao tác like.');
+            }
+        });
+    });
+});
+</script>
+@endpush 

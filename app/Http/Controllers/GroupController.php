@@ -220,6 +220,45 @@ class GroupController extends Controller
             ->with('success', 'Xóa thành viên thành công!');
     }
 
+    public function addMembers(Request $request, Group $group)
+    {
+        if (!$group->hasAdmin(auth()->id())) {
+            return redirect()->route('groups.members', $group)
+                ->with('error', 'Bạn không có quyền thêm thành viên vào nhóm!');
+        }
+
+        $request->validate([
+            'user_ids' => 'required|array',
+            'user_ids.*' => 'exists:users,id'
+        ], [
+            'user_ids.required' => 'Vui lòng chọn thành viên để thêm vào nhóm',
+            'user_ids.array' => 'Dữ liệu không hợp lệ',
+            'user_ids.*.exists' => 'Một số thành viên được chọn không tồn tại'
+        ]);
+
+        $userIds = $request->user_ids;
+        $existingMembers = $group->members()->whereIn('user_id', $userIds)->pluck('user_id')->toArray();
+        $newMembers = array_diff($userIds, $existingMembers);
+
+        if (empty($newMembers)) {
+            return redirect()->route('groups.members', $group)
+                ->with('error', 'Những thành viên được chọn đã là thành viên của nhóm!');
+        }
+
+        foreach ($newMembers as $userId) {
+            GroupMember::create([
+                'group_id' => $group->id,
+                'user_id' => $userId,
+                'role' => 'member',
+                'is_approved' => !$group->is_private
+            ]);
+        }
+
+        $count = count($newMembers);
+        return redirect()->route('groups.members', $group)
+            ->with('success', "Đã thêm thành công $count thành viên mới vào nhóm!");
+    }
+
     public function post(Request $request, Group $group)
     {
         if (!$group->hasMember(auth()->id())) {
@@ -264,4 +303,6 @@ class GroupController extends Controller
             ->get(['id', 'name', 'cover_image', 'avatar']);
         return response()->json($groups);
     }
+
+   
 } 
