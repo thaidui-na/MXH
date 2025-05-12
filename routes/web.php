@@ -11,6 +11,9 @@ use App\Http\Controllers\GroupMessageController;
 use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\PasswordController;
 use App\Http\Controllers\GroupController;
+use App\Http\Controllers\UserController;
+use App\Http\Controllers\GroupPostLikeController;
+use App\Http\Controllers\GroupPostController;
 
 // Route mặc định, hiển thị trang chào mừng
 Route::get('/', function () {
@@ -74,15 +77,21 @@ Route::middleware('auth')->group(function () {
 
     // Routes quản lý nhóm
     Route::resource('groups', GroupController::class);
+    Route::resource('groups.posts', GroupPostController::class);
     Route::post('groups/{group}/join', [GroupController::class, 'join'])->name('groups.join');
     Route::post('groups/{group}/leave', [GroupController::class, 'leave'])->name('groups.leave');
     Route::post('groups/{group}/post', [GroupController::class, 'post'])->name('groups.post');
+    Route::post('groups/{group}/posts/{groupPost}/like', [\App\Http\Controllers\GroupPostLikeController::class, 'toggleLike'])->name('groups.posts.like');
+   
+    // Routes quản lý thành viên nhóm
     Route::get('groups/{group}/members', [GroupController::class, 'members'])->name('groups.members');
-    Route::put('groups/{group}/members/{member}', [GroupController::class, 'updateMember'])->name('groups.members.update');
-    Route::delete('groups/{group}/members/{member}', [GroupController::class, 'removeMember'])->name('groups.members.remove');
+    Route::put('groups/{group}/members/{member}', [GroupController::class, 'updateMember'])->name('groups.update-member');
+    Route::delete('groups/{group}/members/{member}', [GroupController::class, 'removeMember'])->name('groups.remove-member');
+    Route::post('groups/{group}/add-members', [GroupController::class, 'addMembers'])->name('groups.add-members');
 
-    // API tìm kiếm nhóm cho autocomplete
-    Route::middleware('auth')->get('/api/groups/search', [App\Http\Controllers\GroupController::class, 'searchAjax'])->name('groups.searchAjax');
+    // API tìm kiếm
+    Route::get('/users/search', [UserController::class, 'searchAjax'])->name('users.search');
+    Route::get('/api/groups/search', [GroupController::class, 'searchAjax'])->name('groups.searchAjax');
 });
 
 /**
