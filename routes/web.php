@@ -52,10 +52,11 @@ Route::middleware('auth')->group(function () {
     // Routes quản lý bài viết
     Route::get('/posts', [PostController::class, 'index'])->name('posts.index'); // Hiển thị tất cả bài viết
     Route::get('/my-posts', [PostController::class, 'myPosts'])->name('posts.my_posts'); // Hiển thị bài viết của user hiện tại
+    Route::get('/user/{user}/posts', [PostController::class, 'userPosts'])->name('posts.user_posts'); // Hiển thị bài viết của user khác
 
     // Tạo các routes CRUD cho posts (trừ index đã định nghĩa ở trên)
     // Tự động tạo các routes: show, create, store, edit, update, destroy
-    Route::resource('posts', PostController::class)->except(['index']);
+    Route::resource('posts', PostController::class)->except(['index'])->where(['post' => '[0-9]+']);
 
     // Routes quản lý tin nhắn cá nhân
     Route::get('/messages', [MessageController::class, 'index'])->name('messages.index'); // Danh sách chat
@@ -86,6 +87,9 @@ Route::middleware('auth')->group(function () {
 
     // Routes quản lý like bài viết
     Route::post('/posts/{post}/like', [PostController::class, 'like'])->name('posts.like');
+
+    // Routes quản lý users
+    Route::get('/users/search', [App\Http\Controllers\Api\UserController::class, 'search'])->name('users.search');
 });
 
 /**

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Post;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
+use App\Models\User;
 
 /**
  * Controller quản lý các chức năng liên quan đến bài viết (Posts)
@@ -54,6 +55,25 @@ class PostController extends Controller
 
         // Trả về view 'posts.my_posts' và truyền biến 'posts' vào view
         return view('posts.my_posts', compact('posts'));
+    }
+
+    /**
+     * Hiển thị danh sách các bài viết của một người dùng khác.
+     * Phân trang kết quả.
+     *
+     * @param  \App\Models\User  $user Đối tượng User cần xem bài viết
+     * @return \Illuminate\View\View
+     */
+    public function userPosts(User $user)
+    {
+        // Lấy các bài viết công khai của người dùng được chỉ định
+        $posts = $user->posts()
+                    ->where('is_public', true) // Chỉ lấy bài viết công khai
+                    ->latest()
+                    ->paginate(10);
+
+        // Trả về view 'posts.user_posts' và truyền biến 'posts' và 'user' vào view
+        return view('posts.user_posts', compact('posts', 'user'));
     }
 
     /**

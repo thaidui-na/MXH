@@ -110,8 +110,11 @@
                                     <div class="d-flex justify-content-between">
                                         <h5 class="card-title">{{ $post->title }}</h5>
                                         <div class="text-muted">
-                                            <i class="fas fa-heart text-danger"></i>
-                                            <span>{{ $post->likes()->count() }} lượt thích</span>
+                                            <button class="btn btn-sm btn-outline-danger like-button {{ $post->isLikedBy(auth()->id()) ? 'active' : '' }}"
+                                                data-post-id="{{ $post->id }}">
+                                                <i class="fas fa-heart {{ $post->isLikedBy(auth()->id()) ? 'text-danger' : 'text-muted' }}"></i>
+                                                <span class="like-count ms-1">{{ $post->getLikesCount() }}</span>
+                                            </button>
                                         </div>
                                     </div>
                                     <p class="card-text text-muted small">

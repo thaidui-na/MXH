@@ -208,6 +208,88 @@
     .group-card {
         animation: fadeInUp 0.5s ease forwards;
     }
+
+    .user-card {
+        transition: all 0.3s ease;
+        border: none;
+        box-shadow: 0 2px 15px rgba(0, 0, 0, 0.08);
+    }
+
+    .user-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.12);
+    }
+
+    .user-card img {
+        border: 3px solid #fff;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    #searchSuggestions {
+        top: 100%;
+        background: white;
+        border-radius: 0 0 4px 4px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        max-height: 300px;
+        overflow-y: auto;
+    }
+
+    #searchSuggestions .list-group-item {
+        border-left: none;
+        border-right: none;
+        padding: 0.75rem 1rem;
+    }
+
+    #searchSuggestions .list-group-item:first-child {
+        border-top: none;
+    }
+
+    #searchSuggestions .list-group-item:hover {
+        background-color: #f8f9fa;
+    }
+
+    #searchSuggestions .list-group-item img {
+        border: 2px solid #fff;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Style cho nút like */
+    .like-button {
+        transition: all 0.3s ease;
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-size: 0.9rem;
+    }
+
+    .like-button i {
+        font-size: 1.1rem;
+        margin-right: 0.3rem;
+        transition: all 0.3s ease;
+    }
+
+    .like-button.active {
+        background-color: #ffebee;
+        border-color: #ffcdd2;
+    }
+
+    .like-button.active i {
+        color: #e53935 !important;
+        transform: scale(1.1);
+    }
+
+    .like-button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    .like-button:hover i {
+        transform: scale(1.1);
+    }
+
+    .like-count {
+        font-weight: 500;
+        margin-left: 0.3rem;
+    }
 </style>
 @endpush
 
@@ -315,60 +397,43 @@
     </div>
 </div>
 
-{{-- Thêm JavaScript cho hiệu ứng và tab --}}
 @push('scripts')
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Hiệu ứng hover cho card
-        const cards = document.querySelectorAll('.post-card, .group-card');
-        cards.forEach(card => {
-            card.addEventListener('mouseenter', function() {
-                this.style.transform = 'translateY(-5px)';
-            });
-            card.addEventListener('mouseleave', function() {
-                this.style.transform = 'translateY(0)';
-            });
-        });
-
-        const likeButtons = document.querySelectorAll('.like-button');
-
-        likeButtons.forEach(button => {
-            button.addEventListener('click', async function() {
-                const postId = this.dataset.postId;
-                const icon = this.querySelector('i');
-                const countSpan = this.querySelector('.like-count');
-
-                try {
-                    const response = await fetch(`/posts/${postId}/like`, {
-                        method: 'POST',
-                        headers: {
-                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                            'Accept': 'application/json',
-                            'Content-Type': 'application/json'
-                        }
-                    });
-
-                    const data = await response.json();
-
-                    if (response.ok) {
-                        // Update like count
-                        countSpan.textContent = data.likesCount;
-
-                        // Update icon color
-                        if (data.liked) {
-                            icon.classList.remove('text-muted');
-                            icon.classList.add('text-danger');
-                        } else {
-                            icon.classList.remove('text-danger');
-                            icon.classList.add('text-muted');
-                        }
-                    }
-                } catch (error) {
-                    console.error('Error:', error);
+document.addEventListener('DOMContentLoaded', function() {
+    // Like button functionality
+    document.querySelectorAll('.like-button').forEach(button => {
+        button.addEventListener('click', function() {
+            const postId = this.dataset.postId;
+            fetch(`/posts/${postId}/like`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
                 }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.liked) {
+                    this.classList.add('active');
+                    this.querySelector('i').classList.add('text-danger');
+                    this.querySelector('i').classList.remove('text-muted');
+                } else {
+                    this.classList.remove('active');
+                    this.querySelector('i').classList.remove('text-danger');
+                    this.querySelector('i').classList.add('text-muted');
+                }
+                // Cập nhật số lượng like
+                const likeCount = this.querySelector('.like-count');
+                if (likeCount) {
+                    likeCount.textContent = data.likesCount;
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
             });
         });
     });
+});
 </script>
 @endpush
 @endsection
