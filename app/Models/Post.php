@@ -59,7 +59,18 @@ class Post extends Model
      */
     public function isLikedBy($userId)
     {
-        return $this->likes()->where('user_id', $userId)->exists();
+        \Log::info('Checking if post is liked by user', [
+            'post_id' => $this->id,
+            'user_id' => $userId
+        ]);
+        
+        $isLiked = $this->likes()->where('user_id', $userId)->exists();
+        
+        \Log::info('Like check result', [
+            'is_liked' => $isLiked
+        ]);
+        
+        return $isLiked;
     }
 
     /**

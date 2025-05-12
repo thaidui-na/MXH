@@ -107,15 +107,13 @@
                         <div class="col-md-12 mb-3">
                             <div class="card">
                                 <div class="card-body">
-                                    <div class="d-flex justify-content-between">
-                                        <h5 class="card-title">{{ $post->title }}</h5>
-                                        <div class="text-muted">
-                                            <button class="btn btn-sm btn-outline-danger like-button {{ $post->isLikedBy(auth()->id()) ? 'active' : '' }}"
-                                                data-post-id="{{ $post->id }}">
-                                                <i class="fas fa-heart {{ $post->isLikedBy(auth()->id()) ? 'text-danger' : 'text-muted' }}"></i>
-                                                <span class="like-count ms-1">{{ $post->getLikesCount() }}</span>
-                                            </button>
-                                        </div>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <h5 class="card-title mb-0">{{ $post->title }}</h5>
+                                        <button class="btn btn-sm btn-outline-danger like-button {{ $post->isLikedBy(auth()->id()) ? 'active' : '' }}"
+                                            data-post-id="{{ $post->id }}">
+                                            <i class="fas fa-heart {{ $post->isLikedBy(auth()->id()) ? 'text-danger' : 'text-muted' }}"></i>
+                                            <span class="like-count ms-1">{{ $post->getLikesCount() }}</span>
+                                        </button>
                                     </div>
                                     <p class="card-text text-muted small">
                                         Đăng ngày {{ $post->created_at->format('d/m/Y H:i') }}
@@ -128,7 +126,8 @@
                                         <a href="{{ route('posts.edit', $post) }}" class="btn btn-sm btn-warning me-2">
                                             <i class="fas fa-edit"></i> Sửa
                                         </a>
-                                        <form action="{{ route('posts.destroy', $post) }}" method="POST" onsubmit="return confirm('Bạn có chắc chắn muốn xóa bài viết này?');">
+                                        <form action="{{ route('posts.destroy', $post) }}" method="POST" class="d-inline"
+                                              onsubmit="return confirm('Bạn có chắc chắn muốn xóa bài viết này?');">
                                             @csrf
                                             @method('DELETE')
                                             <button type="submit" class="btn btn-sm btn-danger">
@@ -152,7 +151,7 @@
         </div>
         {{-- Tab Nhóm --}}
         <div class="tab-pane fade" id="groups-pane" role="tabpanel" aria-labelledby="groups-tab">
-            <form method="GET" action="{{ route('posts.my_posts') }}" class="mb-4">
+            <form method="GET" action="{{ route('groups.search') }}" class="mb-4">
                 <div class="input-group">
                     <input type="text" name="q" class="form-control" placeholder="Tìm kiếm nhóm..." value="{{ request('q') }}">
                     <button class="btn btn-outline-secondary" type="submit"><i class="fas fa-search"></i> Tìm kiếm</button>
@@ -160,14 +159,16 @@
             </form>
             @php
                 $q = request('q');
-                $groups = \App\Models\Group::withCount('members')->with(['members'])
+                $groups = \App\Models\Group::withCount('members')
+                    ->with(['members'])
                     ->when($q, function($query) use ($q) {
                         $query->where(function($sub) use ($q) {
                             $sub->where('name', 'like', "%$q%")
-                                 ->orWhere('description', 'like', "%$q%") ;
+                                ->orWhere('description', 'like', "%$q%");
                         });
                     })
-                    ->latest()->get();
+                    ->latest()
+                    ->paginate(9);
                 $joinedGroupIds = auth()->user()->joinedGroups()->pluck('groups.id')->toArray();
             @endphp
             @if($groups->count() > 0)
@@ -238,50 +239,69 @@
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const input = document.querySelector('input[name="q"]');
-    const autocompleteBox = document.createElement('div');
-    autocompleteBox.className = 'autocomplete-group-list list-group position-absolute w-100';
-    autocompleteBox.style.zIndex = 1000;
-    input.parentNode.appendChild(autocompleteBox);
-    let timer;
-    input.addEventListener('input', function() {
-        clearTimeout(timer);
-        const q = this.value.trim();
-        if (q.length < 2) {
-            autocompleteBox.innerHTML = '';
-            autocompleteBox.style.display = 'none';
-            return;
-        }
-        timer = setTimeout(() => {
-            fetch('/api/groups/search?q=' + encodeURIComponent(q))
-                .then(res => res.json())
-                .then(groups => {
-                    if (groups.length === 0) {
-                        autocompleteBox.innerHTML = '<div class="list-group-item">Không tìm thấy nhóm nào</div>';
-                        autocompleteBox.style.display = 'block';
-                        return;
-                    }
-                    autocompleteBox.innerHTML = groups.map(group => `
-                        <a href="/groups/${group.id}" class="list-group-item list-group-item-action d-flex align-items-center">
-                            <img src="${group.avatar ? '/storage/' + group.avatar : '/images/default-avatar.jpg'}" class="rounded-circle me-2" style="width:32px;height:32px;object-fit:cover;">
-                            <span>${group.name}</span>
-                        </a>
-                    `).join('');
-                    autocompleteBox.style.display = 'block';
-                });
-        }, 200);
-    });
-    // Ẩn autocomplete khi click ra ngoài
-    document.addEventListener('click', function(e) {
-        if (!autocompleteBox.contains(e.target) && e.target !== input) {
-            autocompleteBox.style.display = 'none';
-        }
-    });
-    // Hiển thị lại khi focus vào input nếu có dữ liệu
-    input.addEventListener('focus', function() {
-        if (autocompleteBox.innerHTML.trim() !== '') {
-            autocompleteBox.style.display = 'block';
-        }
+    // Like button functionality
+    document.querySelectorAll('.like-button').forEach(button => {
+        let isProcessing = false; // Flag to prevent double clicks
+        
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            // Prevent double clicks
+            if (isProcessing) {
+                console.log('Like action is already in progress');
+                return;
+            }
+            
+            isProcessing = true;
+            const postId = this.dataset.postId;
+            const icon = this.querySelector('i');
+            const countSpan = this.querySelector('.like-count');
+            
+            console.log('Like button clicked for post:', postId);
+            
+            // Disable button while processing
+            this.disabled = true;
+            
+            fetch(`/posts/${postId}/like`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    'Accept': 'application/json'
+                },
+                credentials: 'same-origin'
+            })
+            .then(response => {
+                console.log('Response status:', response.status);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Response data:', data);
+                if (data.liked) {
+                    icon.classList.remove('text-muted');
+                    icon.classList.add('text-danger');
+                    this.classList.add('active');
+                } else {
+                    icon.classList.remove('text-danger');
+                    icon.classList.add('text-muted');
+                    this.classList.remove('active');
+                }
+                countSpan.textContent = data.likesCount;
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Có lỗi xảy ra khi thích bài viết. Vui lòng thử lại sau.');
+            })
+            .finally(() => {
+                // Re-enable button and reset processing flag
+                this.disabled = false;
+                isProcessing = false;
+            });
+        });
     });
 });
 </script>
