@@ -45,4 +45,9 @@ class GroupPost extends Model
                $this->group->hasAdmin($userId) || 
                $this->group->hasModerator($userId);
     }
+
+    public function comments()
+    {
+        return $this->hasMany(GroupComment::class);
+    }
 }

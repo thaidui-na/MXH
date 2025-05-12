@@ -11,6 +11,7 @@ use App\Http\Controllers\GroupMessageController;
 use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\PasswordController;
 use App\Http\Controllers\GroupController;
+use App\Http\Controllers\GroupCommentController;
 
 // Route mặc định, hiển thị trang chào mừng
 Route::get('/', function () {
@@ -90,6 +91,9 @@ Route::middleware('auth')->group(function () {
 
     // Routes quản lý users
     Route::get('/users/search', [App\Http\Controllers\Api\UserController::class, 'search'])->name('users.search');
+
+    // Routes quản lý bình luận nhóm
+    Route::post('/group-comments', [GroupCommentController::class, 'store'])->name('group-comments.store');
 });
 
 /**
