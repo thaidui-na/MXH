@@ -29,6 +29,63 @@
         .main-content {
             min-height: calc(100vh - 160px);
         }
+
+        /* Search Results Styles */
+        #searchResults {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid #dee2e6;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            z-index: 1000;
+            margin-top: 5px;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .search-result-item {
+            padding: 10px 15px;
+            border-bottom: 1px solid #eee;
+            text-decoration: none;
+            color: #2c3e50;
+            transition: background-color 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .search-result-item:last-child {
+            border-bottom: none;
+        }
+
+        .search-result-item:hover {
+            background-color: #f8f9fa;
+            text-decoration: none;
+        }
+
+        .search-result-item img {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid #fff;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .search-result-item .user-name {
+            margin: 0;
+            font-size: 1rem;
+            font-weight: 500;
+        }
+
+        /* Search Container */
+        .search-container {
+            position: relative;
+            width: 300px;
+        }
     </style>
     
     @stack('styles')
@@ -44,52 +101,92 @@
     
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"></script>
-    @stack('scripts')
 
-    {{-- ======= JavaScript Bổ Sung ======= --}}
+    <!-- Search Functionality -->
     <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            // --- Header Scroll Effect ---
-            const navbar = document.querySelector('.navbar.fixed-top');
-            if (navbar) {
-                const scrollThreshold = 50; // Ngưỡng cuộn để thay đổi header
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchInput = document.getElementById('searchInput');
+            const searchResults = document.getElementById('searchResults');
+            let searchTimeout;
 
-                const handleScroll = () => {
-                    if (window.scrollY > scrollThreshold) {
-                        navbar.classList.add('navbar-scrolled');
-                    } else {
-                        navbar.classList.remove('navbar-scrolled');
-                    }
-                };
-
-                window.addEventListener('scroll', handleScroll);
-                handleScroll(); // Kiểm tra trạng thái ban đầu khi tải trang
+            if (!searchInput || !searchResults) {
+                console.error('Search elements not found');
+                return;
             }
 
-            // --- Back to Top Button ---
-            const backToTopButton = document.getElementById('back-to-top-btn');
+            searchInput.addEventListener('input', function() {
+                clearTimeout(searchTimeout);
+                const query = this.value.trim();
 
-            if (backToTopButton) {
-                const scrollThresholdBtn = 300; // Ngưỡng cuộn để hiện nút
+                if (query.length < 2) {
+                    searchResults.innerHTML = '';
+                    searchResults.classList.add('hidden');
+                    return;
+                }
 
-                const toggleBackToTopButton = () => {
-                    if (window.scrollY > scrollThresholdBtn) {
-                        backToTopButton.classList.add('show');
-                    } else {
-                        backToTopButton.classList.remove('show');
-                    }
-                };
+                searchTimeout = setTimeout(() => {
+                    console.log('Searching for:', query);
 
-                const scrollToTop = () => {
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                };
+                    fetch(`/users/search?query=${encodeURIComponent(query)}`, {
+                        method: 'GET',
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Accept': 'application/json'
+                        },
+                        credentials: 'same-origin'
+                    })
+                    .then(response => {
+                        console.log('Response status:', response.status);
+                        return response.json();
+                    })
+                    .then(data => {
+                        console.log('Search results:', data);
+                        searchResults.innerHTML = '';
+                        
+                        if (!data.users || data.users.length === 0) {
+                            searchResults.innerHTML = `
+                                <div class="p-4 text-center">
+                                    <div class="text-muted mb-2">Không tìm thấy kết quả</div>
+                                    <div class="text-muted small">Từ khóa tìm kiếm: "${query}"</div>
+                                </div>
+                            `;
+                        } else {
+                            data.users.forEach(user => {
+                                const userElement = document.createElement('a');
+                                userElement.href = `/user/${user.id}/posts`;
+                                userElement.className = 'search-result-item';
+                                userElement.innerHTML = `
+                                    <img src="${user.avatar}" alt="${user.name}" onerror="this.src='/images/default-avatar.png'">
+                                    <div class="user-name">${user.name}</div>
+                                `;
+                                searchResults.appendChild(userElement);
+                            });
+                        }
+                        
+                        searchResults.classList.remove('hidden');
+                    })
+                    .catch(error => {
+                        console.error('Search error:', error);
+                        searchResults.innerHTML = `
+                            <div class="p-4 text-center">
+                                <div class="text-danger mb-2">Có lỗi xảy ra khi tìm kiếm</div>
+                                <div class="text-muted small">Từ khóa tìm kiếm: "${query}"</div>
+                            </div>
+                        `;
+                        searchResults.classList.remove('hidden');
+                    });
+                }, 300);
+            });
 
-                window.addEventListener('scroll', toggleBackToTopButton);
-                backToTopButton.addEventListener('click', scrollToTop);
-                toggleBackToTopButton(); // Kiểm tra trạng thái ban đầu
-            }
+            // Đóng kết quả tìm kiếm khi click ra ngoài
+            document.addEventListener('click', function(e) {
+                if (!searchInput.contains(e.target) && !searchResults.contains(e.target)) {
+                    searchResults.classList.add('hidden');
+                }
+            });
         });
     </script>
-    {{-- ================================ --}}
+
+    @stack('scripts')
 </body>
 </html> 

@@ -31,6 +31,21 @@
                 @endauth
             </ul>
 
+            <!-- Search Form -->
+            @auth
+            <div class="search-container mx-auto">
+                <div class="input-group">
+                    <input type="text" class="form-control" id="searchInput" placeholder="Tìm kiếm người dùng..." aria-label="Tìm kiếm">
+                    <button class="btn btn-outline-primary" type="button">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+                <div id="searchResults" class="hidden">
+                    <!-- Kết quả tìm kiếm sẽ được thêm vào đây -->
+                </div>
+            </div>
+            @endauth
+
             <ul class="navbar-nav ms-auto">
                 @guest
                     <li class="nav-item">
@@ -71,6 +86,54 @@
     /* Đảm bảo body có padding-top bằng chiều cao header để nội dung không bị che */
     body {
         padding-top: 70px; /* Điều chỉnh giá trị này nếu chiều cao header khác */
+    }
+
+    /* Style cho thanh tìm kiếm */
+    #navbarSearchResults {
+        max-height: 400px;
+        overflow-y: auto;
+        border: 1px solid #dee2e6;
+    }
+
+    .search-result-item {
+        padding: 10px 15px;
+        border-bottom: 1px solid #eee;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        text-decoration: none;
+        color: inherit;
+        transition: background-color 0.2s ease;
+    }
+
+    .search-result-item:hover {
+        background-color: #f8f9fa;
+        text-decoration: none;
+    }
+
+    .search-result-item img {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 2px solid #fff;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .search-result-item .user-info {
+        flex: 1;
+    }
+
+    .search-result-item .user-name {
+        font-weight: 500;
+        margin: 0;
+        color: #2c3e50;
+    }
+
+    .search-result-item .user-email {
+        font-size: 0.875rem;
+        color: #6c757d;
+        margin: 0;
     }
 
     .navbar {
