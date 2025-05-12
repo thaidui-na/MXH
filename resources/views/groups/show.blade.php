@@ -90,6 +90,35 @@
                                     </div>
                                     <h5 class="card-title">{{ $post->title }}</h5>
                                     <p class="card-text">{{ $post->content }}</p>
+
+                                    <!-- Nút Bình luận -->
+                                    <button class="btn btn-link p-0" type="button" data-bs-toggle="collapse" data-bs-target="#comments-{{ $post->id }}">
+                                        <i class="fas fa-comment"></i> Bình luận ({{ $post->comments->count() }})
+                                    </button>
+
+                                    <!-- Khối bình luận (ẩn/hiện) -->
+                                    <div class="collapse mt-2" id="comments-{{ $post->id }}">
+                                        <div class="group-comments">
+                                            <h6 class="mb-2">Bình luận</h6>
+                                            @foreach($post->comments as $comment)
+                                                <div class="mb-2">
+                                                    <strong>{{ $comment->user->name }}</strong>:
+                                                    {{ $comment->content }}
+                                                    <span class="text-muted small">({{ $comment->created_at->format('d/m/Y H:i') }})</span>
+                                                </div>
+                                            @endforeach
+
+                                            <!-- Form bình luận -->
+                                            @auth
+                                                <form action="{{ route('group-comments.store') }}" method="POST" class="d-flex mt-2">
+                                                    @csrf
+                                                    <input type="hidden" name="group_post_id" value="{{ $post->id }}">
+                                                    <input type="text" name="content" class="form-control me-2" placeholder="Viết bình luận..." required>
+                                                    <button type="submit" class="btn btn-primary">Gửi</button>
+                                                </form>
+                                            @endauth
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         @endforeach
