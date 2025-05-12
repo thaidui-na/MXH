@@ -228,7 +228,6 @@ class PostController extends Controller
     public function like(Post $post)
     {
         $user = auth()->user();
-        
         if ($post->isLikedBy($user->id)) {
             $post->likes()->detach($user->id);
             $liked = false;
@@ -236,7 +235,6 @@ class PostController extends Controller
             $post->likes()->attach($user->id);
             $liked = true;
         }
-
         return response()->json([
             'liked' => $liked,
             'likesCount' => $post->getLikesCount()

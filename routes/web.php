@@ -85,11 +85,11 @@ Route::middleware('auth')->group(function () {
     // API tìm kiếm nhóm cho autocomplete
     Route::middleware('auth')->get('/api/groups/search', [App\Http\Controllers\GroupController::class, 'searchAjax'])->name('groups.searchAjax');
 
-    // Routes quản lý like bài viết
-    Route::post('/posts/{post}/like', [PostController::class, 'like'])->name('posts.like');
-
     // Routes quản lý users
     Route::get('/users/search', [App\Http\Controllers\Api\UserController::class, 'search'])->name('users.search');
+
+    // Route like bài viết
+    Route::post('/posts/{post}/like', [PostController::class, 'like'])->name('posts.like');
 });
 
 /**
