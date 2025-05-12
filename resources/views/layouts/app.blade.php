@@ -93,8 +93,9 @@
             padding: 0.5rem 1rem;
             border-radius: 20px;
             font-size: 0.9rem;
-            border: 1px solid #e0e0e0;
-            background-color: white;
+            border: 1px solid #dc3545;
+            background-color: transparent;
+            color: #dc3545;
         }
 
         .like-button i {
@@ -116,6 +117,7 @@
         .like-button:hover {
             transform: translateY(-2px);
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            background-color: #ffebee;
         }
 
         .like-button:hover i {
@@ -125,29 +127,6 @@
         .like-count {
             font-weight: 500;
             margin-left: 0.3rem;
-        }
-
-        /* Animation cho nút like */
-        @keyframes heartBeat {
-            0% {
-                transform: scale(1);
-            }
-            14% {
-                transform: scale(1.3);
-            }
-            28% {
-                transform: scale(1);
-            }
-            42% {
-                transform: scale(1.3);
-            }
-            70% {
-                transform: scale(1);
-            }
-        }
-
-        .like-button.active i {
-            animation: heartBeat 1.3s ease-in-out;
         }
     </style>
     
@@ -166,45 +145,7 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"></script>
 
     <!-- Global Like Functionality -->
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Like button functionality
-            document.querySelectorAll('.like-button').forEach(button => {
-                button.addEventListener('click', function() {
-                    const postId = this.dataset.postId;
-                    const icon = this.querySelector('i');
-                    const countElement = this.querySelector('.like-count');
-                    
-                    fetch(`/posts/${postId}/like`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                        }
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.liked) {
-                            this.classList.add('active');
-                            icon.classList.add('text-danger');
-                            icon.classList.remove('text-muted');
-                        } else {
-                            this.classList.remove('active');
-                            icon.classList.remove('text-danger');
-                            icon.classList.add('text-muted');
-                        }
-                        // Cập nhật số lượng like
-                        if (countElement) {
-                            countElement.textContent = data.likesCount;
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
-                    });
-                });
-            });
-        });
-    </script>
+    <!-- XÓA TOÀN BỘ JS LIKE -->
 
     <!-- Search Functionality -->
     <script>

@@ -109,23 +109,21 @@
                                 <div class="card-body">
                                     <div class="d-flex justify-content-between">
                                         <h5 class="card-title">{{ $post->title }}</h5>
-                                        <div class="text-muted">
-                                            <button class="btn btn-sm btn-outline-danger like-button {{ $post->isLikedBy(auth()->id()) ? 'active' : '' }}"
-                                                data-post-id="{{ $post->id }}">
-                                                <i class="fas fa-heart {{ $post->isLikedBy(auth()->id()) ? 'text-danger' : 'text-muted' }}"></i>
-                                                <span class="like-count ms-1">{{ $post->getLikesCount() }}</span>
-                                            </button>
-                                        </div>
                                     </div>
                                     <p class="card-text text-muted small">
                                         Đăng ngày {{ $post->created_at->format('d/m/Y H:i') }}
                                     </p>
                                     <p class="card-text">{{ Str::limit($post->content, 200) }}</p>
                                     <div class="d-flex justify-content-end">
-                                        <a href="{{ route('posts.show', $post) }}" class="btn btn-sm btn-info me-2">
+                                        <button class="btn btn-sm like-button {{ $post->isLikedBy(auth()->id()) ? 'active' : '' }}"
+                                            data-post-id="{{ $post->id }}">
+                                            <i class="fas fa-heart {{ $post->isLikedBy(auth()->id()) ? 'text-danger' : '' }}"></i>
+                                            <span class="like-count">{{ $post->getLikesCount() }}</span>
+                                        </button>
+                                        <a href="{{ route('posts.show', $post) }}" class="btn btn-sm btn-info ms-2">
                                             <i class="fas fa-eye"></i> Xem
                                         </a>
-                                        <a href="{{ route('posts.edit', $post) }}" class="btn btn-sm btn-warning me-2">
+                                        <a href="{{ route('posts.edit', $post) }}" class="btn btn-sm btn-warning ms-2">
                                             <i class="fas fa-edit"></i> Sửa
                                         </a>
                                         <form action="{{ route('posts.destroy', $post) }}" method="POST" onsubmit="return confirm('Bạn có chắc chắn muốn xóa bài viết này?');">
@@ -282,6 +280,41 @@ document.addEventListener('DOMContentLoaded', function() {
         if (autocompleteBox.innerHTML.trim() !== '') {
             autocompleteBox.style.display = 'block';
         }
+    });
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.like-button').forEach(button => {
+        button.addEventListener('click', function() {
+            const postId = this.dataset.postId;
+            fetch(`/posts/${postId}/like`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.liked) {
+                    this.classList.add('active');
+                    this.querySelector('i').classList.add('text-danger');
+                    this.querySelector('i').classList.remove('text-muted');
+                } else {
+                    this.classList.remove('active');
+                    this.querySelector('i').classList.remove('text-danger');
+                    this.querySelector('i').classList.add('text-muted');
+                }
+                // Cập nhật số lượng like
+                const likeCount = this.querySelector('.like-count');
+                if (likeCount) {
+                    likeCount.textContent = data.likesCount;
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        });
     });
 });
 </script>

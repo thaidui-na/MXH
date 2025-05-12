@@ -334,12 +334,12 @@
                             </div>
                             <p class="post-excerpt">{{ Str::limit($post->content, 200) }}</p>
                             <div class="d-flex justify-content-end">
-                                <button class="btn btn-sm btn-outline-danger me-2 like-button {{ $post->isLikedBy(auth()->id()) ? 'active' : '' }}"
+                                <button class="btn btn-sm like-button {{ $post->isLikedBy(auth()->id()) ? 'active' : '' }}"
                                     data-post-id="{{ $post->id }}">
-                                    <i class="fas fa-heart {{ $post->isLikedBy(auth()->id()) ? 'text-danger' : 'text-muted' }}"></i>
-                                    <span class="like-count ms-1">{{ $post->getLikesCount() }}</span>
+                                    <i class="fas fa-heart {{ $post->isLikedBy(auth()->id()) ? 'text-danger' : '' }}"></i>
+                                    <span class="like-count">{{ $post->getLikesCount() }}</span>
                                 </button>
-                                <a href="{{ route('posts.show', $post) }}" class="btn btn-view-post">
+                                <a href="{{ route('posts.show', $post) }}" class="btn btn-view-post ms-2">
                                     <i class="fas fa-eye"></i> Xem chi tiết
                                 </a>
                             </div>
@@ -396,11 +396,11 @@
         </div>
     </div>
 </div>
+@endsection
 
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Like button functionality
     document.querySelectorAll('.like-button').forEach(button => {
         button.addEventListener('click', function() {
             const postId = this.dataset.postId;
@@ -436,4 +436,3 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 @endpush
-@endsection

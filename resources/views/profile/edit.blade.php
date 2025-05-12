@@ -18,15 +18,6 @@
                     <h5 class="card-title">{{ auth()->user()->name }}</h5>
                     <p class="text-muted">Thành viên từ: {{ auth()->user()->created_at->format('d/m/Y') }}</p>
 
-                    <!-- Hiển thị tổng số like -->
-                    <div class="mt-3 mb-3">
-                        <h6 class="text-muted mb-2">Tổng lượt thích</h6>
-                        <div class="d-flex justify-content-center align-items-center">
-                            <i class="fas fa-heart text-danger me-2"></i>
-                            <span class="h4 mb-0">{{ auth()->user()->total_likes }}</span>
-                        </div>
-                    </div>
-
                     <!-- Hiển thị thông tin chi tiết nếu có -->
                     @if(auth()->user()->bio || auth()->user()->phone || auth()->user()->birthday)
                         <hr>

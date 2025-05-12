@@ -43,6 +43,34 @@ class Post extends Model
     }
 
     /**
+     * Định nghĩa một Local Query Scope để lọc các bài viết công khai.
+     * Cho phép tái sử dụng logic query này một cách dễ dàng.
+     * Cách dùng: Post::public()->get();
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder  $query Instance của Query Builder
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopePublic($query)
+    {
+        // Thêm điều kiện `where` vào query builder để chỉ lấy các bài viết có 'is_public' là true.
+        return $query->where('is_public', true);
+    }
+
+    /**
+     * Định nghĩa một Local Query Scope để sắp xếp bài viết theo thứ tự mới nhất.
+     * Cách dùng: Post::latest()->get();
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder  $query Instance của Query Builder
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopeLatest($query)
+    {
+        // Thêm điều kiện `orderBy` vào query builder để sắp xếp theo cột 'created_at' giảm dần (mới nhất trước).
+        // Lưu ý: Laravel cũng cung cấp sẵn phương thức `latest()` hoạt động tương tự.
+        return $query->orderBy('created_at', 'desc');
+    }
+
+    /**
      * Get the likes for the post.
      */
     public function likes()
@@ -70,33 +98,5 @@ class Post extends Model
     public function getLikesCount()
     {
         return $this->likes()->count();
-    }
-
-    /**
-     * Định nghĩa một Local Query Scope để lọc các bài viết công khai.
-     * Cho phép tái sử dụng logic query này một cách dễ dàng.
-     * Cách dùng: Post::public()->get();
-     *
-     * @param  \Illuminate\Database\Eloquent\Builder  $query Instance của Query Builder
-     * @return \Illuminate\Database\Eloquent\Builder
-     */
-    public function scopePublic($query)
-    {
-        // Thêm điều kiện `where` vào query builder để chỉ lấy các bài viết có 'is_public' là true.
-        return $query->where('is_public', true);
-    }
-
-    /**
-     * Định nghĩa một Local Query Scope để sắp xếp bài viết theo thứ tự mới nhất.
-     * Cách dùng: Post::latest()->get();
-     *
-     * @param  \Illuminate\Database\Eloquent\Builder  $query Instance của Query Builder
-     * @return \Illuminate\Database\Eloquent\Builder
-     */
-    public function scopeLatest($query)
-    {
-        // Thêm điều kiện `orderBy` vào query builder để sắp xếp theo cột 'created_at' giảm dần (mới nhất trước).
-        // Lưu ý: Laravel cũng cung cấp sẵn phương thức `latest()` hoạt động tương tự.
-        return $query->orderBy('created_at', 'desc');
     }
 } 

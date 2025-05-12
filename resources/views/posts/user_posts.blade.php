@@ -76,20 +76,18 @@
                         <div class="card-body">
                             <div class="d-flex justify-content-between">
                                 <h5 class="card-title">{{ $post->title }}</h5>
-                                <div class="text-muted">
-                                    <button class="btn btn-sm btn-outline-danger like-button {{ $post->isLikedBy(auth()->id()) ? 'active' : '' }}"
-                                        data-post-id="{{ $post->id }}">
-                                        <i class="fas fa-heart {{ $post->isLikedBy(auth()->id()) ? 'text-danger' : 'text-muted' }}"></i>
-                                        <span class="like-count ms-1">{{ $post->getLikesCount() }}</span>
-                                    </button>
-                                </div>
                             </div>
                             <p class="card-text text-muted small">
                                 Đăng ngày {{ $post->created_at->format('d/m/Y H:i') }}
                             </p>
                             <p class="card-text">{{ Str::limit($post->content, 200) }}</p>
                             <div class="d-flex justify-content-end">
-                                <a href="{{ route('posts.show', $post) }}" class="btn btn-sm btn-info">
+                                <button class="btn btn-sm like-button {{ $post->isLikedBy(auth()->id()) ? 'active' : '' }}"
+                                    data-post-id="{{ $post->id }}">
+                                    <i class="fas fa-heart {{ $post->isLikedBy(auth()->id()) ? 'text-danger' : '' }}"></i>
+                                    <span class="like-count">{{ $post->getLikesCount() }}</span>
+                                </button>
+                                <a href="{{ route('posts.show', $post) }}" class="btn btn-sm btn-info ms-2">
                                     <i class="fas fa-eye"></i> Xem
                                 </a>
                             </div>
@@ -118,13 +116,9 @@
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Xử lý sự kiện like
     document.querySelectorAll('.like-button').forEach(button => {
         button.addEventListener('click', function() {
             const postId = this.dataset.postId;
-            const icon = this.querySelector('i');
-            const countSpan = this.querySelector('.like-count');
-
             fetch(`/posts/${postId}/like`, {
                 method: 'POST',
                 headers: {
@@ -135,19 +129,22 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(response => response.json())
             .then(data => {
                 if (data.liked) {
-                    icon.classList.remove('text-muted');
-                    icon.classList.add('text-danger');
                     this.classList.add('active');
+                    this.querySelector('i').classList.add('text-danger');
+                    this.querySelector('i').classList.remove('text-muted');
                 } else {
-                    icon.classList.remove('text-danger');
-                    icon.classList.add('text-muted');
                     this.classList.remove('active');
+                    this.querySelector('i').classList.remove('text-danger');
+                    this.querySelector('i').classList.add('text-muted');
                 }
-                countSpan.textContent = data.likesCount;
+                // Cập nhật số lượng like
+                const likeCount = this.querySelector('.like-count');
+                if (likeCount) {
+                    likeCount.textContent = data.likesCount;
+                }
             })
             .catch(error => {
                 console.error('Error:', error);
-                alert('Có lỗi xảy ra khi thích bài viết');
             });
         });
     });
