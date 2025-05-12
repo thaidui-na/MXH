@@ -130,6 +130,32 @@
         margin-bottom: 1rem;
     }
 
+    /* Style cho nút xem chi tiết */
+    .btn-view-post {
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-size: 0.875rem;
+        transition: all 0.3s ease;
+        background-color: #3498db;
+        border-color: #3498db;
+        color: white;
+    }
+
+    .btn-view-post:hover {
+        background-color: #2980b9;
+        border-color: #2980b9;
+        transform: translateX(5px);
+    }
+
+    .btn-view-post i {
+        margin-right: 0.5rem;
+        transition: transform 0.3s ease;
+    }
+
+    .btn-view-post:hover i {
+        transform: translateX(3px);
+    }
+
     /* Style cho phân trang */
     .pagination {
         margin-top: 2rem;
@@ -227,40 +253,12 @@
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
 
-    /* Style cho nút xem chi tiết */
-    .btn-view-post {
-        padding: 0.5rem 1rem;
-        border-radius: 20px;
-        font-size: 0.875rem;
-        transition: all 0.3s ease;
-        background-color: #3498db;
-        border-color: #3498db;
-        color: white;
-    }
-
-    .btn-view-post:hover {
-        background-color: #2980b9;
-        border-color: #2980b9;
-        transform: translateX(5px);
-    }
-
-    .btn-view-post i {
-        margin-right: 0.5rem;
-        transition: transform 0.3s ease;
-    }
-
-    .btn-view-post:hover i {
-        transform: translateX(3px);
-    }
-
     /* Style cho nút like */
     .like-button {
         transition: all 0.3s ease;
         padding: 0.5rem 1rem;
         border-radius: 20px;
         font-size: 0.9rem;
-        border: 1px solid #e0e0e0;
-        background-color: white;
     }
 
     .like-button i {
@@ -292,29 +290,6 @@
         font-weight: 500;
         margin-left: 0.3rem;
     }
-
-    /* Animation cho nút like */
-    @keyframes heartBeat {
-        0% {
-            transform: scale(1);
-        }
-        14% {
-            transform: scale(1.3);
-        }
-        28% {
-            transform: scale(1);
-        }
-        42% {
-            transform: scale(1.3);
-        }
-        70% {
-            transform: scale(1);
-        }
-    }
-
-    .like-button.active i {
-        animation: heartBeat 1.3s ease-in-out;
-    }
 </style>
 @endpush
 
@@ -344,20 +319,27 @@
                 <div class="col-md-12" style="animation-delay: {{ $index * 0.1 }}s;">
                     <div class="card post-card">
                         <div class="card-body">
-                            <div class="d-flex justify-content-between align-items-center mb-3">
-                                <h5 class="card-title mb-0">{{ $post->title }}</h5>
-                                <button class="btn btn-sm btn-outline-danger like-button {{ $post->isLikedBy(auth()->id()) ? 'active' : '' }}"
-                                    data-post-id="{{ $post->id }}">
-                                    <i class="fas fa-heart {{ $post->isLikedBy(auth()->id()) ? 'text-danger' : 'text-muted' }}"></i>
-                                    <span class="like-count ms-1">{{ $post->getLikesCount() }}</span>
-                                </button>
+                            <a href="{{ route('posts.show', $post) }}" class="text-decoration-none">
+                                <h5 class="post-title">{{ $post->title }}</h5>
+                            </a>
+                            <div class="post-meta">
+                                <span>
+                                    <i class="fas fa-user-circle"></i>
+                                    {{ $post->user->name }}
+                                </span>
+                                <span>
+                                    <i class="fas fa-clock"></i>
+                                    {{ $post->created_at->format('d/m/Y H:i') }}
+                                </span>
                             </div>
-                            <p class="card-text text-muted small">
-                                Đăng bởi {{ $post->user->name }} - {{ $post->created_at->format('d/m/Y H:i') }}
-                            </p>
-                            <p class="card-text">{{ Str::limit($post->content, 200) }}</p>
+                            <p class="post-excerpt">{{ Str::limit($post->content, 200) }}</p>
                             <div class="d-flex justify-content-end">
-                                <a href="{{ route('posts.show', $post) }}" class="btn btn-view-post">
+                                <button class="btn btn-sm like-button {{ $post->isLikedBy(auth()->id()) ? 'active' : '' }}"
+                                    data-post-id="{{ $post->id }}">
+                                    <i class="fas fa-heart {{ $post->isLikedBy(auth()->id()) ? 'text-danger' : '' }}"></i>
+                                    <span class="like-count">{{ $post->getLikesCount() }}</span>
+                                </button>
+                                <a href="{{ route('posts.show', $post) }}" class="btn btn-view-post ms-2">
                                     <i class="fas fa-eye"></i> Xem chi tiết
                                 </a>
                             </div>
@@ -414,75 +396,43 @@
         </div>
     </div>
 </div>
+@endsection
 
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Like button functionality
     document.querySelectorAll('.like-button').forEach(button => {
-        let isProcessing = false; // Flag to prevent double clicks
-        
-        button.addEventListener('click', function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            
-            // Prevent double clicks
-            if (isProcessing) {
-                console.log('Like action is already in progress');
-                return;
-            }
-            
-            isProcessing = true;
+        button.addEventListener('click', function() {
             const postId = this.dataset.postId;
-            const icon = this.querySelector('i');
-            const countSpan = this.querySelector('.like-count');
-            
-            console.log('Like button clicked for post:', postId);
-            
-            // Disable button while processing
-            this.disabled = true;
-            
             fetch(`/posts/${postId}/like`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                    'Accept': 'application/json'
-                },
-                credentials: 'same-origin'
-            })
-            .then(response => {
-                console.log('Response status:', response.status);
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
                 }
-                return response.json();
             })
+            .then(response => response.json())
             .then(data => {
-                console.log('Response data:', data);
                 if (data.liked) {
-                    icon.classList.remove('text-muted');
-                    icon.classList.add('text-danger');
                     this.classList.add('active');
+                    this.querySelector('i').classList.add('text-danger');
+                    this.querySelector('i').classList.remove('text-muted');
                 } else {
-                    icon.classList.remove('text-danger');
-                    icon.classList.add('text-muted');
                     this.classList.remove('active');
+                    this.querySelector('i').classList.remove('text-danger');
+                    this.querySelector('i').classList.add('text-muted');
                 }
-                countSpan.textContent = data.likesCount;
+                // Cập nhật số lượng like
+                const likeCount = this.querySelector('.like-count');
+                if (likeCount) {
+                    likeCount.textContent = data.likesCount;
+                }
             })
             .catch(error => {
                 console.error('Error:', error);
-                alert('Có lỗi xảy ra khi thích bài viết. Vui lòng thử lại sau.');
-            })
-            .finally(() => {
-                // Re-enable button and reset processing flag
-                this.disabled = false;
-                isProcessing = false;
             });
         });
     });
 });
 </script>
 @endpush
-@endsection

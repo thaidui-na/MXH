@@ -264,28 +264,4 @@ class GroupController extends Controller
             ->get(['id', 'name', 'cover_image', 'avatar']);
         return response()->json($groups);
     }
-
-    public function search(Request $request)
-    {
-        $query = $request->input('q');
-        
-        $groups = Group::withCount('members')
-            ->with(['members'])
-            ->when($query, function($q) use ($query) {
-                $q->where(function($sub) use ($query) {
-                    $sub->where('name', 'like', "%$query%")
-                        ->orWhere('description', 'like', "%$query%");
-                });
-            })
-            ->latest()
-            ->paginate(9);
-            
-        $joinedGroupIds = auth()->user()->joinedGroups()->pluck('groups.id')->toArray();
-        
-        return view('posts.my_posts', [
-            'posts' => auth()->user()->posts()->latest()->paginate(10),
-            'groups' => $groups,
-            'joinedGroupIds' => $joinedGroupIds
-        ]);
-    }
 } 

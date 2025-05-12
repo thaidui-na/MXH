@@ -43,47 +43,6 @@ class Post extends Model
     }
 
     /**
-     * Get the likes for the post.
-     */
-    public function likes()
-    {
-        return $this->belongsToMany(User::class, 'likes', 'post_id', 'user_id')
-            ->withTimestamps();
-    }
-
-    /**
-     * Check if the post is liked by a specific user.
-     *
-     * @param int $userId
-     * @return bool
-     */
-    public function isLikedBy($userId)
-    {
-        \Log::info('Checking if post is liked by user', [
-            'post_id' => $this->id,
-            'user_id' => $userId
-        ]);
-        
-        $isLiked = $this->likes()->where('user_id', $userId)->exists();
-        
-        \Log::info('Like check result', [
-            'is_liked' => $isLiked
-        ]);
-        
-        return $isLiked;
-    }
-
-    /**
-     * Get the total number of likes for the post.
-     *
-     * @return int
-     */
-    public function getLikesCount()
-    {
-        return $this->likes()->count();
-    }
-
-    /**
      * Định nghĩa một Local Query Scope để lọc các bài viết công khai.
      * Cho phép tái sử dụng logic query này một cách dễ dàng.
      * Cách dùng: Post::public()->get();
@@ -109,5 +68,35 @@ class Post extends Model
         // Thêm điều kiện `orderBy` vào query builder để sắp xếp theo cột 'created_at' giảm dần (mới nhất trước).
         // Lưu ý: Laravel cũng cung cấp sẵn phương thức `latest()` hoạt động tương tự.
         return $query->orderBy('created_at', 'desc');
+    }
+
+    /**
+     * Get the likes for the post.
+     */
+    public function likes()
+    {
+        return $this->belongsToMany(User::class, 'likes', 'post_id', 'user_id')
+            ->withTimestamps();
+    }
+
+    /**
+     * Check if the post is liked by a specific user.
+     *
+     * @param int $userId
+     * @return bool
+     */
+    public function isLikedBy($userId)
+    {
+        return $this->likes()->where('user_id', $userId)->exists();
+    }
+
+    /**
+     * Get the total number of likes for the post.
+     *
+     * @return int
+     */
+    public function getLikesCount()
+    {
+        return $this->likes()->count();
     }
 } 

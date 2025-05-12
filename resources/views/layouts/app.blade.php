@@ -93,8 +93,9 @@
             padding: 0.5rem 1rem;
             border-radius: 20px;
             font-size: 0.9rem;
-            border: 1px solid #e0e0e0;
-            background-color: white;
+            border: 1px solid #dc3545;
+            background-color: transparent;
+            color: #dc3545;
         }
 
         .like-button i {
@@ -116,6 +117,7 @@
         .like-button:hover {
             transform: translateY(-2px);
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            background-color: #ffebee;
         }
 
         .like-button:hover i {
@@ -125,29 +127,6 @@
         .like-count {
             font-weight: 500;
             margin-left: 0.3rem;
-        }
-
-        /* Animation cho nút like */
-        @keyframes heartBeat {
-            0% {
-                transform: scale(1);
-            }
-            14% {
-                transform: scale(1.3);
-            }
-            28% {
-                transform: scale(1);
-            }
-            42% {
-                transform: scale(1.3);
-            }
-            70% {
-                transform: scale(1);
-            }
-        }
-
-        .like-button.active i {
-            animation: heartBeat 1.3s ease-in-out;
         }
     </style>
     
@@ -164,6 +143,94 @@
     
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Global Like Functionality -->
+    <!-- XÓA TOÀN BỘ JS LIKE -->
+
+    <!-- Search Functionality -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchInput = document.getElementById('searchInput');
+            const searchResults = document.getElementById('searchResults');
+            let searchTimeout;
+
+            if (!searchInput || !searchResults) {
+                console.error('Search elements not found');
+                return;
+            }
+
+            searchInput.addEventListener('input', function() {
+                clearTimeout(searchTimeout);
+                const query = this.value.trim();
+
+                if (query.length < 2) {
+                    searchResults.innerHTML = '';
+                    searchResults.classList.add('hidden');
+                    return;
+                }
+
+                searchTimeout = setTimeout(() => {
+                    console.log('Searching for:', query);
+
+                    fetch(`/users/search?query=${encodeURIComponent(query)}`, {
+                        method: 'GET',
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Accept': 'application/json'
+                        },
+                        credentials: 'same-origin'
+                    })
+                    .then(response => {
+                        console.log('Response status:', response.status);
+                        return response.json();
+                    })
+                    .then(data => {
+                        console.log('Search results:', data);
+                        searchResults.innerHTML = '';
+                        
+                        if (!data.users || data.users.length === 0) {
+                            searchResults.innerHTML = `
+                                <div class="p-4 text-center">
+                                    <div class="text-muted mb-2">Không tìm thấy kết quả</div>
+                                    <div class="text-muted small">Từ khóa tìm kiếm: "${query}"</div>
+                                </div>
+                            `;
+                        } else {
+                            data.users.forEach(user => {
+                                const userElement = document.createElement('a');
+                                userElement.href = `/user/${user.id}/posts`;
+                                userElement.className = 'search-result-item';
+                                userElement.innerHTML = `
+                                    <img src="${user.avatar}" alt="${user.name}" onerror="this.src='/images/default-avatar.png'">
+                                    <div class="user-name">${user.name}</div>
+                                `;
+                                searchResults.appendChild(userElement);
+                            });
+                        }
+                        
+                        searchResults.classList.remove('hidden');
+                    })
+                    .catch(error => {
+                        console.error('Search error:', error);
+                        searchResults.innerHTML = `
+                            <div class="p-4 text-center">
+                                <div class="text-danger mb-2">Có lỗi xảy ra khi tìm kiếm</div>
+                                <div class="text-muted small">Từ khóa tìm kiếm: "${query}"</div>
+                            </div>
+                        `;
+                        searchResults.classList.remove('hidden');
+                    });
+                }, 300);
+            });
+
+            // Đóng kết quả tìm kiếm khi click ra ngoài
+            document.addEventListener('click', function(e) {
+                if (!searchInput.contains(e.target) && !searchResults.contains(e.target)) {
+                    searchResults.classList.add('hidden');
+                }
+            });
+        });
+    </script>
 
     @stack('scripts')
 </body>

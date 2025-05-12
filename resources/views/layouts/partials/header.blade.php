@@ -34,17 +34,15 @@
             <!-- Search Form -->
             @auth
             <div class="search-container mx-auto">
-                <form method="GET" action="{{ route('users.search') }}" class="d-flex" id="searchForm">
-                    <div class="input-group position-relative">
-                        <input type="text" class="form-control" id="searchInput" name="q" placeholder="Tìm kiếm người dùng..." aria-label="Tìm kiếm" value="{{ request('q') }}">
-                        <button class="btn btn-outline-primary" type="submit">
-                            <i class="fas fa-search"></i>
-                        </button>
-                        <div id="searchResults" class="search-results hidden">
-                            <!-- Kết quả tìm kiếm sẽ được thêm vào đây -->
-                        </div>
-                    </div>
-                </form>
+                <div class="input-group">
+                    <input type="text" class="form-control" id="searchInput" placeholder="Tìm kiếm người dùng..." aria-label="Tìm kiếm">
+                    <button class="btn btn-outline-primary" type="button">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+                <div id="searchResults" class="hidden">
+                    <!-- Kết quả tìm kiếm sẽ được thêm vào đây -->
+                </div>
             </div>
             @endauth
 
@@ -91,29 +89,10 @@
     }
 
     /* Style cho thanh tìm kiếm */
-    .search-container {
-        position: relative;
-        width: 300px;
-    }
-
-    .search-results {
-        position: absolute;
-        top: 100%;
-        left: 0;
-        right: 0;
-        background: white;
-        border: 1px solid #dee2e6;
-        border-radius: 0 0 4px 4px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        z-index: 1000;
+    #navbarSearchResults {
         max-height: 400px;
         overflow-y: auto;
-        margin-top: 2px;
-        width: 100%;
-    }
-
-    .search-results.hidden {
-        display: none !important;
+        border: 1px solid #dee2e6;
     }
 
     .search-result-item {
@@ -121,19 +100,15 @@
         border-bottom: 1px solid #eee;
         display: flex;
         align-items: center;
-        justify-content: space-between;
         gap: 10px;
+        text-decoration: none;
+        color: inherit;
         transition: background-color 0.2s ease;
     }
 
     .search-result-item:hover {
         background-color: #f8f9fa;
-    }
-
-    .search-result-item a {
-        flex: 1;
         text-decoration: none;
-        color: inherit;
     }
 
     .search-result-item img {
@@ -159,45 +134,6 @@
         font-size: 0.875rem;
         color: #6c757d;
         margin: 0;
-    }
-
-    .search-results .search-header {
-        padding: 10px 15px;
-        background: #f8f9fa;
-        border-bottom: 1px solid #dee2e6;
-        font-weight: 500;
-        color: #495057;
-    }
-
-    .search-results .search-footer {
-        padding: 10px 15px;
-        text-align: center;
-        border-top: 1px solid #dee2e6;
-    }
-
-    .search-results .search-footer a {
-        color: #0d6efd;
-        text-decoration: none;
-    }
-
-    .search-results .search-footer a:hover {
-        text-decoration: underline;
-    }
-
-    .add-friend-btn {
-        white-space: nowrap;
-        min-width: 100px;
-    }
-
-    .add-friend-btn.btn-success {
-        background-color: #198754;
-        border-color: #198754;
-        color: white;
-    }
-
-    .add-friend-btn.btn-success:hover {
-        background-color: #157347;
-        border-color: #146c43;
     }
 
     .navbar {

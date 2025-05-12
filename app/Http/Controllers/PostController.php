@@ -228,44 +228,16 @@ class PostController extends Controller
     public function like(Post $post)
     {
         $user = auth()->user();
-        
-        \Log::info('Like request received', [
-            'post_id' => $post->id,
-            'user_id' => $user->id,
-            'is_liked' => $post->isLikedBy($user->id)
-        ]);
-        
-        try {
-            if ($post->isLikedBy($user->id)) {
-                \Log::info('Removing like');
-                $post->likes()->detach($user->id);
-                $liked = false;
-            } else {
-                \Log::info('Adding like');
-                $post->likes()->attach($user->id);
-                $liked = true;
-            }
-
-            $likesCount = $post->getLikesCount();
-            \Log::info('Like operation completed', [
-                'liked' => $liked,
-                'likes_count' => $likesCount
-            ]);
-
-            return response()->json([
-                'liked' => $liked,
-                'likesCount' => $likesCount
-            ]);
-        } catch (\Exception $e) {
-            \Log::error('Error in like operation', [
-                'error' => $e->getMessage(),
-                'post_id' => $post->id,
-                'user_id' => $user->id
-            ]);
-            
-            return response()->json([
-                'error' => 'Có lỗi xảy ra khi xử lý yêu cầu like'
-            ], 500);
+        if ($post->isLikedBy($user->id)) {
+            $post->likes()->detach($user->id);
+            $liked = false;
+        } else {
+            $post->likes()->attach($user->id);
+            $liked = true;
         }
+        return response()->json([
+            'liked' => $liked,
+            'likesCount' => $post->getLikesCount()
+        ]);
     }
 } 
