@@ -165,6 +165,47 @@
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"></script>
 
+    <!-- Global Like Functionality -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Like button functionality
+            document.querySelectorAll('.like-button').forEach(button => {
+                button.addEventListener('click', function() {
+                    const postId = this.dataset.postId;
+                    const icon = this.querySelector('i');
+                    const countElement = this.querySelector('.like-count');
+                    
+                    fetch(`/posts/${postId}/like`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.liked) {
+                            this.classList.add('active');
+                            icon.classList.add('text-danger');
+                            icon.classList.remove('text-muted');
+                        } else {
+                            this.classList.remove('active');
+                            icon.classList.remove('text-danger');
+                            icon.classList.add('text-muted');
+                        }
+                        // Cập nhật số lượng like
+                        if (countElement) {
+                            countElement.textContent = data.likesCount;
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                    });
+                });
+            });
+        });
+    </script>
+
     <!-- Search Functionality -->
     <script>
         document.addEventListener('DOMContentLoaded', function() {
