@@ -208,6 +208,50 @@
     .group-card {
         animation: fadeInUp 0.5s ease forwards;
     }
+
+    .user-card {
+        transition: all 0.3s ease;
+        border: none;
+        box-shadow: 0 2px 15px rgba(0, 0, 0, 0.08);
+    }
+
+    .user-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.12);
+    }
+
+    .user-card img {
+        border: 3px solid #fff;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    #searchSuggestions {
+        top: 100%;
+        background: white;
+        border-radius: 0 0 4px 4px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        max-height: 300px;
+        overflow-y: auto;
+    }
+
+    #searchSuggestions .list-group-item {
+        border-left: none;
+        border-right: none;
+        padding: 0.75rem 1rem;
+    }
+
+    #searchSuggestions .list-group-item:first-child {
+        border-top: none;
+    }
+
+    #searchSuggestions .list-group-item:hover {
+        background-color: #f8f9fa;
+    }
+
+    #searchSuggestions .list-group-item img {
+        border: 2px solid #fff;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
 </style>
 @endpush
 
@@ -223,6 +267,11 @@
         <li class="nav-item" role="presentation">
             <button class="nav-link" id="groups-tab" data-bs-toggle="tab" data-bs-target="#groups-pane" type="button" role="tab" aria-controls="groups-pane" aria-selected="false">
                 <i class="fas fa-users"></i> Nhóm của tôi
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="friends-tab" data-bs-toggle="tab" data-bs-target="#friends-pane" type="button" role="tab" aria-controls="friends-pane" aria-selected="false">
+                <i class="fas fa-user-friends"></i> Tìm bạn bè
             </button>
         </li>
     </ul>
@@ -312,6 +361,35 @@
             </div>
             @endif
         </div>
+        {{-- Tab Tìm bạn bè --}}
+        <div class="tab-pane fade" id="friends-pane" role="tabpanel" aria-labelledby="friends-tab">
+            <div class="card">
+                <div class="card-body">
+                    <form method="GET" action="{{ route('posts.index') }}" class="mb-4" id="friendSearchForm">
+                        @csrf
+                        <div class="input-group position-relative">
+                            <input type="text" name="friend_search" id="friendSearch" class="form-control" placeholder="Nhập tên hoặc email người dùng cần tìm..." value="{{ request('friend_search') }}">
+                            <button class="btn btn-primary" type="button" id="searchButton">
+                                <i class="fas fa-search"></i> Tìm kiếm
+                            </button>
+                            <div id="searchSuggestions" class="position-absolute w-100" style="z-index: 1000; display: none;">
+                                <!-- Kết quả gợi ý sẽ được thêm vào đây -->
+                            </div>
+                        </div>
+                    </form>
+
+                    <div id="searchResults">
+                        <!-- Kết quả tìm kiếm sẽ được thêm vào đây -->
+                    </div>
+
+                    <div class="text-center text-muted py-5" id="defaultView">
+                        <i class="fas fa-search fa-3x mb-3"></i>
+                        <h5>Tìm kiếm bạn bè</h5>
+                        <p>Nhập tên hoặc email để tìm kiếm người dùng</p>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -319,54 +397,126 @@
 @push('scripts')
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Hiệu ứng hover cho card
-        const cards = document.querySelectorAll('.post-card, .group-card');
-        cards.forEach(card => {
-            card.addEventListener('mouseenter', function() {
-                this.style.transform = 'translateY(-5px)';
+        const searchInput = document.getElementById('friendSearch');
+        const searchButton = document.getElementById('searchButton');
+        const searchResults = document.getElementById('searchResults');
+        const defaultView = document.getElementById('defaultView');
+        let searchTimeout;
+
+        // Hàm thực hiện tìm kiếm
+        function performSearch(query) {
+            console.log('Performing search for:', query);
+            
+            if (query.length < 2) {
+                searchResults.innerHTML = '';
+                defaultView.style.display = 'block';
+                return;
+            }
+
+            defaultView.style.display = 'none';
+            searchResults.innerHTML = `
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Đang tìm kiếm...</span>
+                    </div>
+                    <p class="mt-2 text-muted">Đang tìm kiếm...</p>
+                </div>
+            `;
+
+            const searchUrl = `/api/users/search?q=${encodeURIComponent(query)}`;
+            console.log('Search URL:', searchUrl);
+
+            fetch(searchUrl, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                },
+                credentials: 'same-origin'
+            })
+            .then(response => {
+                console.log('Response status:', response.status);
+                if (!response.ok) {
+                    return response.json().then(err => {
+                        console.error('Search error response:', err);
+                        throw new Error(err.message || 'Có lỗi xảy ra khi tìm kiếm');
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Search response data:', data);
+                
+                if (data.error) {
+                    throw new Error(data.message || data.error);
+                }
+                
+                if (!Array.isArray(data) || data.length === 0) {
+                    searchResults.innerHTML = `
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i> Không tìm thấy người dùng nào phù hợp với từ khóa "${query}"
+                        </div>
+                    `;
+                    return;
+                }
+
+                searchResults.innerHTML = `
+                    <div class="row">
+                        ${data.map(user => `
+                            <div class="col-md-3 mb-4">
+                                <div class="card user-card">
+                                    <div class="card-body text-center">
+                                        <img src="${user.avatar_url}" 
+                                             class="rounded-circle mb-3" 
+                                             style="width: 80px; height: 80px; object-fit: cover;"
+                                             alt="${user.name}"
+                                             onerror="this.src='/images/default-avatar.jpg'">
+                                        <h6 class="card-title mb-1">${user.name}</h6>
+                                        <p class="text-muted small mb-3">${user.email}</p>
+                                        <div class="d-grid">
+                                            <a href="/messages/${user.id}" class="btn btn-outline-primary btn-sm">
+                                                <i class="fas fa-comment"></i> Nhắn tin
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            })
+            .catch(error => {
+                console.error('Search error:', error);
+                searchResults.innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-circle"></i> ${error.message || 'Có lỗi xảy ra khi tìm kiếm. Vui lòng thử lại sau.'}
+                    </div>
+                `;
             });
-            card.addEventListener('mouseleave', function() {
-                this.style.transform = 'translateY(0)';
-            });
+        }
+
+        // Xử lý sự kiện input
+        searchInput.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            const query = this.value.trim();
+            console.log('Input changed:', query);
+            searchTimeout = setTimeout(() => performSearch(query), 300);
         });
 
-        const likeButtons = document.querySelectorAll('.like-button');
+        // Xử lý sự kiện click nút tìm kiếm
+        searchButton.addEventListener('click', function() {
+            const query = searchInput.value.trim();
+            console.log('Search button clicked:', query);
+            performSearch(query);
+        });
 
-        likeButtons.forEach(button => {
-            button.addEventListener('click', async function() {
-                const postId = this.dataset.postId;
-                const icon = this.querySelector('i');
-                const countSpan = this.querySelector('.like-count');
-
-                try {
-                    const response = await fetch(`/posts/${postId}/like`, {
-                        method: 'POST',
-                        headers: {
-                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                            'Accept': 'application/json',
-                            'Content-Type': 'application/json'
-                        }
-                    });
-
-                    const data = await response.json();
-
-                    if (response.ok) {
-                        // Update like count
-                        countSpan.textContent = data.likesCount;
-
-                        // Update icon color
-                        if (data.liked) {
-                            icon.classList.remove('text-muted');
-                            icon.classList.add('text-danger');
-                        } else {
-                            icon.classList.remove('text-danger');
-                            icon.classList.add('text-muted');
-                        }
-                    }
-                } catch (error) {
-                    console.error('Error:', error);
-                }
-            });
+        // Ngăn chặn form submit
+        document.getElementById('friendSearchForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const query = searchInput.value.trim();
+            console.log('Form submitted:', query);
+            performSearch(query);
         });
     });
 </script>
