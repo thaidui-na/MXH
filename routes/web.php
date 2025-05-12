@@ -125,4 +125,4 @@ Route::get('/posts/{post}/comments', [CommentController::class, 'index'])->name(
 Route::post('/posts/{post}/comments', [CommentController::class, 'store'])->name('comments.store')->middleware('auth');
 
 // Route báo cáo bài viết
-Route::post('/reports', [ReportController::class, 'store'])->name('reports.store');
+Route::post('/reports', [ReportController::class, 'store'])->name('reports.store')->middleware('auth');

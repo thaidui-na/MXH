@@ -17,7 +17,9 @@
                 @endif
                 <div class="card-body">
                     @if(session('success'))
-                        <div class="alert alert-success mb-3" id="success-alert">
+                        <div id="success-alert"
+                             class="alert alert-success position-fixed top-0 start-50 translate-middle-x mt-3"
+                             style="z-index: 9999; min-width: 300px; max-width: 90%; text-align: center;">
                             {{ session('success') }}
                         </div>
                     @endif
