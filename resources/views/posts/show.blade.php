@@ -1,4 +1,3 @@
-
 @extends('layouts.app')
 
 @section('title', $post->title)
@@ -15,12 +14,16 @@
                         </div>
                     @endif
                     
-                    <h3 class="card-title">{{ $post->title }}</h3>
-                    <div class="d-flex justify-content-between my-3">
-                        <p class="card-text text-muted">
-                            <i class="fas fa-user"></i> {{ $post->user->name }} <br>
-                            <i class="fas fa-calendar"></i> {{ $post->created_at->format('d/m/Y H:i') }}
-                        </p>
+                    <div class="post-header">
+                        <div class="d-flex align-items-center">
+                            <img src="{{ $post->user->avatar_url }}" alt="{{ $post->user->name }}" class="rounded-circle me-2" style="width: 40px; height: 40px; object-fit: cover;">
+                            <div>
+                                <a href="{{ route('profile.show', $post->user) }}" class="text-decoration-none">
+                                    <h6 class="mb-0">{{ $post->user->name }}</h6>
+                                </a>
+                                <small class="text-muted">{{ $post->created_at->format('d/m/Y H:i') }}</small>
+                            </div>
+                        </div>
                     </div>
                     
                     <hr>

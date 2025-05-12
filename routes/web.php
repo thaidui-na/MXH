@@ -43,6 +43,7 @@ Route::middleware('auth')->group(function () {
     // Routes quản lý thông tin cá nhân
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit'); // Hiển thị form chỉnh sửa profile
     Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update'); // Cập nhật thông tin profile
+    Route::get('/users/{user}', [ProfileController::class, 'show'])->name('profile.show'); // Xem profile người dùng khác
 });
 
 /**
