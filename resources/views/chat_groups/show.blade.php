@@ -26,11 +26,22 @@
                                 <small class="text-muted">{{ $group->members->count() }} thành viên</small>
                             </div>
                         </div>
-                        @if($group->members()->where('user_id', auth()->id())->where('is_admin', true)->exists())
-                            <div>
+                        @if($group->members()->where('user_id', auth()->id())->where(function($query) use ($group) {
+                            $query->where('is_admin_group_chat', true)->orWhere('user_id', $group->created_by);
+                        })->exists())
+                            <div class="btn-group">
                                 <a href="{{ route('chat-groups.edit', $group) }}" class="btn btn-sm btn-outline-primary">
-                                    <i class="fas fa-edit"></i> Chỉnh sửa nhóm
+                                    <i class="fas fa-edit"></i> Chỉnh sửa
                                 </a>
+                                <form action="{{ route('chat-groups.destroy', $group) }}" 
+                                      method="POST" 
+                                      class="d-inline delete-group-form">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">
+                                        <i class="fas fa-trash"></i> Xóa nhóm
+                                    </button>
+                                </form>
                             </div>
                         @endif
                     </div>
@@ -74,7 +85,7 @@
                                             @if($member->id === $group->created_by)
                                                 <span class="badge bg-primary">Người tạo</span>
                                             @endif
-                                            @if($member->pivot->is_admin)
+                                            @if($member->pivot->is_admin_group_chat)
                                                 <span class="badge bg-info">Admin</span>
                                             @endif
                                         </h6>
@@ -278,6 +289,41 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.error('Error:', error);
                 alert('Có lỗi xảy ra khi gửi tin nhắn');
             });
+        });
+    }
+
+    // Thêm xử lý xóa nhóm
+    const deleteForm = document.querySelector('.delete-group-form');
+    if (deleteForm) {
+        deleteForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            if (confirm('Bạn có chắc chắn muốn xóa nhóm chat này? Hành động này không thể hoàn tác.')) {
+                const formData = new FormData(this);
+                
+                fetch(this.action, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json'
+                    },
+                    credentials: 'same-origin'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert(data.message);
+                        window.location.href = data.redirect;
+                    } else {
+                        alert(data.message || 'Có lỗi xảy ra khi xóa nhóm chat');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Có lỗi xảy ra khi xóa nhóm chat');
+                });
+            }
         });
     }
 });
