@@ -12,6 +12,7 @@ use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\PasswordController;
 use App\Http\Controllers\CommentReplyController;
 use App\Http\Controllers\CommentController;
+use App\Http\Controllers\ReportController;
 
 
 
@@ -122,3 +123,6 @@ Route::get('/posts/{post}/comments', [CommentController::class, 'index'])->name(
 
 // Route lưu bình luận mới cho một bài viết
 Route::post('/posts/{post}/comments', [CommentController::class, 'store'])->name('comments.store')->middleware('auth');
+
+// Route báo cáo bài viết
+Route::post('/reports', [ReportController::class, 'store'])->name('reports.store');

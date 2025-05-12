@@ -7,9 +7,17 @@
     <div class="row justify-content-center">
         <div class="col-md-8">
             <div class="card">
+                @if(auth()->check() && $post->user_id !== auth()->id())
+                    <button type="button" class="btn btn-outline-danger btn-sm"
+                            style="position: absolute; top: 10px; right: 10px; z-index: 10;"
+                            data-bs-toggle="modal" data-bs-target="#reportModal"
+                            title="Báo cáo bài viết">
+                        <i class="fas fa-flag"></i> Báo cáo
+                    </button>
+                @endif
                 <div class="card-body">
                     @if(session('success'))
-                        <div class="alert alert-success mb-3">
+                        <div class="alert alert-success mb-3" id="success-alert">
                             {{ session('success') }}
                         </div>
                     @endif
@@ -57,4 +65,83 @@
         </div>
     </div>
 </div>
-@endsection 
+
+<!-- Modal Báo cáo -->
+<div class="modal fade" id="reportModal" tabindex="-1" aria-labelledby="reportModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <form action="{{ route('reports.store') }}" method="POST">
+      @csrf
+      <input type="hidden" name="post_id" value="{{ $post->id }}">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="reportModalLabel">Báo cáo bài viết</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+        </div>
+        <div class="modal-body">
+          <label class="form-label">Chọn lý do báo cáo:</label>
+          <div class="form-check">
+            <input class="form-check-input" type="radio" name="reason" id="reason1" value="Nội dung không phù hợp" required>
+            <label class="form-check-label" for="reason1">Nội dung không phù hợp</label>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input" type="radio" name="reason" id="reason2" value="Spam/quảng cáo">
+            <label class="form-check-label" for="reason2">Spam/quảng cáo</label>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input" type="radio" name="reason" id="reason3" value="Thông tin sai sự thật">
+            <label class="form-check-label" for="reason3">Thông tin sai sự thật</label>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input" type="radio" name="reason" id="reason4" value="Ngôn từ thù ghét">
+            <label class="form-check-label" for="reason4">Ngôn từ thù ghét</label>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input" type="radio" name="reason" id="reason5" value="Khác">
+            <label class="form-check-label" for="reason5">Khác</label>
+          </div>
+          <div class="mt-2">
+            <textarea class="form-control" name="custom_reason" id="customReason" rows="2" placeholder="Nhập lý do khác..." style="display:none"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+          <button type="submit" class="btn btn-danger">Gửi báo cáo</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+@endsection
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    // Ẩn alert sau 2 giây
+    const alert = document.getElementById('success-alert');
+    if(alert) {
+        setTimeout(() => {
+            alert.style.transition = "opacity 0.5s";
+            alert.style.opacity = 0;
+            setTimeout(() => alert.remove(), 500);
+        }, 2000);
+    }
+
+    // Đoạn script cho modal báo cáo (nếu có)
+    const radios = document.querySelectorAll('input[name="reason"]');
+    const customReason = document.getElementById('customReason');
+    if(radios && customReason) {
+        radios.forEach(radio => {
+            radio.addEventListener('change', function() {
+                if (this.value === 'Khác') {
+                    customReason.style.display = 'block';
+                    customReason.required = true;
+                } else {
+                    customReason.style.display = 'none';
+                    customReason.required = false;
+                }
+            });
+        });
+    }
+});
+</script>
+@endpush 
