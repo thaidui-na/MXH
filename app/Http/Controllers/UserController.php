@@ -8,43 +8,25 @@ use Illuminate\Support\Facades\Log;
 
 class UserController extends Controller
 {
-<<<<<<< Updated upstream
-    public function search(Request $request)
-    {
-        $query = $request->input('q');
-        Log::info('Searching users with query: ' . $query);
-        
-        $users = User::when($query, function($q) use ($query) {
-            $q->where(function($sub) use ($query) {
-                $sub->where('name', 'like', "%$query%")
-                    ->orWhere('email', 'like', "%$query%");
-            });
-        })
-        ->latest()
-        ->paginate(10);
-        
-        Log::info('Found ' . $users->count() . ' users');
-        
-        return view('users.search', [
-            'users' => $users,
-            'query' => $query
-        ]);
-=======
     // Hàm searchAjax - dùng cho Ajax (JSON response)
     public function searchAjax(Request $request)
     {
-        $q = $request->q;
+        $query = $request->input('query');
+        
         $users = User::query()
-            ->when($q, function($query) use ($q) {
-                $query->where(function($sub) use ($q) {
-                    $sub->where('name', 'like', "%$q%")
-                        ->orWhere('email', 'like', "%$q%");
+            ->when($query, function($q) use ($query) {
+                $q->where(function($sub) use ($query) {
+                    $sub->where('name', 'like', "%{$query}%")
+                        ->orWhere('email', 'like', "%{$query}%");
                 });
             })
+            ->select(['id', 'name', 'email', 'avatar'])
             ->limit(10)
-            ->get(['id', 'name', 'email']);
-        return response()->json($users);
->>>>>>> Stashed changes
+            ->get();
+
+        return response()->json([
+            'users' => $users
+        ]);
     }
 
     // Hàm search - dùng để render ra view với Log ghi lại
@@ -55,8 +37,8 @@ class UserController extends Controller
         
         $users = User::when($query, function($q) use ($query) {
             $q->where(function($sub) use ($query) {
-                $sub->where('name', 'like', "%$query%")
-                    ->orWhere('email', 'like', "%$query%");
+                $sub->where('name', 'like', "%{$query}%")
+                    ->orWhere('email', 'like', "%{$query}%");
             });
         })
         ->latest()

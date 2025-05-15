@@ -55,6 +55,7 @@ Route::middleware('auth')->group(function () {
     // Routes quản lý bài viết
     Route::get('/posts', [PostController::class, 'index'])->name('posts.index'); // Hiển thị tất cả bài viết
     Route::get('/my-posts', [PostController::class, 'myPosts'])->name('posts.my_posts'); // Hiển thị bài viết của user hiện tại
+    Route::get('/posts/my_posts/{user}', [PostController::class, 'userPosts'])->name('posts.user_posts'); // Thêm route mới
 
     // Tạo các routes CRUD cho posts (trừ index đã định nghĩa ở trên)
     // Tự động tạo các routes: show, create, store, edit, update, destroy
@@ -94,6 +95,9 @@ Route::middleware('auth')->group(function () {
 
     // Routes quản lý like/unlike group post
     Route::post('groups/{group}/posts/{groupPost}/like', [GroupPostLikeController::class, 'toggleLike'])->name('groups.posts.like');
+
+    // Routes quản lý like post
+    Route::post('/posts/{post}/like', [PostController::class, 'like'])->name('posts.like');
 });
 
 /**
