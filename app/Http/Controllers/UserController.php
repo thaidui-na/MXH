@@ -21,6 +21,7 @@ class UserController extends Controller
                 });
             })
             ->where('id', '!=', auth()->id())
+            ->excludeBlocked()
             ->select(['id', 'name', 'email', 'avatar'])
             ->limit(10)
             ->get()
@@ -30,7 +31,9 @@ class UserController extends Controller
                     'name' => $user->name,
                     'email' => $user->email,
                     'avatar' => $user->avatar,
-                    'isFriend' => auth()->user()->isFollowing($user)
+                    'isFriend' => auth()->user()->isFollowing($user),
+                    'isBlocked' => auth()->user()->hasBlocked($user->id),
+                    'isReported' => auth()->user()->hasReported($user->id)
                 ];
             });
 
@@ -114,5 +117,86 @@ class UserController extends Controller
     {
         $following = $user->following()->paginate(20);
         return view('users.following', compact('user', 'following'));
+    }
+
+    /**
+     * Hiển thị danh sách người dùng đã bị chặn
+     */
+    public function blocked()
+    {
+        $blockedUsers = auth()->user()->blockedUsers()->paginate(20);
+        return view('users.blocked', compact('blockedUsers'));
+    }
+
+    /**
+     * Chặn một người dùng
+     */
+    public function block(User $user)
+    {
+        if (auth()->id() === $user->id) {
+            return response()->json(['error' => 'Bạn không thể chặn chính mình'], 400);
+        }
+
+        auth()->user()->block($user->id);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Đã chặn người dùng thành công'
+        ]);
+    }
+
+    /**
+     * Bỏ chặn một người dùng
+     */
+    public function unblock(User $user)
+    {
+        if (auth()->id() === $user->id) {
+            return response()->json(['error' => 'Bạn không thể bỏ chặn chính mình'], 400);
+        }
+
+        auth()->user()->unblock($user->id);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Đã bỏ chặn người dùng thành công'
+        ]);
+    }
+
+    /**
+     * Báo cáo một người dùng
+     */
+    public function report(Request $request, User $user)
+    {
+        if (auth()->id() === $user->id) {
+            return response()->json(['error' => 'Bạn không thể báo cáo chính mình'], 400);
+        }
+
+        $request->validate([
+            'reason' => 'required|string|max:1000'
+        ]);
+
+        auth()->user()->report($user->id, $request->reason);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Đã báo cáo người dùng thành công'
+        ]);
+    }
+
+    /**
+     * Hủy báo cáo một người dùng
+     */
+    public function unreport(User $user)
+    {
+        if (auth()->id() === $user->id) {
+            return response()->json(['error' => 'Bạn không thể hủy báo cáo chính mình'], 400);
+        }
+
+        auth()->user()->unreport($user->id);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Đã hủy báo cáo người dùng thành công'
+        ]);
     }
 }
