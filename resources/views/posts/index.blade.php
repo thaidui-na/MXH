@@ -333,7 +333,7 @@
                                 </span>
                             </div>
                             <p class="post-excerpt">{{ Str::limit($post->content, 200) }}</p>
-                            <div class="d-flex justify-content-end">
+                            <div class="d-flex justify-content-end align-items-center">
                                 <button class="btn btn-sm like-button {{ $post->isLikedBy(auth()->id()) ? 'active' : '' }}"
                                     data-post-id="{{ $post->id }}">
                                     <i class="fas fa-heart {{ $post->isLikedBy(auth()->id()) ? 'text-danger' : '' }}"></i>
@@ -342,6 +342,13 @@
                                 <a href="{{ route('posts.show', $post) }}" class="btn btn-view-post ms-2">
                                     <i class="fas fa-eye"></i> Xem chi tiết
                                 </a>
+                                <form action="{{ route('posts.favorites.toggle', $post) }}" method="POST" class="d-inline ms-2">
+                                    @csrf
+                                    <button type="submit" class="btn btn-sm btn-outline-danger {{ $post->isFavoritedBy(auth()->id()) ? 'active' : '' }}">
+                                        <i class="{{ $post->isFavoritedBy(auth()->id()) ? 'fas' : 'far' }} fa-heart"></i>
+                                        <span class="favorite-text">{{ $post->isFavoritedBy(auth()->id()) ? 'Đã lưu' : 'Lưu' }}</span>
+                                    </button>
+                                </form>
                             </div>
                         </div>
                     </div>

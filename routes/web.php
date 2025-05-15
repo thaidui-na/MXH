@@ -15,6 +15,7 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\GroupPostLikeController;
 use App\Http\Controllers\GroupPostController;
 use App\Http\Controllers\CommentController;
+use App\Http\Controllers\GroupPostFavoriteController;
 
 // Route mặc định, hiển thị trang chào mừng
 Route::get('/', function () {
@@ -100,6 +101,9 @@ Route::middleware('auth')->group(function () {
     // Routes quản lý like post
     Route::post('/posts/{post}/like', [PostController::class, 'like'])->name('posts.like');
 
+    // Routes quản lý yêu thích bài viết
+    Route::post('/posts/{post}/favorites/toggle', [PostController::class, 'toggleFavorite'])->name('posts.favorites.toggle');
+
     // Routes quản lý bình luận
     Route::get('/posts/{post}/comments', [CommentController::class, 'index'])->name('comments.index');
     Route::post('/posts/{post}/comments', [CommentController::class, 'store'])->name('comments.store');
@@ -122,6 +126,9 @@ Route::middleware('auth')->group(function () {
     // Routes quản lý báo cáo người dùng
     Route::post('/users/{user}/report', [UserController::class, 'report'])->name('users.report');
     Route::delete('/users/{user}/unreport', [UserController::class, 'unreport'])->name('users.unreport');
+
+    // Routes cho yêu thích bài viết trong nhóm
+    Route::post('group-posts/{post}/favorite', [GroupPostFavoriteController::class, 'toggle'])->name('group-posts.favorites.toggle');
 });
 
 /**
