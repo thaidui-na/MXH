@@ -19,10 +19,12 @@ class ProfileController extends Controller
      */
     public function edit()
     {
-        // Trả về view 'profile.edit'
-        // Truyền vào view biến 'user' chứa thông tin của người dùng đang được xác thực (đăng nhập)
+        $user = auth()->user();
+        $blockedUsers = $user->blockedUsers()->paginate(10, ['*'], 'blocked_page');
+
         return view('profile.edit', [
-            'user' => auth()->user() // Lấy thông tin người dùng hiện tại
+            'user' => $user,
+            'blockedUsers' => $blockedUsers
         ]);
     }
 
@@ -36,46 +38,34 @@ class ProfileController extends Controller
      */
     public function update(Request $request)
     {
-        // Validate dữ liệu nhận được từ request
-        // Định nghĩa các quy tắc xác thực cho từng trường
-        $validated = $request->validate([
-            'name' => 'required|string|max:255', // Tên là bắt buộc, dạng chuỗi, tối đa 255 ký tự
-            // Email là bắt buộc, dạng email, phải là duy nhất trong bảng 'users' NGOẠI TRỪ chính user hiện tại (id = auth()->id())
-            'email' => 'required|email|unique:users,email,' . auth()->id(),
-            'phone' => 'nullable|string|max:20', // Số điện thoại có thể null, nếu có phải là chuỗi, tối đa 20 ký tự
-            'bio' => 'nullable|string|max:1000', // Giới thiệu có thể null, nếu có phải là chuỗi, tối đa 1000 ký tự
-            'birthday' => 'nullable|date', // Ngày sinh có thể null, nếu có phải là định dạng ngày hợp lệ
-            // Avatar có thể null, nếu có phải là file ảnh, định dạng jpeg/png/jpg/gif, tối đa 2048 KB (2MB)
+        // Validate dữ liệu đầu vào
+        $validatedData = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255|unique:users,email,' . auth()->id(),
+            'phone' => 'nullable|string|max:20',
+            'bio' => 'nullable|string|max:1000',
+            'birthday' => 'nullable|date',
             'avatar' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048'
         ]);
 
-        // Lấy đối tượng User của người dùng đang đăng nhập
         $user = auth()->user();
 
-        // Xử lý việc upload avatar mới nếu người dùng có chọn file avatar trong form
+        // Xử lý upload avatar nếu có
         if ($request->hasFile('avatar')) {
-            // Kiểm tra xem người dùng hiện tại đã có avatar cũ chưa
+            // Xóa avatar cũ nếu có
             if ($user->avatar) {
-                // Nếu có avatar cũ, xóa file avatar đó khỏi storage disk 'public'
-                // Đường dẫn file cũ được lưu trong $user->avatar
-                Storage::disk('public')->delete($user->avatar);
+                Storage::delete($user->avatar);
             }
 
-            // Upload file avatar mới lên thư mục 'avatars' trong storage disk 'public'
-            // Hàm store() trả về đường dẫn tương đối của file đã lưu (ví dụ: 'avatars/ten_file_moi.jpg')
+            // Upload và lưu đường dẫn avatar mới
             $avatarPath = $request->file('avatar')->store('avatars', 'public');
-            // Thêm hoặc cập nhật đường dẫn avatar mới vào mảng dữ liệu $validated để chuẩn bị update vào DB
-            $validated['avatar'] = $avatarPath;
+            $validatedData['avatar'] = $avatarPath;
         }
 
-        // Cập nhật thông tin người dùng trong database với dữ liệu đã được validate (và có thể đã thêm avatar)
-        // Phương thức update() của Eloquent model sẽ tự động lưu các thay đổi
-        $user->update($validated);
+        // Cập nhật thông tin người dùng
+        $user->update($validatedData);
 
-        // Chuyển hướng người dùng quay lại trang chỉnh sửa profile
-        return redirect()
-            ->route('profile.edit') // Sử dụng route name 'profile.edit'
-            ->with('success', 'Cập nhật thông tin thành công!'); // Gửi kèm thông báo thành công (flash message) vào session
+        return redirect()->back()->with('success', 'Cập nhật thông tin thành công!');
     }
 
     // Phương thức updatePassword đã được chuyển sang PasswordController
