@@ -3,155 +3,162 @@
 @section('title', 'Chỉnh sửa thông tin cá nhân')
 
 @section('content')
-<div class="container py-5">
+<div class="container py-4">
     <div class="row">
-        <!-- Sidebar với avatar và thông tin cơ bản -->
+        <!-- Thông tin cá nhân -->
         <div class="col-md-4 mb-4">
-            <div class="card">
+            <div class="card shadow-sm">
                 <div class="card-body text-center">
-                    <!-- Hiển thị avatar hiện tại -->
                     <img src="{{ auth()->user()->avatar_url }}" 
-                         alt="Avatar" 
-                         class="rounded-circle img-fluid mb-3" 
-                         style="width: 150px; height: 150px; object-fit: cover;">
-                    
-                    <h5 class="card-title">{{ auth()->user()->name }}</h5>
-                    <p class="text-muted">Thành viên từ: {{ auth()->user()->created_at->format('d/m/Y') }}</p>
-
-                    <!-- Hiển thị thông tin chi tiết nếu có -->
-                    @if(auth()->user()->bio || auth()->user()->phone || auth()->user()->birthday)
-                        <hr>
-                        <div class="text-start profile-info">
-                            @if(auth()->user()->bio)
-                                <div class="mb-3">
-                                    <h6 class="text-muted mb-1">Giới thiệu:</h6>
-                                    <p class="mb-0">{{ auth()->user()->bio }}</p>
-                                </div>
-                            @endif
-
-                            @if(auth()->user()->phone)
-                                <div class="mb-2">
-                                    <h6 class="text-muted mb-1">Số điện thoại:</h6>
-                                    <p class="mb-0">{{ auth()->user()->phone }}</p>
-                                </div>
-                            @endif
-
-                            @if(auth()->user()->birthday)
-                                <div class="mb-2">
-                                    <h6 class="text-muted mb-1">Ngày sinh:</h6>
-                                    <p class="mb-0">{{ auth()->user()->birthday->format('d/m/Y') }}</p>
-                                </div>
-                            @endif
-
-                            <div class="mb-2">
-                                <h6 class="text-muted mb-1">Email:</h6>
-                                <p class="mb-0">{{ auth()->user()->email }}</p>
-                            </div>
-                        </div>
-                    @else
-                        <div class="alert alert-info mt-3 mb-0">
-                            <i class="fas fa-info-circle"></i> Vui lòng cập nhật thông tin cá nhân của bạn
-                        </div>
-                    @endif
+                         alt="{{ auth()->user()->name }}" 
+                         class="rounded-circle mb-3"
+                         style="width: 120px; height: 120px; object-fit: cover;">
+                    <h5 class="mb-1">{{ auth()->user()->name }}</h5>
+                    <p class="text-muted mb-3">{{ auth()->user()->email }}</p>
+                    <p class="text-muted small mb-0">
+                        Thành viên từ {{ auth()->user()->created_at->format('d/m/Y') }}
+                    </p>
                 </div>
             </div>
         </div>
 
-        <!-- Form chỉnh sửa thông tin -->
+        <!-- Tab content -->
         <div class="col-md-8">
-            <!-- Thông báo -->
-            @if(session('success'))
-                <div class="alert alert-success">
-                    {{ session('success') }}
+            <div class="card shadow-sm">
+                <div class="card-header bg-white">
+                    <ul class="nav nav-tabs card-header-tabs">
+                        <li class="nav-item">
+                            <a class="nav-link active" id="profile-tab" data-bs-toggle="tab" href="#profile">
+                                <i class="fas fa-user me-2"></i>Thông tin cá nhân
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" id="blocked-tab" data-bs-toggle="tab" href="#blocked">
+                                <i class="fas fa-user-slash me-2"></i>Người dùng đã chặn
+                            </a>
+                        </li>
+                    </ul>
                 </div>
-            @endif
 
-            <!-- Form cập nhật thông tin cá nhân -->
-            <div class="card mb-4">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">Thông tin cá nhân</h5>
-                    <a href="{{ route('groups.create') }}" class="btn btn-success">
-                        <i class="fas fa-users"></i> Tạo nhóm mới
-                    </a>
-                </div>
                 <div class="card-body">
-                    <form action="{{ route('profile.update') }}" method="POST" enctype="multipart/form-data">
-                        @csrf
-                        @method('PUT')
+                    <div class="tab-content">
+                        <!-- Tab thông tin cá nhân -->
+                        <div class="tab-pane fade show active" id="profile">
+                            <form method="POST" action="{{ route('profile.update') }}" enctype="multipart/form-data">
+                                @csrf
+                                @method('PUT')
 
-                        <!-- Upload avatar -->
-                        <div class="mb-3">
-                            <label for="avatar" class="form-label">Avatar</label>
-                            @if(auth()->user()->avatar)
-                                <div class="mb-2">
-                                    <img src="{{ Storage::url(auth()->user()->avatar) }}" alt="Current Avatar" class="rounded-circle" style="width: 100px; height: 100px; object-fit: cover;">
+                                <div class="mb-3">
+                                    <label for="avatar" class="form-label">Avatar</label>
+                                    <input type="file" class="form-control" id="avatar" name="avatar">
                                 </div>
+
+                                <div class="mb-3">
+                                    <label for="name" class="form-label">Họ tên</label>
+                                    <input type="text" class="form-control" id="name" name="name" value="{{ old('name', auth()->user()->name) }}" required>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="email" class="form-label">Email</label>
+                                    <input type="email" class="form-control" id="email" name="email" value="{{ old('email', auth()->user()->email) }}" required>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="phone" class="form-label">Số điện thoại</label>
+                                    <input type="tel" class="form-control" id="phone" name="phone" value="{{ old('phone', auth()->user()->phone) }}">
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="birthday" class="form-label">Ngày sinh</label>
+                                    <input type="date" class="form-control" id="birthday" name="birthday" value="{{ old('birthday', auth()->user()->birthday ? auth()->user()->birthday->format('Y-m-d') : '') }}">
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="bio" class="form-label">Giới thiệu bản thân</label>
+                                    <textarea class="form-control" id="bio" name="bio" rows="3">{{ old('bio', auth()->user()->bio) }}</textarea>
+                                </div>
+
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save me-2"></i>Lưu thay đổi
+                                </button>
+                            </form>
+                        </div>
+
+                        <!-- Tab người dùng đã chặn -->
+                        <div class="tab-pane fade" id="blocked">
+                            @if(auth()->user()->blockedUsers->count() > 0)
+                                <div class="list-group">
+                                    @foreach(auth()->user()->blockedUsers as $blockedUser)
+                                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                                            <div class="d-flex align-items-center">
+                                                <img src="{{ $blockedUser->avatar_url }}" 
+                                                     alt="{{ $blockedUser->name }}" 
+                                                     class="rounded-circle me-3"
+                                                     style="width: 40px; height: 40px; object-fit: cover;">
+                                                <div>
+                                                    <h6 class="mb-0">{{ $blockedUser->name }}</h6>
+                                                    <small class="text-muted">{{ $blockedUser->email }}</small>
+                                                </div>
+                                            </div>
+                                            <button class="btn btn-success btn-sm unblock-user" 
+                                                    data-user-id="{{ $blockedUser->id }}"
+                                                    data-user-name="{{ $blockedUser->name }}">
+                                                <i class="fas fa-unlock me-1"></i>
+                                                Bỏ chặn
+                                            </button>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            @else
+                                <p class="text-center text-muted my-4">Bạn chưa chặn người dùng nào.</p>
                             @endif
-                            <input type="file" class="form-control @error('avatar') is-invalid @enderror" 
-                                   id="avatar" name="avatar" accept="image/*">
-                            @error('avatar')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
                         </div>
-
-                        <!-- Họ tên -->
-                        <div class="mb-3">
-                            <label for="name" class="form-label">Họ tên</label>
-                            <input type="text" class="form-control @error('name') is-invalid @enderror" 
-                                   id="name" name="name" value="{{ old('name', $user->name) }}">
-                            @error('name')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
-
-                        <!-- Email -->
-                        <div class="mb-3">
-                            <label for="email" class="form-label">Email</label>
-                            <input type="email" class="form-control @error('email') is-invalid @enderror" 
-                                   id="email" name="email" value="{{ old('email', $user->email) }}">
-                            @error('email')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
-
-                        <!-- Số điện thoại -->
-                        <div class="mb-3">
-                            <label for="phone" class="form-label">Số điện thoại</label>
-                            <input type="text" class="form-control @error('phone') is-invalid @enderror" 
-                                   id="phone" name="phone" value="{{ old('phone', $user->phone) }}">
-                            @error('phone')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
-
-                        <!-- Ngày sinh -->
-                        <div class="mb-3">
-                            <label for="birthday" class="form-label">Ngày sinh</label>
-                            <input type="date" class="form-control @error('birthday') is-invalid @enderror" 
-                                   id="birthday" name="birthday" 
-                                   value="{{ old('birthday', $user->birthday?->format('Y-m-d')) }}">
-                            @error('birthday')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
-
-                        <!-- Giới thiệu bản thân -->
-                        <div class="mb-3">
-                            <label for="bio" class="form-label">Giới thiệu bản thân</label>
-                            <textarea class="form-control @error('bio') is-invalid @enderror" 
-                                      id="bio" name="bio" rows="3">{{ old('bio', $user->bio) }}</textarea>
-                            @error('bio')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
-
-                        <button type="submit" class="btn btn-primary">Cập nhật thông tin</button>
-                    </form>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+@push('scripts')
+<script>
+document.querySelectorAll('.unblock-user').forEach(button => {
+    button.addEventListener('click', function() {
+        const userId = this.dataset.userId;
+        const userName = this.dataset.userName;
+        
+        if (confirm(`Bạn có chắc chắn muốn bỏ chặn người dùng ${userName}?`)) {
+            fetch(`/users/${userId}/unblock`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Xóa phần tử khỏi danh sách
+                    this.closest('.list-group-item').remove();
+                    
+                    // Kiểm tra nếu không còn người dùng nào bị chặn
+                    if (document.querySelectorAll('.list-group-item').length === 0) {
+                        document.querySelector('#blocked').innerHTML = 
+                            '<p class="text-center text-muted my-4">Bạn chưa chặn người dùng nào.</p>';
+                    }
+                } else {
+                    alert(data.error || 'Có lỗi xảy ra');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Có lỗi xảy ra');
+            });
+        }
+    });
+});
+</script>
+@endpush
 @endsection
 
 @push('styles')

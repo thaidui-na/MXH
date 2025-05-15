@@ -237,4 +237,109 @@ class User extends Authenticatable
     {
         return $this->following()->where('following_id', $user->id)->exists();
     }
+
+    /**
+     * Định nghĩa quan hệ với những người dùng đã bị chặn bởi người dùng này
+     */
+    public function blockedUsers()
+    {
+        return $this->belongsToMany(User::class, 'user_blocks', 'blocker_id', 'blocked_id')
+                    ->withTimestamps();
+    }
+
+    /**
+     * Định nghĩa quan hệ với những người dùng đã chặn người dùng này
+     */
+    public function blockedByUsers()
+    {
+        return $this->belongsToMany(User::class, 'user_blocks', 'blocked_id', 'blocker_id')
+                    ->withTimestamps();
+    }
+
+    /**
+     * Kiểm tra xem người dùng hiện tại có chặn một người dùng khác không
+     */
+    public function hasBlocked($userId)
+    {
+        return $this->blockedUsers()->where('blocked_id', $userId)->exists();
+    }
+
+    /**
+     * Chặn một người dùng khác
+     */
+    public function block($userId)
+    {
+        if (!$this->hasBlocked($userId)) {
+            $this->blockedUsers()->attach($userId);
+        }
+    }
+
+    /**
+     * Bỏ chặn một người dùng
+     */
+    public function unblock($userId)
+    {
+        $this->blockedUsers()->detach($userId);
+    }
+
+    /**
+     * Định nghĩa quan hệ với những người dùng đã báo cáo người dùng này
+     */
+    public function reportedByUsers()
+    {
+        return $this->belongsToMany(User::class, 'user_reports', 'reported_id', 'reporter_id')
+                    ->withPivot('reason', 'is_resolved', 'admin_note')
+                    ->withTimestamps();
+    }
+
+    /**
+     * Định nghĩa quan hệ với những người dùng mà người dùng này đã báo cáo
+     */
+    public function reportedUsers()
+    {
+        return $this->belongsToMany(User::class, 'user_reports', 'reporter_id', 'reported_id')
+                    ->withPivot('reason', 'is_resolved', 'admin_note')
+                    ->withTimestamps();
+    }
+
+    /**
+     * Kiểm tra xem người dùng hiện tại đã báo cáo một người dùng khác chưa
+     */
+    public function hasReported($userId)
+    {
+        return $this->reportedUsers()->where('reported_id', $userId)->exists();
+    }
+
+    /**
+     * Báo cáo một người dùng
+     */
+    public function report($userId, $reason)
+    {
+        if (!$this->hasReported($userId)) {
+            $this->reportedUsers()->attach($userId, [
+                'reason' => $reason,
+                'is_resolved' => false
+            ]);
+        }
+    }
+
+    /**
+     * Hủy báo cáo một người dùng
+     */
+    public function unreport($userId)
+    {
+        $this->reportedUsers()->detach($userId);
+    }
+
+    /**
+     * Scope để loại bỏ những người dùng đã bị chặn khỏi kết quả tìm kiếm
+     */
+    public function scopeExcludeBlocked($query)
+    {
+        return $query->whereNotIn('id', function($subquery) {
+            $subquery->select('blocked_id')
+                    ->from('user_blocks')
+                    ->where('blocker_id', auth()->id());
+        });
+    }
 }

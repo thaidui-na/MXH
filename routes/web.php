@@ -113,6 +113,15 @@ Route::middleware('auth')->group(function () {
     Route::post('/users/{user}/add-friend', [UserController::class, 'addFriend'])->name('users.add-friend');
     Route::delete('/users/{user}/remove-friend', [UserController::class, 'removeFriend'])->name('users.remove-friend');
     Route::get('/users/{user}/friends', [UserController::class, 'friends'])->name('users.friends');
+
+    // Routes quản lý chặn người dùng
+    Route::post('/users/{user}/block', [UserController::class, 'block'])->name('users.block');
+    Route::delete('/users/{user}/unblock', [UserController::class, 'unblock'])->name('users.unblock');
+    Route::get('/users/blocked', [UserController::class, 'blocked'])->name('users.blocked');
+
+    // Routes quản lý báo cáo người dùng
+    Route::post('/users/{user}/report', [UserController::class, 'report'])->name('users.report');
+    Route::delete('/users/{user}/unreport', [UserController::class, 'unreport'])->name('users.unreport');
 });
 
 /**
