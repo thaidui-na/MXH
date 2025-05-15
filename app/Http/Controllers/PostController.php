@@ -6,6 +6,7 @@ use App\Models\Post;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Models\Report;
 
 /**
  * Controller quản lý các chức năng liên quan đến bài viết (Posts)
@@ -239,5 +240,22 @@ class PostController extends Controller
             'liked' => $liked,
             'likesCount' => $post->getLikesCount()
         ]);
+    }
+
+    public function report(Request $request, Post $post)
+    {
+        $reason = $request->input('reason');
+        if ($reason === 'other') {
+            $reason = $request->input('other_reason');
+        }
+        
+        // Lưu báo cáo vào database
+        Report::create([
+            'post_id' => $post->id,
+            'user_id' => auth()->id(),
+            'reason' => $reason
+        ]);
+        
+        return redirect()->back()->with('success', 'Cảm ơn bạn đã báo cáo. Chúng tôi sẽ xem xét nội dung này.');
     }
 } 

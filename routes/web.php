@@ -105,6 +105,15 @@ Route::middleware('auth')->group(function () {
     Route::post('/posts/{post}/comments', [CommentController::class, 'store'])->name('comments.store');
     Route::delete('/comments/{comment}', [CommentController::class, 'destroy'])->name('comments.destroy');
     Route::post('/comments/{comment}/reply', [CommentController::class, 'reply'])->name('comments.reply');
+
+    // Routes quản lý báo cáo bài viết
+    Route::post('/posts/{post}/report', [PostController::class, 'report'])->name('posts.report');
+
+    // Routes quản lý theo dõi người dùng
+    Route::post('/users/{user}/follow', [UserController::class, 'follow'])->name('users.follow');
+    Route::delete('/users/{user}/unfollow', [UserController::class, 'unfollow'])->name('users.unfollow');
+    Route::get('/users/{user}/followers', [UserController::class, 'followers'])->name('users.followers');
+    Route::get('/users/{user}/following', [UserController::class, 'following'])->name('users.following');
 });
 
 /**
