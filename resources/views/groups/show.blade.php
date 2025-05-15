@@ -137,8 +137,11 @@
                                                 <span class="like-count">{{ $post->likes()->count() }}</span>
                                             </button>
                                         </form>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary ms-2 comment-toggle" data-post-id="{{ $post->id }}">
+                                            <i class="fas fa-comment"></i> 
+                                            <span class="comment-count">{{ $post->comments()->count() }}</span>
+                                        </button>
                                         <div>
-                                           
                                             <form action="{{ route('group-posts.favorites.toggle', $post) }}" method="POST" class="d-inline">
                                                 @csrf
                                                 <button type="submit" class="btn btn-link {{ $post->isFavoritedBy(auth()->id()) ? 'text-danger' : 'text-muted' }} p-0">
@@ -146,6 +149,44 @@
                                                     {{ $post->isFavoritedBy(auth()->id()) ? 'Đã lưu' : 'Lưu bài viết' }}
                                                 </button>
                                             </form>
+                                        </div>
+                                    </div>
+
+                                    {{-- Phần bình luận --}}
+                                    <div class="comments-section mt-3" id="comments-{{ $post->id }}" style="display: none;">
+                                        {{-- Form thêm bình luận mới --}}
+                                        @if($group->members->where('user_id', auth()->id())->count() > 0)
+                                            <form class="comment-form mb-3" data-post-id="{{ $post->id }}">
+                                                @csrf
+                                                <div class="input-group">
+                                                    <input type="text" class="form-control comment-input" placeholder="Viết bình luận..." required>
+                                                    <button type="submit" class="btn btn-primary">
+                                                        <i class="fas fa-paper-plane"></i>
+                                                    </button>
+                                                </div>
+                                            </form>
+                                        @endif
+
+                                        {{-- Danh sách bình luận --}}
+                                        <div class="comments-list">
+                                            @foreach($post->comments()->with('user')->latest()->get() as $comment)
+                                                <div class="comment-item mb-2">
+                                                    <div class="d-flex">
+                                                        <img src="{{ $comment->user->avatar ? Storage::url($comment->user->avatar) : asset('images/default-avatar.jpg') }}" 
+                                                             class="rounded-circle me-2" 
+                                                             style="width: 32px; height: 32px; object-fit: cover;">
+                                                        <div class="flex-grow-1">
+                                                            <div class="bg-light rounded p-2">
+                                                                <div class="d-flex justify-content-between">
+                                                                    <strong>{{ $comment->user->name }}</strong>
+                                                                    <small class="text-muted">{{ $comment->created_at->diffForHumans() }}</small>
+                                                                </div>
+                                                                <p class="mb-1">{{ $comment->content }}</p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            @endforeach
                                         </div>
                                     </div>
                                 </div>
@@ -247,6 +288,82 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
     });
+
+    // Xử lý hiển thị/ẩn phần bình luận
+    document.querySelectorAll('.comment-toggle').forEach(button => {
+        button.addEventListener('click', function() {
+            const postId = this.dataset.postId;
+            const commentsSection = document.getElementById(`comments-${postId}`);
+            commentsSection.style.display = commentsSection.style.display === 'none' ? 'block' : 'none';
+        });
+    });
+
+    // Xử lý thêm bình luận mới
+    document.querySelectorAll('.comment-form').forEach(form => {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const postId = this.dataset.postId;
+            const input = this.querySelector('.comment-input');
+            const content = input.value.trim();
+            
+            if (!content) return;
+
+            const token = document.querySelector('meta[name="csrf-token"]').content;
+            
+            fetch(`/groups/posts/${postId}/comments`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': token,
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ content })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Thêm bình luận mới vào danh sách
+                    const commentsList = this.closest('.comments-section').querySelector('.comments-list');
+                    const newComment = createCommentElement(data.comment);
+                    commentsList.insertBefore(newComment, commentsList.firstChild);
+                    
+                    // Cập nhật số lượng bình luận
+                    const commentCount = document.querySelector(`.comment-toggle[data-post-id="${postId}"] .comment-count`);
+                    commentCount.textContent = parseInt(commentCount.textContent) + 1;
+                    
+                    // Xóa nội dung input
+                    input.value = '';
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Có lỗi xảy ra khi thêm bình luận');
+            });
+        });
+    });
+
+    // Hàm tạo element bình luận mới
+    function createCommentElement(comment) {
+        const div = document.createElement('div');
+        div.className = 'comment-item mb-2';
+        div.innerHTML = `
+            <div class="d-flex">
+                <img src="${comment.user.avatar || '/images/default-avatar.jpg'}" 
+                     class="rounded-circle me-2" 
+                     style="width: 32px; height: 32px; object-fit: cover;">
+                <div class="flex-grow-1">
+                    <div class="bg-light rounded p-2">
+                        <div class="d-flex justify-content-between">
+                            <strong>${comment.user.name}</strong>
+                            <small class="text-muted">Vừa xong</small>
+                        </div>
+                        <p class="mb-1">${comment.content}</p>
+                    </div>
+                </div>
+            </div>
+        `;
+        return div;
+    }
 });
 </script>
 @endpush 

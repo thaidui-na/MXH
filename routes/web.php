@@ -16,6 +16,7 @@ use App\Http\Controllers\GroupPostLikeController;
 use App\Http\Controllers\GroupPostController;
 use App\Http\Controllers\CommentController;
 use App\Http\Controllers\GroupPostFavoriteController;
+use App\Http\Controllers\GroupCommentController;
 
 // Route mặc định, hiển thị trang chào mừng
 Route::get('/', function () {
@@ -132,6 +133,9 @@ Route::middleware('auth')->group(function () {
 
     // Routes quản lý theo dõi người dùng
     Route::post('/users/{user}/follow', [UserController::class, 'follow'])->name('users.follow');
+
+    // Routes quản lý bình luận trong nhóm
+    Route::post('/groups/posts/{post}/comments', [GroupCommentController::class, 'store'])->name('groups.posts.comments.store');
 });
 
 /**
