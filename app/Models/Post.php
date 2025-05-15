@@ -99,4 +99,10 @@ class Post extends Model
     {
         return $this->likes()->count();
     }
+
+    // Thêm relationship với comments
+    public function comments()
+    {
+        return $this->hasMany(Comment::class);
+    }
 } 
