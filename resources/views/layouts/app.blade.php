@@ -31,6 +31,10 @@
         }
 
         /* Search Results Styles */
+        .hidden {
+            display: none !important;
+        }
+
         #searchResults {
             max-height: 400px;
             overflow-y: auto;
@@ -225,11 +229,12 @@
             }
 
             searchTimeout = setTimeout(() => {
-                fetch(`/users/search?query=${encodeURIComponent(query)}`, {
+                fetch(`/api/users/search?q=${encodeURIComponent(query)}`, {
                     method: 'GET',
                     headers: {
                         'X-Requested-With': 'XMLHttpRequest',
-                        'Accept': 'application/json'
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                     },
                     credentials: 'same-origin'
                 })

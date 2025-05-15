@@ -91,7 +91,7 @@ Route::middleware('auth')->group(function () {
     Route::post('groups/{group}/add-members', [GroupController::class, 'addMembers'])->name('groups.add-members');
 
     // API tìm kiếm
-    Route::get('/users/search', [UserController::class, 'searchAjax'])->name('users.search');
+    Route::get('/api/users/search', [App\Http\Controllers\Api\UserController::class, 'search'])->name('api.users.search');
     Route::get('/api/groups/search', [GroupController::class, 'searchAjax'])->name('groups.searchAjax');
 
     // Routes quản lý like/unlike group post
