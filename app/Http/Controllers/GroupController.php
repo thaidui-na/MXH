@@ -68,8 +68,14 @@ class GroupController extends Controller
 
     public function show(Group $group)
     {
-        $group->load(['members.user', 'posts.user']);
-        $posts = $group->posts()->with('user')->latest()->paginate(10);
+        $group->load(['members.user']);
+        
+        // Lấy bài viết và sắp xếp theo số lượt yêu thích
+        $posts = $group->posts()
+            ->with(['user', 'likes'])
+            ->orderByFavorites()
+            ->get();
+            
         return view('groups.show', compact('group', 'posts'));
     }
 

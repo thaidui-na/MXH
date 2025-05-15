@@ -105,4 +105,32 @@ class Post extends Model
     {
         return $this->hasMany(Comment::class);
     }
+
+    public function favorites()
+    {
+        return $this->hasMany(PostFavorite::class);
+    }
+
+    public function isFavoritedBy($userId)
+    {
+        return $this->favorites()->where('user_id', $userId)->exists();
+    }
+
+    public function scopeOrderByFavorites($query)
+    {
+        return $query->leftJoin('post_favorites', 'posts.id', '=', 'post_favorites.post_id')
+                    ->select('posts.*')
+                    ->selectRaw('COUNT(post_favorites.id) as favorites_count')
+                    ->groupBy(
+                        'posts.id',
+                        'posts.user_id',
+                        'posts.title',
+                        'posts.content',
+                        'posts.is_public',
+                        'posts.created_at',
+                        'posts.updated_at'
+                    )
+                    ->orderByDesc('favorites_count')
+                    ->orderByDesc('posts.created_at');
+    }
 } 

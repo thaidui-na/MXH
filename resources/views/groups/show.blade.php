@@ -128,9 +128,25 @@
                                         <img src="{{ Storage::url($post->image) }}" class="img-fluid rounded mb-3" alt="Post image">
                                     @endif
                                     <div class="post-actions mt-2">
-                                        <button class="btn btn-sm btn-outline-primary like-button" data-post-id="{{ $post->id }}" data-is-liked="{{ $post->isLikedBy(auth()->id()) ? 'true' : 'false' }}">
-                                            <i class="fas fa-heart"></i> <span class="like-count">{{ $post->likes()->count() }}</span>
-                                        </button>
+                                        <form class="d-inline like-form">
+                                            @csrf
+                                            <button type="button" class="btn btn-sm {{ $post->isLikedBy(auth()->id()) ? 'btn-primary' : 'btn-outline-primary' }} like-button" 
+                                                data-post-id="{{ $post->id }}" 
+                                                data-group-id="{{ $group->id }}">
+                                                <i class="fas fa-heart"></i> 
+                                                <span class="like-count">{{ $post->likes()->count() }}</span>
+                                            </button>
+                                        </form>
+                                        <div>
+                                           
+                                            <form action="{{ route('group-posts.favorites.toggle', $post) }}" method="POST" class="d-inline">
+                                                @csrf
+                                                <button type="submit" class="btn btn-link {{ $post->isFavoritedBy(auth()->id()) ? 'text-danger' : 'text-muted' }} p-0">
+                                                    <i class="{{ $post->isFavoritedBy(auth()->id()) ? 'fas' : 'far' }} fa-heart"></i>
+                                                    {{ $post->isFavoritedBy(auth()->id()) ? 'Đã lưu' : 'Lưu bài viết' }}
+                                                </button>
+                                            </form>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -172,33 +188,63 @@
 
 @push('scripts')
 <script>
-$(document).ready(function() {
-    $('.like-button').click(function() {
-        var button = $(this);
-        var postId = button.data('post-id');
-        var groupId = {{ $group->id }};
-        var isLiked = button.data('is-liked') === 'true';
+document.addEventListener('DOMContentLoaded', function() {
+    // Xử lý sự kiện click cho nút like
+    document.querySelectorAll('.like-button').forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            const postId = this.dataset.postId;
+            const groupId = this.dataset.groupId;
+            const token = document.querySelector('meta[name="csrf-token"]').content;
+            const button = this;
+            
+            console.log('Sending like request:', {
+                postId,
+                groupId,
+                token
+            });
 
-        $.ajax({
-            url: '/groups/' + groupId + '/posts/' + postId + '/like',
-            type: 'POST',
-            data: {
-                _token: '{{ csrf_token() }}'
-            },
-            success: function(response) {
-                if (response.success) {
-                    button.data('is-liked', response.isLiked);
-                    button.find('.like-count').text(response.likeCount);
-                    if (response.isLiked) {
-                        button.addClass('btn-primary').removeClass('btn-outline-primary');
-                    } else {
-                        button.addClass('btn-outline-primary').removeClass('btn-primary');
+            fetch(`/groups/${groupId}/posts/${postId}/like`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': token,
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                },
+                credentials: 'same-origin'
+            })
+            .then(response => {
+                console.log('Response status:', response.status);
+                return response.json().catch(() => {
+                    throw new Error('Invalid JSON response');
+                });
+            })
+            .then(data => {
+                console.log('Response data:', data);
+                if (data.success) {
+                    // Cập nhật số lượt like
+                    const likeCount = button.querySelector('.like-count');
+                    if (likeCount) {
+                        likeCount.textContent = data.likeCount;
                     }
+                    
+                    // Cập nhật trạng thái nút
+                    if (data.isLiked) {
+                        button.classList.remove('btn-outline-primary');
+                        button.classList.add('btn-primary');
+                    } else {
+                        button.classList.remove('btn-primary');
+                        button.classList.add('btn-outline-primary');
+                    }
+                } else if (data.error) {
+                    console.error('Server error:', data.error);
+                    alert(data.error);
                 }
-            },
-            error: function(xhr) {
-                alert('Có lỗi xảy ra khi thực hiện thao tác like.');
-            }
+            })
+            .catch(error => {
+                console.error('Error details:', error);
+                alert('Có lỗi xảy ra khi thực hiện thao tác like: ' + error.message);
+            });
         });
     });
 });
