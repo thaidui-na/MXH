@@ -199,4 +199,17 @@ class UserController extends Controller
             'message' => 'Đã hủy báo cáo người dùng thành công'
         ]);
     }
+
+    public function follow(User $user)
+    {
+        $follower = auth()->user();
+        
+        if ($follower->isFollowing($user)) {
+            $follower->unfollow($user);
+            return response()->json(['following' => false]);
+        }
+        
+        $follower->follow($user);
+        return response()->json(['following' => true]);
+    }
 }

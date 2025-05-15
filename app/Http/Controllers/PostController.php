@@ -44,14 +44,16 @@ class PostController extends Controller
      */
     public function myPosts()
     {
+        // Lấy người dùng đang đăng nhập
+        $user = auth()->user();
+        
         // Lấy các bài viết thuộc về người dùng đang đăng nhập
-        $posts = auth()->user() // Lấy đối tượng User đang đăng nhập
-                    ->posts() // Truy cập relationship 'posts' đã định nghĩa trong User model
+        $posts = $user->posts() // Truy cập relationship 'posts' đã định nghĩa trong User model
                     ->latest() // Sắp xếp theo thứ tự mới nhất lên đầu
                     ->paginate(10); // Phân trang kết quả, mỗi trang 10 bài viết
 
-        // Trả về view 'posts.my_posts' và truyền biến 'posts' vào view
-        return view('posts.my_posts', compact('posts'));
+        // Trả về view 'posts.my_posts' và truyền biến 'posts' và 'user' vào view
+        return view('posts.my_posts', compact('posts', 'user'));
     }
 
     /**
@@ -69,8 +71,8 @@ class PostController extends Controller
                     ->latest()
                     ->paginate(10);
 
-        // Trả về view 'posts.user_posts' và truyền biến 'posts' và 'user' vào view
-        return view('posts.user_posts', compact('posts', 'user'));
+        // Trả về view 'posts.my_posts' và truyền biến 'posts' và 'user' vào view
+        return view('posts.my_posts', compact('posts', 'user'));
     }
 
     /**
