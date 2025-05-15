@@ -129,6 +129,9 @@ Route::middleware('auth')->group(function () {
 
     // Routes cho yêu thích bài viết trong nhóm
     Route::post('group-posts/{post}/favorite', [GroupPostFavoriteController::class, 'toggle'])->name('group-posts.favorites.toggle');
+
+    // Routes quản lý theo dõi người dùng
+    Route::post('/users/{user}/follow', [UserController::class, 'follow'])->name('users.follow');
 });
 
 /**
