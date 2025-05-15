@@ -33,6 +33,22 @@
                             {{ $user->birthday->format('d/m/Y') }}
                         </p>
                     @endif
+
+                    {{-- Thêm các nút tương tác --}}
+                    @if(auth()->id() !== $user->id)
+                        <div class="mt-3">
+                            <button class="btn btn-sm {{ auth()->user()->isFollowing($user) ? 'btn-primary' : 'btn-outline-primary' }} friend-button"
+                                    data-user-id="{{ $user->id }}"
+                                    onclick="toggleFriend({{ $user->id }}, this)">
+                                <i class="fas fa-{{ auth()->user()->isFollowing($user) ? 'user-friends' : 'user-plus' }}"></i>
+                                {{ auth()->user()->isFollowing($user) ? 'Bạn bè' : 'Kết bạn' }}
+                            </button>
+
+                            <a href="{{ route('messages.show', $user->id) }}" class="btn btn-sm btn-outline-info ms-2">
+                                <i class="fas fa-comment"></i> Nhắn tin
+                            </a>
+                        </div>
+                    @endif
                 </div>
                 
                 {{-- Cột bên phải: Giới thiệu và thống kê --}}
@@ -116,6 +132,7 @@
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Xử lý nút like
     document.querySelectorAll('.like-button').forEach(button => {
         button.addEventListener('click', function() {
             const postId = this.dataset.postId;
@@ -131,23 +148,57 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (data.liked) {
                     this.classList.add('active');
                     this.querySelector('i').classList.add('text-danger');
-                    this.querySelector('i').classList.remove('text-muted');
                 } else {
                     this.classList.remove('active');
                     this.querySelector('i').classList.remove('text-danger');
-                    this.querySelector('i').classList.add('text-muted');
                 }
-                // Cập nhật số lượng like
-                const likeCount = this.querySelector('.like-count');
-                if (likeCount) {
-                    likeCount.textContent = data.likesCount;
-                }
+                this.querySelector('.like-count').textContent = data.likesCount;
             })
             .catch(error => {
                 console.error('Error:', error);
             });
         });
     });
+
+    // Xử lý nút kết bạn
+    function toggleFriend(userId, button) {
+        const isFriend = button.classList.contains('btn-primary');
+        const url = isFriend ? `/users/${userId}/remove-friend` : `/users/${userId}/add-friend`;
+        const method = isFriend ? 'DELETE' : 'POST';
+
+        fetch(url, {
+            method: method,
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'Accept': 'application/json'
+            },
+            credentials: 'same-origin'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                if (data.isFriend) {
+                    button.classList.remove('btn-outline-primary');
+                    button.classList.add('btn-primary');
+                    button.innerHTML = '<i class="fas fa-user-friends"></i> Bạn bè';
+                } else {
+                    button.classList.remove('btn-primary');
+                    button.classList.add('btn-outline-primary');
+                    button.innerHTML = '<i class="fas fa-user-plus"></i> Kết bạn';
+                }
+            } else {
+                alert(data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Có lỗi xảy ra khi thực hiện thao tác');
+        });
+    }
+
+    // Đăng ký hàm toggleFriend vào window để có thể gọi từ onclick
+    window.toggleFriend = toggleFriend;
 });
 </script>
 @endpush 

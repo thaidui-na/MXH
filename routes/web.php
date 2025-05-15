@@ -109,11 +109,10 @@ Route::middleware('auth')->group(function () {
     // Routes quản lý báo cáo bài viết
     Route::post('/posts/{post}/report', [PostController::class, 'report'])->name('posts.report');
 
-    // Routes quản lý theo dõi người dùng
-    Route::post('/users/{user}/follow', [UserController::class, 'follow'])->name('users.follow');
-    Route::delete('/users/{user}/unfollow', [UserController::class, 'unfollow'])->name('users.unfollow');
-    Route::get('/users/{user}/followers', [UserController::class, 'followers'])->name('users.followers');
-    Route::get('/users/{user}/following', [UserController::class, 'following'])->name('users.following');
+    // Routes quản lý kết bạn
+    Route::post('/users/{user}/add-friend', [UserController::class, 'addFriend'])->name('users.add-friend');
+    Route::delete('/users/{user}/remove-friend', [UserController::class, 'removeFriend'])->name('users.remove-friend');
+    Route::get('/users/{user}/friends', [UserController::class, 'friends'])->name('users.friends');
 });
 
 /**

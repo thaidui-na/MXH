@@ -260,10 +260,16 @@
                                      class="rounded-circle me-2"
                                      style="width: 40px; height: 40px; object-fit: cover;"
                                      onerror="this.src='/images/default-avatar.jpg'">
-                                <div>
+                                <div class="flex-grow-1">
                                     <div class="fw-bold text-dark">${user.name}</div>
                                     ${user.email ? `<div class="text-muted small">${user.email}</div>` : ''}
                                 </div>
+                                <button class="btn btn-sm ${user.isFriend ? 'btn-primary' : 'btn-outline-primary'} friend-button ms-2" 
+                                        data-user-id="${user.id}"
+                                        onclick="event.preventDefault(); toggleFriend(${user.id}, this);">
+                                    <i class="fas fa-${user.isFriend ? 'user-friends' : 'user-plus'}"></i> 
+                                    ${user.isFriend ? 'Bạn bè' : 'Kết bạn'}
+                                </button>
                             `;
                             searchResults.appendChild(userElement);
                         });
@@ -291,6 +297,43 @@
             }
         });
     });
+
+    // Follow/Unfollow functionality
+    function toggleFriend(userId, button) {
+        const isFriend = button.classList.contains('btn-primary');
+        const url = isFriend ? `/users/${userId}/remove-friend` : `/users/${userId}/add-friend`;
+        const method = isFriend ? 'DELETE' : 'POST';
+
+        fetch(url, {
+            method: method,
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'Accept': 'application/json'
+            },
+            credentials: 'same-origin'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                if (data.isFriend) {
+                    button.classList.remove('btn-outline-primary');
+                    button.classList.add('btn-primary');
+                    button.innerHTML = '<i class="fas fa-user-friends"></i> Bạn bè';
+                } else {
+                    button.classList.remove('btn-primary');
+                    button.classList.add('btn-outline-primary');
+                    button.innerHTML = '<i class="fas fa-user-plus"></i> Kết bạn';
+                }
+            } else {
+                alert(data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Có lỗi xảy ra khi thực hiện thao tác');
+        });
+    }
     </script>
 
     @stack('scripts')
