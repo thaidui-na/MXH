@@ -14,6 +14,7 @@ use App\Http\Controllers\GroupController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\GroupPostLikeController;
 use App\Http\Controllers\GroupPostController;
+use App\Http\Controllers\CommentController;
 
 // Route mặc định, hiển thị trang chào mừng
 Route::get('/', function () {
@@ -77,7 +78,7 @@ Route::middleware('auth')->group(function () {
 
     // Routes quản lý nhóm
     Route::resource('groups', GroupController::class);
-    Route::resource('groups.posts', GroupPostController::class);
+    // Route::resource('groups.posts', GroupPostController::class);
     Route::post('groups/{group}/join', [GroupController::class, 'join'])->name('groups.join');
     Route::post('groups/{group}/leave', [GroupController::class, 'leave'])->name('groups.leave');
     Route::post('groups/{group}/post', [GroupController::class, 'post'])->name('groups.post');
@@ -94,6 +95,15 @@ Route::middleware('auth')->group(function () {
 
     // Routes quản lý like/unlike group post
     Route::post('groups/{group}/posts/{groupPost}/like', [GroupPostLikeController::class, 'toggleLike'])->name('groups.posts.like');
+
+    // Routes quản lý comments
+    Route::resource('posts.comments', CommentController::class);
+
+    // Thêm route cho comments
+    Route::post('/posts/{post}/comments', [App\Http\Controllers\CommentController::class, 'store'])->name('comments.store');
+
+    // Thêm route trả lời bình luận
+    Route::post('/comments/{comment}/replies', [CommentController::class, 'storeReply'])->name('comments.replies.store');
 });
 
 /**
@@ -136,3 +146,6 @@ Route::middleware(['web', 'auth', \App\Http\Middleware\AdminMiddleware::class])-
     Route::put('/posts/{id}', [AdminController::class, 'updatePost'])->name('admin.posts.update'); // Cập nhật post
     Route::delete('/posts/{id}', [AdminController::class, 'deletePost'])->name('admin.posts.delete'); // Xóa post
 });
+
+Route::delete('/comments/{comment}', [CommentController::class, 'destroy'])->name('comments.destroy');
+Route::put('/comments/{comment}', [CommentController::class, 'update'])->name('comments.update');

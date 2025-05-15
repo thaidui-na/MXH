@@ -10,8 +10,8 @@ return new class extends Migration
     {
         Schema::create('group_comments', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('group_post_id')->constrained('group_posts')->onDelete('cascade');
-            $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
+            $table->unsignedBigInteger('group_post_id');
+            $table->unsignedBigInteger('user_id');
             $table->text('content');
             $table->timestamps();
         });

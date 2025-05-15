@@ -53,30 +53,6 @@
                                 <h3 class="mb-0">{{ auth()->user()->posts()->count() }}</h3>
                                 <p class="text-muted mb-0">Tổng bài viết</p>
                             </div>
-<p class="card-text text-muted small">
-    Đăng ngày {{ $post->created_at->format('d/m/Y H:i') }}
-</p>
-<p class="card-text">{{ Str::limit($post->content, 200) }}</p>
-<div class="d-flex justify-content-end">
-    <a href="{{ route('posts.show', $post) }}" class="btn btn-sm btn-info me-2">
-        <i class="fas fa-eye"></i> Xem
-    </a>
-    <a href="{{ route('comments.index', $post->id) }}" class="btn btn-sm btn-secondary me-2">
-        <i class="fas fa-comments"></i> Bình luận
-    </a>
-    <a href="{{ route('posts.edit', $post) }}" class="btn btn-sm btn-warning me-2">
-        <i class="fas fa-edit"></i> Sửa
-    </a>
-    <form action="{{ route('posts.destroy', $post) }}" method="POST" 
-          onsubmit="return confirm('Bạn có chắc chắn muốn xóa bài viết này?');">
-        @csrf
-        @method('DELETE')
-        <button type="submit" class="btn btn-sm btn-danger">
-            <i class="fas fa-trash"></i> Xóa
-        </button>
-    </form>
-</div>
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -137,13 +113,17 @@
                                             <i class="fas fa-heart {{ $post->isLikedBy(auth()->id()) ? 'text-danger' : '' }}"></i>
                                             <span class="like-count">{{ $post->getLikesCount() }}</span>
                                         </button>
-                                        <a href="{{ route('posts.show', $post) }}" class="btn btn-sm btn-info ms-2">
+                                        <a href="{{ route('posts.show', $post) }}" class="btn btn-sm btn-info me-2">
                                             <i class="fas fa-eye"></i> Xem
                                         </a>
-                                        <a href="{{ route('posts.edit', $post) }}" class="btn btn-sm btn-warning ms-2">
+                                        <a href="{{ route('posts.comments.index', ['post' => $post->id]) }}" class="btn btn-sm btn-secondary me-2">
+                                            <i class="fas fa-comments"></i> Bình luận
+                                        </a>
+                                        <a href="{{ route('posts.edit', $post) }}" class="btn btn-sm btn-warning me-2">
                                             <i class="fas fa-edit"></i> Sửa
                                         </a>
-                                        <form action="{{ route('posts.destroy', $post) }}" method="POST" onsubmit="return confirm('Bạn có chắc chắn muốn xóa bài viết này?');">
+                                        <form action="{{ route('posts.destroy', $post) }}" method="POST" 
+                                              onsubmit="return confirm('Bạn có chắc chắn muốn xóa bài viết này?');">
                                             @csrf
                                             @method('DELETE')
                                             <button type="submit" class="btn btn-sm btn-danger">
