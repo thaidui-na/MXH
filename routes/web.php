@@ -14,6 +14,7 @@ use App\Http\Controllers\GroupController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\GroupPostLikeController;
 use App\Http\Controllers\GroupPostController;
+use App\Http\Controllers\CommentController;
 
 // Route mặc định, hiển thị trang chào mừng
 Route::get('/', function () {
@@ -98,6 +99,12 @@ Route::middleware('auth')->group(function () {
 
     // Routes quản lý like post
     Route::post('/posts/{post}/like', [PostController::class, 'like'])->name('posts.like');
+
+    // Routes quản lý bình luận
+    Route::get('/posts/{post}/comments', [CommentController::class, 'index'])->name('comments.index');
+    Route::post('/posts/{post}/comments', [CommentController::class, 'store'])->name('comments.store');
+    Route::delete('/comments/{comment}', [CommentController::class, 'destroy'])->name('comments.destroy');
+    Route::post('/comments/{comment}/reply', [CommentController::class, 'reply'])->name('comments.reply');
 });
 
 /**
