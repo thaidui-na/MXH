@@ -48,7 +48,17 @@ class GroupPost extends Model
 
     public function likes()
     {
-        return $this->hasMany(GroupPostLike::class, 'group_post_id');
+        return $this->belongsToMany(User::class, 'group_post_likes', 'group_post_id', 'user_id');
+    }
+
+    public function favorites()
+    {
+        return $this->belongsToMany(User::class, 'group_post_favorites', 'group_post_id', 'user_id');
+    }
+
+    public function comments()
+    {
+        return $this->hasMany(GroupComment::class, 'post_id');
     }
 
     public function isLikedBy($userId)
@@ -56,14 +66,14 @@ class GroupPost extends Model
         return $this->likes()->where('user_id', $userId)->exists();
     }
 
-    public function favorites()
-    {
-        return $this->hasMany(GroupPostFavorite::class, 'group_post_id');
-    }
-
     public function isFavoritedBy($userId)
     {
         return $this->favorites()->where('user_id', $userId)->exists();
+    }
+
+    public function getLikesCount()
+    {
+        return $this->likes()->count();
     }
 
     public function scopeOrderByFavorites($query)
