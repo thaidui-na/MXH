@@ -53,30 +53,6 @@
                                 <h3 class="mb-0">{{ auth()->user()->posts()->count() }}</h3>
                                 <p class="text-muted mb-0">Tổng bài viết</p>
                             </div>
-<p class="card-text text-muted small">
-    Đăng ngày {{ $post->created_at->format('d/m/Y H:i') }}
-</p>
-<p class="card-text">{{ Str::limit($post->content, 200) }}</p>
-<div class="d-flex justify-content-end">
-    <a href="{{ route('posts.show', $post) }}" class="btn btn-sm btn-info me-2">
-        <i class="fas fa-eye"></i> Xem
-    </a>
-    <a href="{{ route('comments.index', $post->id) }}" class="btn btn-sm btn-secondary me-2">
-        <i class="fas fa-comments"></i> Bình luận
-    </a>
-    <a href="{{ route('posts.edit', $post) }}" class="btn btn-sm btn-warning me-2">
-        <i class="fas fa-edit"></i> Sửa
-    </a>
-    <form action="{{ route('posts.destroy', $post) }}" method="POST" 
-          onsubmit="return confirm('Bạn có chắc chắn muốn xóa bài viết này?');">
-        @csrf
-        @method('DELETE')
-        <button type="submit" class="btn btn-sm btn-danger">
-            <i class="fas fa-trash"></i> Xóa
-        </button>
-    </form>
-</div>
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -167,12 +143,21 @@
         </div>
         {{-- Tab Nhóm --}}
         <div class="tab-pane fade" id="groups-pane" role="tabpanel" aria-labelledby="groups-tab">
-            <form method="GET" action="{{ route('posts.my_posts') }}" class="mb-4">
+            <div class="search-container position-relative mb-4">
                 <div class="input-group">
-                    <input type="text" name="q" class="form-control" placeholder="Tìm kiếm nhóm..." value="{{ request('q') }}">
-                    <button class="btn btn-outline-secondary" type="submit"><i class="fas fa-search"></i> Tìm kiếm</button>
+                    <input type="text" 
+                           name="q" 
+                           class="form-control" 
+                           id="groupSearchInput"
+                           placeholder="Tìm kiếm nhóm..." 
+                           value="{{ request('q') }}"
+                           autocomplete="off">
+                    <button class="btn btn-outline-secondary" type="button">
+                        <i class="fas fa-search"></i> Tìm kiếm
+                    </button>
                 </div>
-            </form>
+                <div id="groupSearchResults" class="autocomplete-results position-absolute w-100 mt-1 d-none"></div>
+            </div>
             @php
                 $q = request('q');
                 $groups = \App\Models\Group::withCount('members')->with(['members'])
@@ -247,89 +232,155 @@
     .stats-item:hover {
         background-color: #e9ecef;
     }
+    .search-container {
+        z-index: 1000;
+    }
+    .autocomplete-results {
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        max-height: 300px;
+        overflow-y: auto;
+    }
+    .autocomplete-results .list-group-item {
+        border-left: none;
+        border-right: none;
+        cursor: pointer;
+    }
+    .autocomplete-results .list-group-item:first-child {
+        border-top: none;
+    }
+    .autocomplete-results .list-group-item:last-child {
+        border-bottom: none;
+    }
 </style>
 @endpush
 
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const input = document.querySelector('input[name="q"]');
-    const autocompleteBox = document.createElement('div');
-    autocompleteBox.className = 'autocomplete-group-list list-group position-absolute w-100';
-    autocompleteBox.style.zIndex = 1000;
-    input.parentNode.appendChild(autocompleteBox);
-    let timer;
-    input.addEventListener('input', function() {
-        clearTimeout(timer);
-        const q = this.value.trim();
-        if (q.length < 2) {
-            autocompleteBox.innerHTML = '';
-            autocompleteBox.style.display = 'none';
-            return;
-        }
-        timer = setTimeout(() => {
-            fetch('/api/groups/search?q=' + encodeURIComponent(q))
-                .then(res => res.json())
-                .then(groups => {
-                    if (groups.length === 0) {
-                        autocompleteBox.innerHTML = '<div class="list-group-item">Không tìm thấy nhóm nào</div>';
-                        autocompleteBox.style.display = 'block';
-                        return;
+    const searchInput = document.getElementById('groupSearchInput');
+    const searchResults = document.getElementById('groupSearchResults');
+    let searchTimeout;
+
+    if (searchInput && searchResults) {
+        searchInput.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            const query = this.value.trim();
+
+            if (query.length < 2) {
+                searchResults.innerHTML = '';
+                searchResults.classList.add('d-none');
+                return;
+            }
+
+            searchTimeout = setTimeout(() => {
+                fetch(`/api/groups/search?q=${encodeURIComponent(query)}`, {
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json'
                     }
-                    autocompleteBox.innerHTML = groups.map(group => `
-                        <a href="/groups/${group.id}" class="list-group-item list-group-item-action d-flex align-items-center">
-                            <img src="${group.avatar ? '/storage/' + group.avatar : '/images/default-avatar.jpg'}" class="rounded-circle me-2" style="width:32px;height:32px;object-fit:cover;">
-                            <span>${group.name}</span>
-                        </a>
-                    `).join('');
-                    autocompleteBox.style.display = 'block';
+                })
+                .then(response => response.json())
+                .then(data => {
+                    searchResults.innerHTML = '';
+                    
+                    if (data.length === 0) {
+                        searchResults.innerHTML = `
+                            <div class="list-group-item text-center text-muted">
+                                Không tìm thấy nhóm nào
+                            </div>`;
+                    } else {
+                        data.forEach(group => {
+                            const item = document.createElement('a');
+                            item.href = `/groups/${group.id}`;
+                            item.className = 'list-group-item list-group-item-action';
+                            item.innerHTML = `
+                                <div class="d-flex align-items-center">
+                                    <img src="${group.avatar || '/images/default-avatar.jpg'}" 
+                                         class="rounded-circle me-2" 
+                                         style="width: 32px; height: 32px; object-fit: cover;">
+                                    <div>
+                                        <div class="fw-bold">${group.name}</div>
+                                        <small class="text-muted">${group.members_count || 0} thành viên</small>
+                                    </div>
+                                </div>`;
+                            searchResults.appendChild(item);
+                        });
+                    }
+                    searchResults.classList.remove('d-none');
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    searchResults.innerHTML = `
+                        <div class="list-group-item text-center text-danger">
+                            Đã có lỗi xảy ra khi tìm kiếm
+                        </div>`;
+                    searchResults.classList.remove('d-none');
                 });
-        }, 200);
-    });
-    // Ẩn autocomplete khi click ra ngoài
-    document.addEventListener('click', function(e) {
-        if (!autocompleteBox.contains(e.target) && e.target !== input) {
-            autocompleteBox.style.display = 'none';
-        }
-    });
-    // Hiển thị lại khi focus vào input nếu có dữ liệu
-    input.addEventListener('focus', function() {
-        if (autocompleteBox.innerHTML.trim() !== '') {
-            autocompleteBox.style.display = 'block';
-        }
-    });
+            }, 300);
+        });
+
+        // Ẩn kết quả khi click ra ngoài
+        document.addEventListener('click', function(e) {
+            if (!searchInput.contains(e.target) && !searchResults.contains(e.target)) {
+                searchResults.classList.add('d-none');
+            }
+        });
+
+        // Hiện lại kết quả khi focus vào input
+        searchInput.addEventListener('focus', function() {
+            if (this.value.trim().length >= 2) {
+                searchResults.classList.remove('d-none');
+            }
+        });
+    }
 });
 
 document.addEventListener('DOMContentLoaded', function() {
+    // Xử lý sự kiện like
     document.querySelectorAll('.like-button').forEach(button => {
         button.addEventListener('click', function() {
             const postId = this.dataset.postId;
+            const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+            
             fetch(`/posts/${postId}/like`, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                }
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                },
+                credentials: 'same-origin'
             })
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
             .then(data => {
+                const heartIcon = this.querySelector('i');
+                const likeCount = this.querySelector('.like-count');
+                
                 if (data.liked) {
                     this.classList.add('active');
-                    this.querySelector('i').classList.add('text-danger');
-                    this.querySelector('i').classList.remove('text-muted');
+                    heartIcon.classList.add('text-danger');
+                    heartIcon.classList.remove('text-muted');
                 } else {
                     this.classList.remove('active');
-                    this.querySelector('i').classList.remove('text-danger');
-                    this.querySelector('i').classList.add('text-muted');
+                    heartIcon.classList.remove('text-danger');
+                    heartIcon.classList.add('text-muted');
                 }
-                // Cập nhật số lượng like
-                const likeCount = this.querySelector('.like-count');
+                
                 if (likeCount) {
                     likeCount.textContent = data.likesCount;
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
+                alert('Có lỗi xảy ra khi thực hiện thao tác like');
             });
         });
     });

@@ -35,7 +35,12 @@
             @auth
             <div class="search-container mx-auto">
                 <div class="input-group">
-                    <input type="text" class="form-control" id="searchInput" placeholder="Tìm kiếm người dùng..." aria-label="Tìm kiếm">
+                    <input type="text" 
+                           class="form-control" 
+                           id="searchInput" 
+                           placeholder="Tìm kiếm người dùng..." 
+                           aria-label="Tìm kiếm"
+                           autocomplete="off">
                     <button class="btn btn-outline-primary" type="button">
                         <i class="fas fa-search"></i>
                     </button>
