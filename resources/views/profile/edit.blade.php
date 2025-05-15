@@ -122,12 +122,14 @@
 
 @push('scripts')
 <script>
-document.querySelectorAll('.unblock-user').forEach(button => {
-    button.addEventListener('click', function() {
-        const userId = this.dataset.userId;
-        const userName = this.dataset.userName;
-        
-        if (confirm(`Bạn có chắc chắn muốn bỏ chặn người dùng ${userName}?`)) {
+document.addEventListener('DOMContentLoaded', function() {
+    // Xử lý form bỏ chặn người dùng
+    document.querySelectorAll('.unblock-user').forEach(button => {
+        button.addEventListener('click', function() {
+            const userId = this.dataset.userId;
+            const userName = this.dataset.userName;
+            const userElement = this.closest('.list-group-item');
+
             fetch(`/users/${userId}/unblock`, {
                 method: 'DELETE',
                 headers: {
@@ -138,28 +140,32 @@ document.querySelectorAll('.unblock-user').forEach(button => {
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    // Xóa phần tử khỏi danh sách
-                    this.closest('.list-group-item').remove();
-                    
-                    // Kiểm tra nếu không còn người dùng nào bị chặn
-                    if (document.querySelectorAll('.list-group-item').length === 0) {
-                        document.querySelector('#blocked').innerHTML = 
-                            '<p class="text-center text-muted my-4">Bạn chưa chặn người dùng nào.</p>';
-                    }
-                } else {
-                    alert(data.error || 'Có lỗi xảy ra');
+                    // Xóa phần tử người dùng khỏi danh sách với hiệu ứng fade out
+                    userElement.style.transition = 'opacity 0.3s ease';
+                    userElement.style.opacity = '0';
+                    setTimeout(() => {
+                        userElement.remove();
+                        // Kiểm tra nếu không còn người dùng nào bị chặn
+                        if (document.querySelectorAll('#blocked .list-group-item').length === 0) {
+                            document.querySelector('#blocked').innerHTML = `
+                                <div class="text-center py-4">
+                                    <i class="fas fa-user-slash fa-3x text-muted mb-3"></i>
+                                    <p class="text-muted">Bạn chưa chặn người dùng nào.</p>
+                                </div>
+                            `;
+                        }
+                    }, 300);
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                alert('Có lỗi xảy ra');
+                alert('Có lỗi xảy ra khi bỏ chặn người dùng. Vui lòng thử lại.');
             });
-        }
+        });
     });
 });
 </script>
 @endpush
-@endsection
 
 @push('styles')
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
@@ -173,6 +179,19 @@ document.querySelectorAll('.unblock-user').forEach(button => {
     }
     .profile-info p {
         font-size: 1rem;
+    }
+    .list-group-item {
+        transition: all 0.3s ease;
+    }
+    .list-group-item:hover {
+        background-color: #f8f9fa;
+    }
+    .unblock-user {
+        transition: all 0.2s ease;
+    }
+    .unblock-user:hover {
+        background-color: #28a745;
+        color: white;
     }
 </style>
 @endpush 
