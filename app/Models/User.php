@@ -74,7 +74,10 @@ class User extends Authenticatable
      */
     public function getAvatarUrlAttribute()
     {
-        return $this->avatar ? Storage::url($this->avatar) : asset('images/default-avatar.jpg');
+        if ($this->avatar && Storage::disk('public')->exists($this->avatar)) {
+            return Storage::url($this->avatar);
+        }
+        return asset('stickers/avatar_icon.png');
     }
 
     /**
