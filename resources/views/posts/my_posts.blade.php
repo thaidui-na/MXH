@@ -53,8 +53,15 @@
                     @endif
                 </div>
                 
-                {{-- Cột bên phải: Giới thiệu và thống kê --}}
+                {{-- Cột bên phải: Ngày tham gia + 3 chấm + giới thiệu + thống kê --}}
                 <div class="col-md-9">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <h3 class="mb-0">{{ $user->created_at->format('d/m/Y') }}</h3>
+                            <p class="text-muted mb-0">Ngày tham gia</p>
+                        </div>
+                        @include('components.user-actions-menu', ['user' => $user])
+                    </div>
                     {{-- Phần giới thiệu nếu có --}}
                     @if($user->bio)
                         <div class="mb-4">
@@ -143,8 +150,52 @@
                         <div class="col-md-12 mb-3">
                             <div class="card">
                                 <div class="card-body">
-                                    <div class="d-flex justify-content-between">
-                                        <h5 class="card-title">{{ $post->title }}</h5>
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <h5 class="card-title mb-0">{{ $post->title }}</h5>
+                                        <div class="dropdown">
+                                            <button class="btn btn-link text-dark p-0" type="button" id="dropdownMenuButton{{ $post->id }}" data-bs-toggle="dropdown" aria-expanded="false">
+                                                <i class="fas fa-ellipsis-v fa-lg"></i>
+                                            </button>
+                                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdownMenuButton{{ $post->id }}">
+                                                <li>
+                                                    <a class="dropdown-item" href="{{ route('posts.show', $post) }}">
+                                                        <i class="fas fa-eye me-2"></i> Xem
+                                                    </a>
+                                                </li>
+                                                @if($post->user_id === auth()->id())
+                                                    <li>
+                                                        <a class="dropdown-item" href="{{ route('posts.edit', $post) }}">
+                                                            <i class="fas fa-edit me-2"></i> Chỉnh sửa
+                                                        </a>
+                                                    </li>
+                                                    <li>
+                                                        <form action="{{ route('posts.destroy', $post) }}" method="POST" onsubmit="return confirm('Bạn có chắc chắn muốn xóa bài viết này?');">
+                                                            @csrf
+                                                            @method('DELETE')
+                                                            <button type="submit" class="dropdown-item text-danger">
+                                                                <i class="fas fa-trash me-2"></i> Xóa bài viết
+                                                            </button>
+                                                        </form>
+                                                    </li>
+                                                @else
+                                                    <li>
+                                                        <button class="dropdown-item text-danger report-post" 
+                                                                data-post-id="{{ $post->id }}"
+                                                                data-post-title="{{ $post->title }}">
+                                                            <i class="fas fa-flag me-2"></i> Báo cáo bài viết
+                                                        </button>
+                                                    </li>
+                                                    <li>
+                                                        <button class="dropdown-item {{ auth()->user()->hasBlocked($post->user_id) ? 'text-success unblock-user' : 'text-danger block-user' }}"
+                                                                data-user-id="{{ $post->user_id }}"
+                                                                data-user-name="{{ $post->user->name }}">
+                                                            <i class="fas {{ auth()->user()->hasBlocked($post->user_id) ? 'fa-unlock me-2' : 'fa-ban me-2' }}"></i>
+                                                            {{ auth()->user()->hasBlocked($post->user_id) ? 'Bỏ chặn người dùng' : 'Chặn người dùng' }}
+                                                        </button>
+                                                    </li>
+                                                @endif
+                                            </ul>
+                                        </div>
                                     </div>
                                     <p class="card-text text-muted small">
                                         Đăng ngày {{ $post->created_at->format('d/m/Y H:i') }}
@@ -156,19 +207,6 @@
                                             <i class="fas fa-heart {{ $post->isLikedBy(auth()->id()) ? 'text-danger' : '' }}"></i>
                                             <span class="like-count">{{ $post->getLikesCount() }}</span>
                                         </button>
-                                        <a href="{{ route('posts.show', $post) }}" class="btn btn-sm btn-info ms-2">
-                                            <i class="fas fa-eye"></i> Xem
-                                        </a>
-                                        <a href="{{ route('posts.edit', $post) }}" class="btn btn-sm btn-warning ms-2">
-                                            <i class="fas fa-edit"></i> Sửa
-                                        </a>
-                                        <form action="{{ route('posts.destroy', $post) }}" method="POST" onsubmit="return confirm('Bạn có chắc chắn muốn xóa bài viết này?');">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="btn btn-sm btn-danger">
-                                                <i class="fas fa-trash"></i> Xóa
-                                            </button>
-                                        </form>
                                     </div>
                                 </div>
                             </div>
@@ -536,6 +574,229 @@ document.addEventListener('DOMContentLoaded', function() {
             .catch(error => {
                 console.error('Error:', error);
                 alert('Có lỗi xảy ra khi thực hiện thao tác theo dõi');
+            });
+        });
+    });
+
+    // Xử lý sự kiện báo cáo bài viết
+    document.querySelectorAll('.report-post').forEach(button => {
+        button.addEventListener('click', function() {
+            const postId = this.dataset.postId;
+            const postTitle = this.dataset.postTitle;
+            
+            // Tạo modal báo cáo động
+            const modalHtml = `
+                <div class="modal fade" id="reportModal-${postId}" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Báo cáo bài viết</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+                            </div>
+                            <form action="/posts/${postId}/report" method="POST">
+                                @csrf
+                                <div class="modal-body">
+                                    <p>Bạn đang báo cáo bài viết: <strong>${postTitle}</strong></p>
+                                    <div class="mb-3">
+                                        <label class="form-label">Lý do báo cáo:</label>
+                                        <div class="form-check mb-2">
+                                            <input class="form-check-input" type="radio" name="reason" id="reason1-${postId}" value="Nội dung không phù hợp" required>
+                                            <label class="form-check-label" for="reason1-${postId}">
+                                                Nội dung không phù hợp
+                                            </label>
+                                        </div>
+                                        <div class="form-check mb-2">
+                                            <input class="form-check-input" type="radio" name="reason" id="reason2-${postId}" value="Spam" required>
+                                            <label class="form-check-label" for="reason2-${postId}">
+                                                Spam
+                                            </label>
+                                        </div>
+                                        <div class="form-check mb-2">
+                                            <input class="form-check-input" type="radio" name="reason" id="reason3-${postId}" value="Vi phạm bản quyền" required>
+                                            <label class="form-check-label" for="reason3-${postId}">
+                                                Vi phạm bản quyền
+                                            </label>
+                                        </div>
+                                        <div class="form-check mb-2">
+                                            <input class="form-check-input" type="radio" name="reason" id="reason4-${postId}" value="Quấy rối" required>
+                                            <label class="form-check-label" for="reason4-${postId}">
+                                                Quấy rối
+                                            </label>
+                                        </div>
+                                        <div class="form-check mb-2">
+                                            <input class="form-check-input" type="radio" name="reason" id="reason5-${postId}" value="Bạo lực" required>
+                                            <label class="form-check-label" for="reason5-${postId}">
+                                                Bạo lực
+                                            </label>
+                                        </div>
+                                        <div class="form-check mb-2">
+                                            <input class="form-check-input" type="radio" name="reason" id="reason6-${postId}" value="other" required>
+                                            <label class="form-check-label" for="reason6-${postId}">
+                                                Lý do khác
+                                            </label>
+                                        </div>
+                                        <div class="mt-2 d-none" id="otherReasonContainer-${postId}">
+                                            <textarea class="form-control" name="other_reason" rows="2" placeholder="Vui lòng mô tả lý do báo cáo..."></textarea>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                                    <button type="submit" class="btn btn-danger">Gửi báo cáo</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Thêm modal vào body
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+            
+            // Hiển thị modal
+            const modal = new bootstrap.Modal(document.getElementById(`reportModal-${postId}`));
+            modal.show();
+            
+            // Xử lý hiển thị/ẩn textarea lý do khác
+            const otherRadio = document.getElementById(`reason6-${postId}`);
+            const otherReasonContainer = document.getElementById(`otherReasonContainer-${postId}`);
+            
+            document.querySelectorAll(`#reportModal-${postId} input[name="reason"]`).forEach(radio => {
+                radio.addEventListener('change', function() {
+                    if (this.value === 'other') {
+                        otherReasonContainer.classList.remove('d-none');
+                    } else {
+                        otherReasonContainer.classList.add('d-none');
+                    }
+                });
+            });
+            
+            // Xóa modal khi đóng
+            document.getElementById(`reportModal-${postId}`).addEventListener('hidden.bs.modal', function() {
+                this.remove();
+            });
+        });
+    });
+
+    // Xử lý sự kiện chặn người dùng
+    document.querySelectorAll('.block-user').forEach(button => {
+        button.addEventListener('click', function() {
+            const userId = this.dataset.userId;
+            const userName = this.dataset.userName;
+            
+            if (confirm(`Bạn có chắc chắn muốn chặn người dùng ${userName}? Người dùng này sẽ không thể tương tác với bạn nữa.`)) {
+                fetch(`/users/${userId}/block`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('Đã chặn người dùng thành công');
+                        location.reload();
+                    } else {
+                        alert(data.error || 'Có lỗi xảy ra khi chặn người dùng');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Có lỗi xảy ra khi chặn người dùng');
+                });
+            }
+        });
+    });
+
+    // Xử lý sự kiện bỏ chặn người dùng
+    document.querySelectorAll('.unblock-user').forEach(button => {
+        button.addEventListener('click', function() {
+            const userId = this.dataset.userId;
+            const userName = this.dataset.userName;
+            
+            if (confirm(`Bạn có chắc chắn muốn bỏ chặn người dùng ${userName}?`)) {
+                fetch(`/users/${userId}/unblock`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('Đã bỏ chặn người dùng thành công');
+                        location.reload();
+                    } else {
+                        alert(data.error || 'Có lỗi xảy ra khi bỏ chặn người dùng');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Có lỗi xảy ra khi bỏ chặn người dùng');
+                });
+            }
+        });
+    });
+
+    // Xử lý sự kiện báo cáo
+    document.querySelectorAll('.report-user').forEach(button => {
+        button.addEventListener('click', function() {
+            const userId = this.dataset.userId;
+            const modal = new bootstrap.Modal(document.getElementById(`reportModal-${userId}`));
+            modal.show();
+
+            // Hiện/ẩn textarea khi chọn "Lý do khác"
+            const otherRadio = document.getElementById(`reason5-${userId}`);
+            const otherReasonContainer = document.getElementById(`otherReasonContainer-${userId}`);
+            document.querySelectorAll(`input[name=\"reason-${userId}\"]`).forEach(radio => {
+                radio.addEventListener('change', function() {
+                    if (otherRadio.checked) {
+                        otherReasonContainer.classList.remove('d-none');
+                    } else {
+                        otherReasonContainer.classList.add('d-none');
+                    }
+                });
+            });
+        });
+    });
+
+    // Xử lý sự kiện gửi báo cáo
+    document.querySelectorAll('.submit-report').forEach(button => {
+        button.addEventListener('click', function() {
+            const userId = this.dataset.userId;
+            const selectedReason = document.querySelector(`input[name=\"reason-${userId}\"]:checked`);
+            let reason = '';
+            if (selectedReason) {
+                reason = selectedReason.value === 'other'
+                    ? document.querySelector(`#otherReasonContainer-${userId} textarea`).value.trim()
+                    : selectedReason.value;
+            }
+            if (!reason) {
+                alert('Vui lòng chọn và nhập lý do báo cáo');
+                return;
+            }
+            fetch(`/users/${userId}/report`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name=\"csrf-token\"]').content
+                },
+                body: JSON.stringify({ reason: reason })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    bootstrap.Modal.getInstance(document.getElementById(`reportModal-${userId}`)).hide();
+                    alert('Đã gửi báo cáo thành công');
+                } else {
+                    alert(data.error || 'Có lỗi xảy ra');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Có lỗi xảy ra');
             });
         });
     });

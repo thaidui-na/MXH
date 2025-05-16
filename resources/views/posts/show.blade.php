@@ -77,31 +77,43 @@
                     <div class="mb-3">
                         <label class="form-label">Lý do báo cáo:</label>
                         <div class="form-check mb-2">
-                            <input class="form-check-input" type="radio" name="reason" id="reason1" value="Nội dung không phù hợp">
+                            <input class="form-check-input" type="radio" name="reason" id="reason1" value="Nội dung không phù hợp" required>
                             <label class="form-check-label" for="reason1">
                                 Nội dung không phù hợp
                             </label>
                         </div>
                         <div class="form-check mb-2">
-                            <input class="form-check-input" type="radio" name="reason" id="reason2" value="Spam">
+                            <input class="form-check-input" type="radio" name="reason" id="reason2" value="Spam" required>
                             <label class="form-check-label" for="reason2">
                                 Spam
                             </label>
                         </div>
                         <div class="form-check mb-2">
-                            <input class="form-check-input" type="radio" name="reason" id="reason3" value="Vi phạm bản quyền">
+                            <input class="form-check-input" type="radio" name="reason" id="reason3" value="Vi phạm bản quyền" required>
                             <label class="form-check-label" for="reason3">
                                 Vi phạm bản quyền
                             </label>
                         </div>
                         <div class="form-check mb-2">
-                            <input class="form-check-input" type="radio" name="reason" id="reason4" value="other">
+                            <input class="form-check-input" type="radio" name="reason" id="reason4" value="Quấy rối" required>
                             <label class="form-check-label" for="reason4">
-                                Khác
+                                Quấy rối
                             </label>
                         </div>
-                        <div class="mt-3" id="otherReasonDiv" style="display: none;">
-                            <textarea class="form-control" name="other_reason" rows="3" placeholder="Nhập lý do khác"></textarea>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="radio" name="reason" id="reason5" value="Bạo lực" required>
+                            <label class="form-check-label" for="reason5">
+                                Bạo lực
+                            </label>
+                        </div>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="radio" name="reason" id="reason6" value="other" required>
+                            <label class="form-check-label" for="reason6">
+                                Lý do khác
+                            </label>
+                        </div>
+                        <div class="mt-2 d-none" id="otherReasonContainer">
+                            <textarea class="form-control" name="other_reason" rows="2" placeholder="Vui lòng mô tả lý do báo cáo..."></textarea>
                         </div>
                     </div>
                 </div>
@@ -116,16 +128,46 @@
 
 @push('scripts')
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const otherRadio = document.getElementById('reason4');
-        const otherReasonDiv = document.getElementById('otherReasonDiv');
-        
-        document.querySelectorAll('input[name="reason"]').forEach(radio => {
-            radio.addEventListener('change', function() {
-                otherReasonDiv.style.display = otherRadio.checked ? 'block' : 'none';
-            });
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle other reason textarea visibility
+    const otherRadio = document.getElementById('reason6');
+    const otherReasonContainer = document.getElementById('otherReasonContainer');
+    
+    document.querySelectorAll('input[name="reason"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+            if (this.value === 'other') {
+                otherReasonContainer.classList.remove('d-none');
+            } else {
+                otherReasonContainer.classList.add('d-none');
+            }
         });
     });
+
+    // Handle form submission
+    const reportForm = document.querySelector('#reportModal form');
+    if (reportForm) {
+        reportForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const selectedReason = document.querySelector('input[name="reason"]:checked');
+            if (!selectedReason) {
+                alert('Vui lòng chọn lý do báo cáo');
+                return;
+            }
+
+            if (selectedReason.value === 'other') {
+                const otherReason = document.querySelector('textarea[name="other_reason"]').value.trim();
+                if (!otherReason) {
+                    alert('Vui lòng nhập lý do báo cáo');
+                    return;
+                }
+            }
+
+            // Submit the form
+            this.submit();
+        });
+    }
+});
 </script>
 @endpush
 

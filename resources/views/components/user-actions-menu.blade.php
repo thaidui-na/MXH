@@ -37,8 +37,54 @@
                 <div class="modal-body">
                     <p>Bạn đang báo cáo người dùng <strong>{{ $user->name }}</strong></p>
                     <div class="mb-3">
-                        <label for="reportReason-{{ $user->id }}" class="form-label">Lý do báo cáo:</label>
-                        <textarea class="form-control" id="reportReason-{{ $user->id }}" rows="3" required></textarea>
+                        <label class="form-label">Lý do báo cáo:</label>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="radio" name="reason-{{ $user->id }}" id="reason1-{{ $user->id }}" value="Nội dung không phù hợp" required>
+                            <label class="form-check-label" for="reason1-{{ $user->id }}">Nội dung không phù hợp</label>
+                        </div>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="radio" name="reason-{{ $user->id }}" id="reason2-{{ $user->id }}" value="Spam" required>
+                            <label class="form-check-label" for="reason2-{{ $user->id }}">Spam</label>
+                        </div>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="radio" name="reason-{{ $user->id }}" id="reason3-{{ $user->id }}" value="Vi phạm bản quyền" required>
+                            <label class="form-check-label" for="reason3-{{ $user->id }}">Vi phạm bản quyền</label>
+                        </div>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="radio" name="reason-{{ $user->id }}" id="reason4-{{ $user->id }}" value="Quấy rối" required>
+                            <label class="form-check-label" for="reason4-{{ $user->id }}">Quấy rối</label>
+                        </div>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="radio" name="reason-{{ $user->id }}" id="reason5-{{ $user->id }}" value="Bạo lực" required>
+                            <label class="form-check-label" for="reason5-{{ $user->id }}">Bạo lực</label>
+                        </div>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="radio" name="reason-{{ $user->id }}" id="reason6-{{ $user->id }}" value="Lừa đảo" required>
+                            <label class="form-check-label" for="reason6-{{ $user->id }}">Lừa đảo</label>
+                        </div>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="radio" name="reason-{{ $user->id }}" id="reason7-{{ $user->id }}" value="Ngôn ngữ thù địch" required>
+                            <label class="form-check-label" for="reason7-{{ $user->id }}">Ngôn ngữ thù địch</label>
+                        </div>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="radio" name="reason-{{ $user->id }}" id="reason8-{{ $user->id }}" value="Thông tin sai lệch" required>
+                            <label class="form-check-label" for="reason8-{{ $user->id }}">Thông tin sai lệch</label>
+                        </div>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="radio" name="reason-{{ $user->id }}" id="reason9-{{ $user->id }}" value="Nội dung khiêu dâm" required>
+                            <label class="form-check-label" for="reason9-{{ $user->id }}">Nội dung khiêu dâm</label>
+                        </div>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="radio" name="reason-{{ $user->id }}" id="reason10-{{ $user->id }}" value="Tự tử hoặc tự làm hại" required>
+                            <label class="form-check-label" for="reason10-{{ $user->id }}">Tự tử hoặc tự làm hại</label>
+                        </div>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="radio" name="reason-{{ $user->id }}" id="reason11-{{ $user->id }}" value="other" required>
+                            <label class="form-check-label" for="reason11-{{ $user->id }}">Lý do khác</label>
+                        </div>
+                        <div class="mt-2 d-none" id="otherReasonContainer-{{ $user->id }}">
+                            <textarea class="form-control" name="other_reason" rows="2" placeholder="Vui lòng mô tả lý do báo cáo..."></textarea>
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -59,6 +105,19 @@ document.addEventListener('DOMContentLoaded', function() {
             const userId = this.dataset.userId;
             const modal = new bootstrap.Modal(document.getElementById(`reportModal-${userId}`));
             modal.show();
+
+            // Hiện/ẩn textarea khi chọn "Lý do khác"
+            const otherRadio = document.getElementById(`reason11-${userId}`);
+            const otherReasonContainer = document.getElementById(`otherReasonContainer-${userId}`);
+            document.querySelectorAll(`input[name='reason-${userId}']`).forEach(radio => {
+                radio.addEventListener('change', function() {
+                    if (otherRadio.checked) {
+                        otherReasonContainer.classList.remove('d-none');
+                    } else {
+                        otherReasonContainer.classList.add('d-none');
+                    }
+                });
+            });
         });
     });
 
@@ -66,20 +125,32 @@ document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('.submit-report').forEach(button => {
         button.addEventListener('click', function() {
             const userId = this.dataset.userId;
-            const reason = document.getElementById(`reportReason-${userId}`).value;
-            
-            if (!reason.trim()) {
-                alert('Vui lòng nhập lý do báo cáo');
+            const selectedReason = document.querySelector(`input[name='reason-${userId}']:checked`);
+            let reason = '';
+            let other_reason = '';
+            if (selectedReason) {
+                if (selectedReason.value === 'other') {
+                    other_reason = document.querySelector(`#otherReasonContainer-${userId} textarea`).value.trim();
+                    reason = 'other';
+                } else {
+                    reason = selectedReason.value;
+                }
+            }
+            if (!reason || (reason === 'other' && !other_reason)) {
+                alert('Vui lòng chọn và nhập lý do báo cáo');
                 return;
             }
-
+            const formData = new URLSearchParams();
+            formData.append('reason', reason);
+            if (reason === 'other') {
+                formData.append('other_reason', other_reason);
+            }
             fetch(`/users/${userId}/report`, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
                 },
-                body: JSON.stringify({ reason: reason })
+                body: formData
             })
             .then(response => response.json())
             .then(data => {

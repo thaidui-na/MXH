@@ -242,19 +242,33 @@ class PostController extends Controller
 
     public function report(Request $request, Post $post)
     {
+        $request->validate([
+            'reason' => 'required|string',
+            'other_reason' => 'required_if:reason,other|string|max:500'
+        ]);
+
         $reason = $request->input('reason');
         if ($reason === 'other') {
             $reason = $request->input('other_reason');
         }
         
-        // Lưu báo cáo vào database
+        // Check if user has already reported this post
+        $existingReport = Report::where('post_id', $post->id)
+            ->where('user_id', auth()->id())
+            ->first();
+
+        if ($existingReport) {
+            return redirect()->back()->with('error', 'Bạn đã báo cáo bài viết này trước đó.');
+        }
+        
+        // Create new report
         Report::create([
             'post_id' => $post->id,
             'user_id' => auth()->id(),
             'reason' => $reason
         ]);
         
-        return redirect()->back()->with('success', 'Cảm ơn bạn đã báo cáo. Chúng tôi sẽ xem xét nội dung này.');
+        return redirect()->back()->with('success', 'Cảm ơn bạn đã báo cáo. Chúng tôi sẽ xem xét nội dung này trong thời gian sớm nhất.');
     }
 
     public function toggleFavorite(Post $post)
