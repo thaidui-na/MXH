@@ -1,31 +1,34 @@
 @extends('layouts.app')
 
-@section('title', 'Đăng nhập')
-
 @section('content')
 <div class="container">
     <div class="row justify-content-center">
         <div class="col-md-6">
             <div class="card shadow-lg border-0 rounded-lg mt-5">
                 <div class="card-header bg-primary text-white">
-                    <h3 class="text-center font-weight-light my-2">{{ __('Đăng nhập') }}</h3>
+                    <h3 class="text-center font-weight-light my-2">{{ __('Quên mật khẩu') }}</h3>
                 </div>
                 <div class="card-body">
+                    <div class="small mb-3 text-center">
+                        {{ __('Nhập email của bạn và chúng tôi sẽ gửi link đặt lại mật khẩu cho bạn.') }}
+                    </div>
                     @if (session('status'))
                         <div class="alert alert-success" role="alert">
                             {{ session('status') }}
                         </div>
                     @endif
 
-                    <form method="POST" action="{{ route('login') }}">
+                    <form method="POST" action="{{ route('password.email') }}">
                         @csrf
 
                         <div class="form-floating mb-3">
-                            <input type="email" class="form-control @error('email') is-invalid @enderror"
-                                id="email" name="email" value="{{ old('email') }}" 
+                            <input id="email" type="email" 
+                                class="form-control @error('email') is-invalid @enderror" 
+                                name="email" value="{{ old('email') }}" 
                                 required autocomplete="email" autofocus
                                 placeholder="name@example.com">
                             <label for="email">{{ __('Địa chỉ Email') }}</label>
+
                             @error('email')
                                 <span class="invalid-feedback" role="alert">
                                     <strong>{{ $message }}</strong>
@@ -33,34 +36,14 @@
                             @enderror
                         </div>
 
-                        <div class="form-floating mb-3">
-                            <input type="password" class="form-control @error('password') is-invalid @enderror"
-                                id="password" name="password" required autocomplete="current-password"
-                                placeholder="Nhập mật khẩu">
-                            <label for="password">{{ __('Mật khẩu') }}</label>
-                            @error('password')
-                                <span class="invalid-feedback" role="alert">
-                                    <strong>{{ $message }}</strong>
-                                </span>
-                            @enderror
-                        </div>
-
-                        <div class="form-check mb-3">
-                            <input class="form-check-input" type="checkbox" name="remember" 
-                                id="remember" {{ old('remember') ? 'checked' : '' }}>
-                            <label class="form-check-label" for="remember">
-                                {{ __('Ghi nhớ đăng nhập') }}
-                            </label>
-                        </div>
-
                         <div class="d-flex align-items-center justify-content-between mt-4 mb-0">
-                            <a class="small text-decoration-none" href="{{ route('password.request') }}">
-                                <i class="fas fa-key me-1"></i>
-                                {{ __('Quên mật khẩu?') }}
+                            <a class="small text-decoration-none" href="{{ route('login') }}">
+                                <i class="fas fa-arrow-left me-1"></i>
+                                {{ __('Quay lại đăng nhập') }}
                             </a>
                             <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-sign-in-alt me-1"></i>
-                                {{ __('Đăng nhập') }}
+                                <i class="fas fa-paper-plane me-1"></i>
+                                {{ __('Gửi link đặt lại mật khẩu') }}
                             </button>
                         </div>
                     </form>
@@ -90,4 +73,4 @@
     background-color: rgba(255, 255, 255, 0.9);
 }
 </style>
-@endpush
+@endpush 
