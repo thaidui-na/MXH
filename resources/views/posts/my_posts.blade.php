@@ -11,7 +11,7 @@
             <div class="row">
                 {{-- Cột bên trái: Avatar và thông tin cơ bản --}}
                 <div class="col-md-3 text-center">
-                    <img src="{{ auth()->user()->avatar_url }}"
+                    <img src="{{ $user->avatar ? asset('images/' . $user->avatar) : asset('images/default-avatar.jpg') }}"
                          onerror="this.onerror=null;this.src='{{ asset('images/default-avatar.jpg') }}';"
                          class="rounded-circle img-thumbnail mb-3"
                          style="width: 150px; height: 150px; object-fit: cover;"
@@ -34,12 +34,21 @@
                         </p>
                     @endif
                     @if(auth()->id() !== $user->id)
-                        <div class="mt-3">
+                        <div class="mt-3 d-flex gap-2">
                             <button class="btn {{ auth()->user()->isFollowing($user) ? 'btn-primary' : 'btn-outline-primary' }} follow-button" 
                                     data-user-id="{{ $user->id }}">
                                 <i class="fas fa-user-plus"></i> 
                                 <span class="follow-text">{{ auth()->user()->isFollowing($user) ? 'Đã theo dõi' : 'Theo dõi' }}</span>
                             </button>
+
+                            <button class="btn {{ auth()->user()->isFollowing($user) ? 'btn-primary' : 'btn-outline-primary' }} friend-button" 
+                                    onclick="toggleFriend({{ $user->id }}, this)">
+                                <i class="fas fa-{{ auth()->user()->isFollowing($user) ? 'user-friends' : 'user-plus' }}"></i>
+                                {{ auth()->user()->isFollowing($user) ? 'Bạn bè' : 'Kết bạn' }}
+                            </button>
+                            <a href="{{ route('messages.show', $user->id) }}" class="btn btn-outline-success">
+                                <i class="fas fa-comment"></i> Nhắn tin
+                            </a>
                         </div>
                     @endif
                 </div>
