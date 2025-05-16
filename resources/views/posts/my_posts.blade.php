@@ -11,7 +11,7 @@
             <div class="row">
                 {{-- Cột bên trái: Avatar và thông tin cơ bản --}}
                 <div class="col-md-3 text-center">
-                    <img src="{{ $user->avatar ? asset('images/' . $user->avatar) : asset('images/default-avatar.jpg') }}"
+                    <img src="{{ auth()->user()->avatar_url }}"
                          onerror="this.onerror=null;this.src='{{ asset('images/default-avatar.jpg') }}';"
                          class="rounded-circle img-thumbnail mb-3"
                          style="width: 150px; height: 150px; object-fit: cover;"
