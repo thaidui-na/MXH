@@ -13,34 +13,39 @@ class UserController extends Controller
     public function search(Request $request)
     {
         try {
-            $query = $request->input('query');
+            // Bật query logging
+            DB::enableQueryLog();
+            
+            $query = $request->input('q');
             Log::info('Search query:', ['query' => $query]);
             
             if (empty($query)) {
                 return response()->json(['users' => []]);
             }
 
-            // Log tất cả users trong database để debug
-            $allUsers = User::select('id', 'name')->get();
-            Log::info('All users in database:', ['users' => $allUsers->toArray()]);
-
-            // Tìm kiếm với điều kiện đơn giản
-            $users = User::where('name', 'like', '%' . $query . '%')
-                ->where('id', '!=', auth()->id())
-                ->select('id', 'name', 'avatar')
+            // Tìm kiếm với điều kiện chính xác hơn
+            $users = User::query()
+                ->where(function($q) use ($query) {
+                    $q->where('name', 'like', '%' . $query . '%')
+                      ->orWhere('email', 'like', '%' . $query . '%');
+                })
+                ->when(auth()->check(), function($q) {
+                    $q->where('id', '!=', auth()->id());
+                })
+                ->select('id', 'name', 'email', 'avatar')
                 ->get()
                 ->map(function ($user) {
                     return [
                         'id' => $user->id,
                         'name' => $user->name,
-                        'avatar' => $user->avatar ? asset('storage/' . $user->avatar) : asset('images/default-avatar.png')
+                        'email' => $user->email,
+                        'avatar' => $user->avatar ? asset('storage/' . $user->avatar) : asset('images/default-avatar.jpg')
                     ];
                 });
 
             // Log câu query SQL để debug
             Log::info('SQL Query:', [
-                'sql' => DB::getQueryLog(),
-                'bindings' => DB::getQueryLog()
+                'queries' => DB::getQueryLog()
             ]);
 
             Log::info('Search results:', [
@@ -52,7 +57,7 @@ class UserController extends Controller
         } catch (\Exception $e) {
             Log::error('Search error: ' . $e->getMessage(), [
                 'exception' => $e,
-                'query' => $request->input('query')
+                'query' => $request->input('q')
             ]);
             return response()->json(['error' => 'Có lỗi xảy ra khi tìm kiếm'], 500);
         }

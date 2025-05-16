@@ -25,6 +25,35 @@
                         </div>
                     @endif
 
+                    @if($group->hasAdmin(auth()->id()))
+                        <div class="mb-4 p-3 bg-light rounded">
+                            <h6 class="border-bottom pb-2 mb-3"><i class="fas fa-user-plus"></i> Thêm thành viên mới</h6>
+                            <form method="POST" action="{{ route('groups.add-members', $group) }}" id="addMembersForm">
+                                @csrf
+                                <div class="mb-3">
+                                    <label for="user_ids" class="form-label">Chọn thành viên:</label>
+                                    <div class="input-group mb-2">
+                                        <input type="text" class="form-control" id="searchInput" placeholder="Tìm kiếm thành viên...">
+                                        <button class="btn btn-outline-secondary" type="button" onclick="clearSearch()">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </div>
+                                    <select name="user_ids[]" id="user_ids" class="form-select" multiple size="8" style="min-height: 200px;">
+                                        @foreach(\App\Models\User::whereNotIn('id', $group->members->pluck('user_id'))->orderBy('name')->get() as $user)
+                                            <option value="{{ $user->id }}">{{ $user->name }} ({{ $user->email }})</option>
+                                        @endforeach
+                                    </select>
+                                    <div class="form-text">
+                                        <i class="fas fa-info-circle"></i> Giữ Ctrl để chọn nhiều thành viên cùng lúc
+                                    </div>
+                                </div>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-plus-circle"></i> Thêm thành viên
+                                </button>
+                            </form>
+                        </div>
+                    @endif
+
                     <div class="table-responsive">
                         <table class="table table-hover">
                             <thead>
@@ -92,12 +121,14 @@
                                             {{ $member->created_at->format('d/m/Y H:i') }}
                                         </td>
                                         <td class="align-middle">
-                                            @if($group->hasAdmin(auth()->id()) && $member->user_id != $group->created_by && $member->user_id != auth()->id())
-                                                <form method="POST" action="{{ route('groups.remove-member', ['group' => $group->id, 'member' => $member->id]) }}" class="d-inline">
+                                            @if($group->hasAdmin(auth()->id()) && $member->user_id != $group->created_by)
+                                                <form method="POST" action="{{ route('groups.remove-member', ['group' => $group->id, 'member' => $member->id]) }}" 
+                                                      class="d-inline"
+                                                      onsubmit="return confirm('Bạn có chắc chắn muốn xóa thành viên này?');">
                                                     @csrf
                                                     @method('DELETE')
-                                                    <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Bạn có chắc chắn muốn xóa thành viên này?')">
-                                                        <i class="fas fa-trash"></i>
+                                                    <button type="submit" class="btn btn-danger btn-sm">
+                                                        <i class="fas fa-user-minus"></i>
                                                     </button>
                                                 </form>
                                             @endif
@@ -116,4 +147,66 @@
         </div>
     </div>
 </div>
-@endsection 
+@endsection
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('searchInput');
+    const userSelect = document.getElementById('user_ids');
+    const options = Array.from(userSelect.options);
+
+    searchInput.addEventListener('input', function(e) {
+        const searchTerm = e.target.value.toLowerCase();
+        const filteredOptions = options.filter(option => 
+            option.text.toLowerCase().includes(searchTerm)
+        );
+
+        // Lưu lại các option đã chọn
+        const selectedValues = Array.from(userSelect.selectedOptions).map(opt => opt.value);
+
+        // Xóa tất cả options hiện tại
+        userSelect.innerHTML = '';
+
+        // Thêm lại các options phù hợp với tìm kiếm
+        filteredOptions.forEach(option => {
+            userSelect.add(option);
+            // Khôi phục lại trạng thái đã chọn
+            if (selectedValues.includes(option.value)) {
+                option.selected = true;
+            }
+        });
+    });
+
+    // Form validation
+    document.getElementById('addMembersForm').addEventListener('submit', function(e) {
+        if (userSelect.selectedOptions.length === 0) {
+            e.preventDefault();
+            alert('Vui lòng chọn ít nhất một thành viên để thêm vào nhóm');
+        }
+    });
+});
+
+function clearSearch() {
+    document.getElementById('searchInput').value = '';
+    document.getElementById('searchInput').dispatchEvent(new Event('input'));
+}
+</script>
+@endpush
+
+@push('styles')
+<style>
+#user_ids option {
+    padding: 8px;
+    margin-bottom: 2px;
+    border-radius: 4px;
+}
+#user_ids option:hover {
+    background-color: #f8f9fa;
+}
+#user_ids option:checked {
+    background-color: #0d6efd;
+    color: white;
+}
+</style>
+@endpush 

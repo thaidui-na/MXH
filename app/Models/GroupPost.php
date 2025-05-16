@@ -46,8 +46,53 @@ class GroupPost extends Model
                $this->group->hasModerator($userId);
     }
 
+    public function likes()
+    {
+        return $this->belongsToMany(User::class, 'group_post_likes', 'group_post_id', 'user_id');
+    }
+
+    public function favorites()
+    {
+        return $this->belongsToMany(User::class, 'group_post_favorites', 'group_post_id', 'user_id');
+    }
+
     public function comments()
     {
-        return $this->hasMany(GroupComment::class);
+        return $this->hasMany(GroupComment::class, 'post_id');
+    }
+
+    public function isLikedBy($userId)
+    {
+        return $this->likes()->where('user_id', $userId)->exists();
+    }
+
+    public function isFavoritedBy($userId)
+    {
+        return $this->favorites()->where('user_id', $userId)->exists();
+    }
+
+    public function getLikesCount()
+    {
+        return $this->likes()->count();
+    }
+
+    public function scopeOrderByFavorites($query)
+    {
+        return $query->leftJoin('group_post_favorites', 'group_posts.id', '=', 'group_post_favorites.group_post_id')
+                    ->select('group_posts.*')
+                    ->selectRaw('COUNT(group_post_favorites.id) as favorites_count')
+                    ->groupBy(
+                        'group_posts.id',
+                        'group_posts.group_id',
+                        'group_posts.user_id',
+                        'group_posts.title',
+                        'group_posts.content',
+                        'group_posts.image',
+                        'group_posts.is_approved',
+                        'group_posts.created_at',
+                        'group_posts.updated_at'
+                    )
+                    ->orderByDesc('favorites_count')
+                    ->orderByDesc('group_posts.created_at');
     }
 }

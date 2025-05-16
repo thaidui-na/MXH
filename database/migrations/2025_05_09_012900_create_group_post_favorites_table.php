@@ -6,25 +6,21 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
-        Schema::create('group_comments', function (Blueprint $table) {
+        Schema::create('group_post_favorites', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('post_id')->constrained('group_posts')->onDelete('cascade');
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
-            $table->text('content');
+            $table->foreignId('group_post_id')->constrained('group_posts')->onDelete('cascade');
             $table->timestamps();
+            
+            // Một user chỉ có thể favorite một bài viết một lần
+            $table->unique(['user_id', 'group_post_id']);
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
-        Schema::dropIfExists('group_comments');
+        Schema::dropIfExists('group_post_favorites');
     }
 };

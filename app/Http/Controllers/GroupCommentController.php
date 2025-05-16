@@ -4,22 +4,20 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\GroupComment;
+use App\Models\GroupPost;
 
 class GroupCommentController extends Controller
 {
-    public function store(Request $request)
+    public function store(Request $request, GroupPost $post)
     {
-        $request->validate([
-            'group_post_id' => 'required|exists:group_posts,id',
-            'content' => 'required|string|max:1000',
-        ]);
-
-        GroupComment::create([
-            'group_post_id' => $request->group_post_id,
+        $comment = $post->comments()->create([
             'user_id' => auth()->id(),
-            'content' => $request->content,
+            'content' => $request->content
         ]);
 
-        return back();
+        return response()->json([
+            'success' => true,
+            'comment' => $comment->load('user')
+        ]);
     }
 }

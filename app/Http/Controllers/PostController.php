@@ -6,6 +6,7 @@ use App\Models\Post;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Models\Report;
 
 /**
  * Controller quản lý các chức năng liên quan đến bài viết (Posts)
@@ -23,19 +24,15 @@ class PostController extends Controller
      */
     public function index()
     {
-        // Lấy các bài viết từ database
-        $posts = Post::with('user') // Tải kèm thông tin của tác giả (relationship 'user') để tránh N+1 query
-                    ->where('is_public', true) // Chỉ lấy những bài viết được đánh dấu là công khai
-                    ->latest() // Sắp xếp theo thứ tự mới nhất lên đầu (dựa vào cột created_at hoặc updated_at)
-                    ->paginate(10); // Phân trang kết quả, mỗi trang hiển thị 10 bài viết
+        $posts = Post::with(['user', 'likes'])
+            ->where('is_public', true)
+            ->orderByFavorites()
+            ->paginate(10);
 
-        // Lấy các nhóm mà người dùng đã tham gia
         $groups = auth()->user()->joinedGroups()
             ->withCount('members')
-            ->latest()
             ->get();
 
-        // Trả về view 'posts.index' và truyền biến 'posts' chứa dữ liệu bài viết vào view
         return view('posts.index', compact('posts', 'groups'));
     }
 
@@ -47,14 +44,16 @@ class PostController extends Controller
      */
     public function myPosts()
     {
+        // Lấy người dùng đang đăng nhập
+        $user = auth()->user();
+        
         // Lấy các bài viết thuộc về người dùng đang đăng nhập
-        $posts = auth()->user() // Lấy đối tượng User đang đăng nhập
-                    ->posts() // Truy cập relationship 'posts' đã định nghĩa trong User model
+        $posts = $user->posts() // Truy cập relationship 'posts' đã định nghĩa trong User model
                     ->latest() // Sắp xếp theo thứ tự mới nhất lên đầu
                     ->paginate(10); // Phân trang kết quả, mỗi trang 10 bài viết
 
-        // Trả về view 'posts.my_posts' và truyền biến 'posts' vào view
-        return view('posts.my_posts', compact('posts'));
+        // Trả về view 'posts.my_posts' và truyền biến 'posts' và 'user' vào view
+        return view('posts.my_posts', compact('posts', 'user'));
     }
 
     /**
@@ -72,8 +71,8 @@ class PostController extends Controller
                     ->latest()
                     ->paginate(10);
 
-        // Trả về view 'posts.user_posts' và truyền biến 'posts' và 'user' vào view
-        return view('posts.user_posts', compact('posts', 'user'));
+        // Trả về view 'posts.my_posts' và truyền biến 'posts' và 'user' vào view
+        return view('posts.my_posts', compact('posts', 'user'));
     }
 
     /**
@@ -239,5 +238,49 @@ class PostController extends Controller
             'liked' => $liked,
             'likesCount' => $post->getLikesCount()
         ]);
+    }
+
+    public function report(Request $request, Post $post)
+    {
+        $reason = $request->input('reason');
+        if ($reason === 'other') {
+            $reason = $request->input('other_reason');
+        }
+        
+        // Lưu báo cáo vào database
+        Report::create([
+            'post_id' => $post->id,
+            'user_id' => auth()->id(),
+            'reason' => $reason
+        ]);
+        
+        return redirect()->back()->with('success', 'Cảm ơn bạn đã báo cáo. Chúng tôi sẽ xem xét nội dung này.');
+    }
+
+    public function toggleFavorite(Post $post)
+    {
+        $user = auth()->user();
+        
+        if ($post->isFavoritedBy($user->id)) {
+            // Nếu đã favorite thì xóa
+            $post->favorites()->where('user_id', $user->id)->delete();
+            $message = 'Đã xóa khỏi danh sách yêu thích';
+        } else {
+            // Nếu chưa favorite thì thêm mới
+            $post->favorites()->create([
+                'user_id' => $user->id
+            ]);
+            $message = 'Đã thêm vào danh sách yêu thích';
+        }
+
+        if (request()->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => $message,
+                'isFavorited' => !$post->isFavoritedBy($user->id)
+            ]);
+        }
+
+        return redirect()->back()->with('success', $message);
     }
 } 

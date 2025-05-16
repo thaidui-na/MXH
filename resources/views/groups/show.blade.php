@@ -81,42 +81,112 @@
                         @foreach($group->posts as $post)
                             <div class="card mb-3 post-card">
                                 <div class="card-body">
-                                    <div class="d-flex align-items-center mb-2">
-                                        <img src="{{ $post->user->avatar_url }}" class="rounded-circle me-2" style="width: 40px; height: 40px; object-fit: cover;">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <div class="d-flex align-items-center">
+                                            <img src="{{ $post->user->avatar ? Storage::url($post->user->avatar) : asset('images/default-avatar.jpg') }}" 
+                                                 class="rounded-circle me-2" 
+                                                 style="width: 40px; height: 40px; object-fit: cover;">
+                                            <div>
+                                                <h6 class="mb-0">{{ $post->user->name }}</h6>
+                                                <small class="text-muted">{{ $post->created_at->diffForHumans() }}</small>
+                                            </div>
+                                        </div>
+                                        @if($post->user_id == auth()->id() || $group->hasAdmin(auth()->id()))
+                                            <div class="dropdown">
+                                                <button class="btn btn-link text-dark" type="button" data-bs-toggle="dropdown">
+                                                    <i class="fas fa-ellipsis-v"></i>
+                                                </button>
+                                                <ul class="dropdown-menu">
+                                                    @if($post->user_id == auth()->id())
+                                                        <li>
+                                                            <form action="{{ route('groups.posts.destroy', ['group' => $group->id, 'post' => $post->id]) }}" method="POST" class="d-inline">
+                                                                @csrf
+                                                                @method('DELETE')
+                                                                <button type="submit" class="dropdown-item text-danger" onclick="return confirm('Bạn có chắc chắn muốn xóa bài viết này?')">
+                                                                    <i class="fas fa-trash"></i> Xóa
+                                                                </button>
+                                                            </form>
+                                                        </li>
+                                                    @endif
+                                                    @if($group->hasAdmin(auth()->id()))
+                                                        <li>
+                                                            <form action="{{ route('groups.posts.destroy', ['group' => $group->id, 'post' => $post->id]) }}" method="POST" class="d-inline">
+                                                                @csrf
+                                                                @method('DELETE')
+                                                                <button type="submit" class="dropdown-item text-danger" onclick="return confirm('Bạn có chắc chắn muốn xóa bài viết này?')">
+                                                                    <i class="fas fa-trash"></i> Xóa bài viết
+                                                                </button>
+                                                            </form>
+                                                        </li>
+                                                    @endif
+                                                </ul>
+                                            </div>
+                                        @endif
+                                    </div>
+                                    <p class="card-text">{{ $post->content }}</p>
+                                    @if($post->image)
+                                        <img src="{{ Storage::url($post->image) }}" class="img-fluid rounded mb-3" alt="Post image">
+                                    @endif
+                                    <div class="post-actions mt-2">
+                                        <form class="d-inline like-form">
+                                            @csrf
+                                            <button type="button" class="btn btn-sm {{ $post->isLikedBy(auth()->id()) ? 'btn-primary' : 'btn-outline-primary' }} like-button" 
+                                                data-post-id="{{ $post->id }}" 
+                                                data-group-id="{{ $group->id }}">
+                                                <i class="fas fa-heart"></i> 
+                                                <span class="like-count">{{ $post->likes()->count() }}</span>
+                                            </button>
+                                        </form>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary ms-2 comment-toggle" data-post-id="{{ $post->id }}">
+                                            <i class="fas fa-comment"></i> 
+                                            <span class="comment-count">{{ $post->comments()->count() }}</span>
+                                        </button>
                                         <div>
-                                            <strong>{{ $post->user->name }}</strong><br>
-                                            <small class="text-muted">{{ $post->created_at->diffForHumans() }}</small>
+                                            <form action="{{ route('group-posts.favorites.toggle', $post) }}" method="POST" class="d-inline">
+                                                @csrf
+                                                <button type="submit" class="btn btn-link {{ $post->isFavoritedBy(auth()->id()) ? 'text-danger' : 'text-muted' }} p-0">
+                                                    <i class="{{ $post->isFavoritedBy(auth()->id()) ? 'fas' : 'far' }} fa-heart"></i>
+                                                    {{ $post->isFavoritedBy(auth()->id()) ? 'Đã lưu' : 'Lưu bài viết' }}
+                                                </button>
+                                            </form>
                                         </div>
                                     </div>
-                                    <h5 class="card-title">{{ $post->title }}</h5>
-                                    <p class="card-text">{{ $post->content }}</p>
 
-                                    <!-- Nút Bình luận -->
-                                    <button class="btn btn-link p-0" type="button" data-bs-toggle="collapse" data-bs-target="#comments-{{ $post->id }}">
-                                        <i class="fas fa-comment"></i> Bình luận ({{ $post->comments->count() }})
-                                    </button>
+                                    {{-- Phần bình luận --}}
+                                    <div class="comments-section mt-3" id="comments-{{ $post->id }}" style="display: none;">
+                                        {{-- Form thêm bình luận mới --}}
+                                        @if($group->members->where('user_id', auth()->id())->count() > 0)
+                                            <form class="comment-form mb-3" data-post-id="{{ $post->id }}">
+                                                @csrf
+                                                <div class="input-group">
+                                                    <input type="text" class="form-control comment-input" placeholder="Viết bình luận..." required>
+                                                    <button type="submit" class="btn btn-primary">
+                                                        <i class="fas fa-paper-plane"></i>
+                                                    </button>
+                                                </div>
+                                            </form>
+                                        @endif
 
-                                    <!-- Khối bình luận (ẩn/hiện) -->
-                                    <div class="collapse mt-2" id="comments-{{ $post->id }}">
-                                        <div class="group-comments">
-                                            <h6 class="mb-2">Bình luận</h6>
-                                            @foreach($post->comments as $comment)
-                                                <div class="mb-2">
-                                                    <strong>{{ $comment->user->name }}</strong>:
-                                                    {{ $comment->content }}
-                                                    <span class="text-muted small">({{ $comment->created_at->format('d/m/Y H:i') }})</span>
+                                        {{-- Danh sách bình luận --}}
+                                        <div class="comments-list">
+                                            @foreach($post->comments()->with('user')->latest()->get() as $comment)
+                                                <div class="comment-item mb-2">
+                                                    <div class="d-flex">
+                                                        <img src="{{ $comment->user->avatar ? Storage::url($comment->user->avatar) : asset('images/default-avatar.jpg') }}" 
+                                                             class="rounded-circle me-2" 
+                                                             style="width: 32px; height: 32px; object-fit: cover;">
+                                                        <div class="flex-grow-1">
+                                                            <div class="bg-light rounded p-2">
+                                                                <div class="d-flex justify-content-between">
+                                                                    <strong>{{ $comment->user->name }}</strong>
+                                                                    <small class="text-muted">{{ $comment->created_at->diffForHumans() }}</small>
+                                                                </div>
+                                                                <p class="mb-1">{{ $comment->content }}</p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             @endforeach
-
-                                            <!-- Form bình luận -->
-                                            @auth
-                                                <form action="{{ route('group-comments.store') }}" method="POST" class="d-flex mt-2">
-                                                    @csrf
-                                                    <input type="hidden" name="group_post_id" value="{{ $post->id }}">
-                                                    <input type="text" name="content" class="form-control me-2" placeholder="Viết bình luận..." required>
-                                                    <button type="submit" class="btn btn-primary">Gửi</button>
-                                                </form>
-                                            @endauth
                                         </div>
                                     </div>
                                 </div>
@@ -128,6 +198,13 @@
                 </div>
                 {{-- Tab Thành viên --}}
                 <div class="tab-pane fade" id="members-pane" role="tabpanel" aria-labelledby="members-tab">
+                    @if($group->hasAdmin(auth()->id()))
+                        <div class="mb-3">
+                            <a href="{{ route('groups.members', $group) }}" class="btn btn-primary">
+                                <i class="fas fa-users-cog"></i> Quản lý thành viên
+                            </a>
+                        </div>
+                    @endif
                     <div class="row">
                         @foreach($group->members as $member)
                             <div class="col-md-4 mb-3">
@@ -148,4 +225,145 @@
         </div>
     </div>
 </div>
-@endsection 
+@endsection
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Xử lý sự kiện click cho nút like
+    document.querySelectorAll('.like-button').forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            const postId = this.dataset.postId;
+            const groupId = this.dataset.groupId;
+            const token = document.querySelector('meta[name="csrf-token"]').content;
+            const button = this;
+            
+            console.log('Sending like request:', {
+                postId,
+                groupId,
+                token
+            });
+
+            fetch(`/groups/${groupId}/posts/${postId}/like`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': token,
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                },
+                credentials: 'same-origin'
+            })
+            .then(response => {
+                console.log('Response status:', response.status);
+                return response.json().catch(() => {
+                    throw new Error('Invalid JSON response');
+                });
+            })
+            .then(data => {
+                console.log('Response data:', data);
+                if (data.success) {
+                    // Cập nhật số lượt like
+                    const likeCount = button.querySelector('.like-count');
+                    if (likeCount) {
+                        likeCount.textContent = data.likeCount;
+                    }
+                    
+                    // Cập nhật trạng thái nút
+                    if (data.isLiked) {
+                        button.classList.remove('btn-outline-primary');
+                        button.classList.add('btn-primary');
+                    } else {
+                        button.classList.remove('btn-primary');
+                        button.classList.add('btn-outline-primary');
+                    }
+                } else if (data.error) {
+                    console.error('Server error:', data.error);
+                    alert(data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error details:', error);
+                alert('Có lỗi xảy ra khi thực hiện thao tác like: ' + error.message);
+            });
+        });
+    });
+
+    // Xử lý hiển thị/ẩn phần bình luận
+    document.querySelectorAll('.comment-toggle').forEach(button => {
+        button.addEventListener('click', function() {
+            const postId = this.dataset.postId;
+            const commentsSection = document.getElementById(`comments-${postId}`);
+            commentsSection.style.display = commentsSection.style.display === 'none' ? 'block' : 'none';
+        });
+    });
+
+    // Xử lý thêm bình luận mới
+    document.querySelectorAll('.comment-form').forEach(form => {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const postId = this.dataset.postId;
+            const input = this.querySelector('.comment-input');
+            const content = input.value.trim();
+            
+            if (!content) return;
+
+            const token = document.querySelector('meta[name="csrf-token"]').content;
+            
+            fetch(`/groups/posts/${postId}/comments`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': token,
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ content })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Thêm bình luận mới vào danh sách
+                    const commentsList = this.closest('.comments-section').querySelector('.comments-list');
+                    const newComment = createCommentElement(data.comment);
+                    commentsList.insertBefore(newComment, commentsList.firstChild);
+                    
+                    // Cập nhật số lượng bình luận
+                    const commentCount = document.querySelector(`.comment-toggle[data-post-id="${postId}"] .comment-count`);
+                    commentCount.textContent = parseInt(commentCount.textContent) + 1;
+                    
+                    // Xóa nội dung input
+                    input.value = '';
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Có lỗi xảy ra khi thêm bình luận');
+            });
+        });
+    });
+
+    // Hàm tạo element bình luận mới
+    function createCommentElement(comment) {
+        const div = document.createElement('div');
+        div.className = 'comment-item mb-2';
+        div.innerHTML = `
+            <div class="d-flex">
+                <img src="${comment.user.avatar || '/images/default-avatar.jpg'}" 
+                     class="rounded-circle me-2" 
+                     style="width: 32px; height: 32px; object-fit: cover;">
+                <div class="flex-grow-1">
+                    <div class="bg-light rounded p-2">
+                        <div class="d-flex justify-content-between">
+                            <strong>${comment.user.name}</strong>
+                            <small class="text-muted">Vừa xong</small>
+                        </div>
+                        <p class="mb-1">${comment.content}</p>
+                    </div>
+                </div>
+            </div>
+        `;
+        return div;
+    }
+});
+</script>
+@endpush 

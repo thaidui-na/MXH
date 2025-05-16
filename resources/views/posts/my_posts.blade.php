@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 {{-- Tiêu đề trang --}}
-@section('title', 'Trang cá nhân của ' . auth()->user()->name)
+@section('title', 'Trang cá nhân của ' . $user->name)
 
 @section('content')
 <div class="container py-4">
@@ -11,71 +11,70 @@
             <div class="row">
                 {{-- Cột bên trái: Avatar và thông tin cơ bản --}}
                 <div class="col-md-3 text-center">
-                    <img src="{{ auth()->user()->avatar ? asset('images/' . auth()->user()->avatar) : asset('images/default-avatar.jpg') }}"
+                    <img src="{{ $user->avatar ? asset('images/' . $user->avatar) : asset('images/default-avatar.jpg') }}"
                          onerror="this.onerror=null;this.src='{{ asset('images/default-avatar.jpg') }}';"
                          class="rounded-circle img-thumbnail mb-3"
                          style="width: 150px; height: 150px; object-fit: cover;"
-                         alt="{{ auth()->user()->name }}'s avatar">
-                    <h4 class="mb-0">{{ auth()->user()->name }}</h4>
-                    @if(auth()->user()->email)
+                         alt="{{ $user->name }}'s avatar">
+                    <h4 class="mb-0">{{ $user->name }}</h4>
+                    @if($user->email)
                         <p class="text-muted mb-2">
-                            <i class="fas fa-envelope me-2"></i>{{ auth()->user()->email }}
+                            <i class="fas fa-envelope me-2"></i>{{ $user->email }}
                         </p>
                     @endif
-                    @if(auth()->user()->phone)
+                    @if($user->phone)
                         <p class="text-muted mb-2">
-                            <i class="fas fa-phone me-2"></i>{{ auth()->user()->phone }}
+                            <i class="fas fa-phone me-2"></i>{{ $user->phone }}
                         </p>
                     @endif
-                    @if(auth()->user()->birthday)
+                    @if($user->birthday)
                         <p class="text-muted mb-0">
                             <i class="fas fa-birthday-cake me-2"></i>
-                            {{ auth()->user()->birthday->format('d/m/Y') }}
+                            {{ $user->birthday->format('d/m/Y') }}
                         </p>
+                    @endif
+                    @if(auth()->id() !== $user->id)
+                        <div class="mt-3">
+                            <button class="btn {{ auth()->user()->isFollowing($user) ? 'btn-primary' : 'btn-outline-primary' }} follow-button" 
+                                    data-user-id="{{ $user->id }}">
+                                <i class="fas fa-user-plus"></i> 
+                                <span class="follow-text">{{ auth()->user()->isFollowing($user) ? 'Đã theo dõi' : 'Theo dõi' }}</span>
+                            </button>
+                        </div>
                     @endif
                 </div>
                 
                 {{-- Cột bên phải: Giới thiệu và thống kê --}}
                 <div class="col-md-9">
                     {{-- Phần giới thiệu nếu có --}}
-                    @if(auth()->user()->bio)
+                    @if($user->bio)
                         <div class="mb-4">
                             <h5 class="text-muted mb-3">Giới thiệu</h5>
-                            <p class="mb-0">{{ auth()->user()->bio }}</p>
+                            <p class="mb-0">{{ $user->bio }}</p>
                         </div>
                     @endif
                     
                     {{-- Thống kê hoạt động --}}
                     <div class="row stats-container">
                         {{-- Tổng số bài viết --}}
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <div class="stats-item text-center p-3">
-                                <h3 class="mb-0">{{ auth()->user()->posts()->count() }}</h3>
+                                <h3 class="mb-0">{{ $user->posts()->count() }}</h3>
                                 <p class="text-muted mb-0">Tổng bài viết</p>
                             </div>
-<p class="card-text text-muted small">
-    Đăng ngày {{ $post->created_at->format('d/m/Y H:i') }}
-</p>
-<p class="card-text">{{ Str::limit($post->content, 200) }}</p>
-<div class="d-flex justify-content-end">
-    <a href="{{ route('posts.show', $post) }}" class="btn btn-sm btn-info me-2">
-        <i class="fas fa-eye"></i> Xem
-    </a>
-    <a href="{{ route('comments.index', $post->id) }}" class="btn btn-sm btn-secondary me-2">
-        <i class="fas fa-comments"></i> Bình luận
-    </a>
-    <a href="{{ route('posts.edit', $post) }}" class="btn btn-sm btn-warning me-2">
-        <i class="fas fa-edit"></i> Sửa
-    </a>
-    <form action="{{ route('posts.destroy', $post) }}" method="POST" 
-          onsubmit="return confirm('Bạn có chắc chắn muốn xóa bài viết này?');">
-        @csrf
-        @method('DELETE')
-        <button type="submit" class="btn btn-sm btn-danger">
-            <i class="fas fa-trash"></i> Xóa
-        </button>
-    </form>
-</div>
+                        </div>
+                        {{-- Số người theo dõi --}}
+                        <div class="col-md-4">
+                            <div class="stats-item text-center p-3">
+                                <h3 class="mb-0">{{ $user->followers()->count() }}</h3>
+                                <p class="text-muted mb-0">Người theo dõi</p>
+                            </div>
+                        </div>
+                        {{-- Số người đang theo dõi --}}
+                        <div class="col-md-4">
+                            <div class="stats-item text-center p-3">
+                                <h3 class="mb-0">{{ $user->following()->count() }}</h3>
+                                <p class="text-muted mb-0">Đang theo dõi</p>
                             </div>
                         </div>
                     </div>
@@ -92,11 +91,22 @@
             </button>
         </li>
         <li class="nav-item" role="presentation">
+            <button class="nav-link" id="followers-tab" data-bs-toggle="tab" data-bs-target="#followers-pane" type="button" role="tab" aria-controls="followers-pane" aria-selected="false">
+                <i class="fas fa-users"></i> Người theo dõi
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="following-tab" data-bs-toggle="tab" data-bs-target="#following-pane" type="button" role="tab" aria-controls="following-pane" aria-selected="false">
+                <i class="fas fa-user-friends"></i> Đang theo dõi
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
             <button class="nav-link" id="groups-tab" data-bs-toggle="tab" data-bs-target="#groups-pane" type="button" role="tab" aria-controls="groups-pane" aria-selected="false">
                 <i class="fas fa-users"></i> Nhóm
             </button>
         </li>
     </ul>
+
     <div class="tab-content" id="profileTabContent">
         {{-- Tab Bài viết --}}
         <div class="tab-pane fade show active" id="posts-pane" role="tabpanel" aria-labelledby="posts-tab">
@@ -165,14 +175,102 @@
                 </div>
             @endif
         </div>
+
+        {{-- Tab Người theo dõi --}}
+        <div class="tab-pane fade" id="followers-pane" role="tabpanel" aria-labelledby="followers-tab">
+            <div class="row">
+                @forelse($user->followers as $follower)
+                    <div class="col-md-4 mb-3">
+                        <div class="card">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center">
+                                    <img src="{{ $follower->avatar ? asset('images/' . $follower->avatar) : asset('images/default-avatar.jpg') }}"
+                                         class="rounded-circle me-3"
+                                         style="width: 50px; height: 50px; object-fit: cover;"
+                                         alt="{{ $follower->name }}'s avatar">
+                                    <div>
+                                        <h5 class="mb-0">{{ $follower->name }}</h5>
+                                        <p class="text-muted mb-0">{{ $follower->email }}</p>
+                                    </div>
+                                </div>
+                                @if(auth()->id() !== $follower->id)
+                                    <div class="mt-3">
+                                        <button class="btn {{ auth()->user()->isFollowing($follower) ? 'btn-primary' : 'btn-outline-primary' }} btn-sm follow-button" 
+                                                data-user-id="{{ $follower->id }}">
+                                            <i class="fas fa-user-plus"></i> 
+                                            <span class="follow-text">{{ auth()->user()->isFollowing($follower) ? 'Đã theo dõi' : 'Theo dõi' }}</span>
+                                        </button>
+                                    </div>
+                                @endif
+                            </div>
+                        </div>
+                    </div>
+                @empty
+                    <div class="col-12">
+                        <div class="alert alert-info">
+                            Chưa có người theo dõi nào.
+                        </div>
+                    </div>
+                @endforelse
+            </div>
+        </div>
+
+        {{-- Tab Đang theo dõi --}}
+        <div class="tab-pane fade" id="following-pane" role="tabpanel" aria-labelledby="following-tab">
+            <div class="row">
+                @forelse($user->following as $following)
+                    <div class="col-md-4 mb-3">
+                        <div class="card">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center">
+                                    <img src="{{ $following->avatar ? asset('images/' . $following->avatar) : asset('images/default-avatar.jpg') }}"
+                                         class="rounded-circle me-3"
+                                         style="width: 50px; height: 50px; object-fit: cover;"
+                                         alt="{{ $following->name }}'s avatar">
+                                    <div>
+                                        <h5 class="mb-0">{{ $following->name }}</h5>
+                                        <p class="text-muted mb-0">{{ $following->email }}</p>
+                                    </div>
+                                </div>
+                                @if(auth()->id() !== $following->id)
+                                    <div class="mt-3">
+                                        <button class="btn {{ auth()->user()->isFollowing($following) ? 'btn-primary' : 'btn-outline-primary' }} btn-sm follow-button" 
+                                                data-user-id="{{ $following->id }}">
+                                            <i class="fas fa-user-plus"></i> 
+                                            <span class="follow-text">{{ auth()->user()->isFollowing($following) ? 'Bỏ theo dõi' : 'Theo dõi' }}</span>
+                                        </button>
+                                    </div>
+                                @endif
+                            </div>
+                        </div>
+                    </div>
+                @empty
+                    <div class="col-12">
+                        <div class="alert alert-info">
+                            Chưa theo dõi ai.
+                        </div>
+                    </div>
+                @endforelse
+            </div>
+        </div>
+
         {{-- Tab Nhóm --}}
         <div class="tab-pane fade" id="groups-pane" role="tabpanel" aria-labelledby="groups-tab">
-            <form method="GET" action="{{ route('posts.my_posts') }}" class="mb-4">
+            <div class="search-container position-relative mb-4">
                 <div class="input-group">
-                    <input type="text" name="q" class="form-control" placeholder="Tìm kiếm nhóm..." value="{{ request('q') }}">
-                    <button class="btn btn-outline-secondary" type="submit"><i class="fas fa-search"></i> Tìm kiếm</button>
+                    <input type="text" 
+                           name="q" 
+                           class="form-control" 
+                           id="groupSearchInput"
+                           placeholder="Tìm kiếm nhóm..." 
+                           value="{{ request('q') }}"
+                           autocomplete="off">
+                    <button class="btn btn-outline-secondary" type="button">
+                        <i class="fas fa-search"></i> Tìm kiếm
+                    </button>
                 </div>
-            </form>
+                <div id="groupSearchResults" class="autocomplete-results position-absolute w-100 mt-1 d-none"></div>
+            </div>
             @php
                 $q = request('q');
                 $groups = \App\Models\Group::withCount('members')->with(['members'])
@@ -247,89 +345,188 @@
     .stats-item:hover {
         background-color: #e9ecef;
     }
+    .search-container {
+        z-index: 1000;
+    }
+    .autocomplete-results {
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        max-height: 300px;
+        overflow-y: auto;
+    }
+    .autocomplete-results .list-group-item {
+        border-left: none;
+        border-right: none;
+        cursor: pointer;
+    }
+    .autocomplete-results .list-group-item:first-child {
+        border-top: none;
+    }
+    .autocomplete-results .list-group-item:last-child {
+        border-bottom: none;
+    }
 </style>
 @endpush
 
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const input = document.querySelector('input[name="q"]');
-    const autocompleteBox = document.createElement('div');
-    autocompleteBox.className = 'autocomplete-group-list list-group position-absolute w-100';
-    autocompleteBox.style.zIndex = 1000;
-    input.parentNode.appendChild(autocompleteBox);
-    let timer;
-    input.addEventListener('input', function() {
-        clearTimeout(timer);
-        const q = this.value.trim();
-        if (q.length < 2) {
-            autocompleteBox.innerHTML = '';
-            autocompleteBox.style.display = 'none';
-            return;
-        }
-        timer = setTimeout(() => {
-            fetch('/api/groups/search?q=' + encodeURIComponent(q))
-                .then(res => res.json())
-                .then(groups => {
-                    if (groups.length === 0) {
-                        autocompleteBox.innerHTML = '<div class="list-group-item">Không tìm thấy nhóm nào</div>';
-                        autocompleteBox.style.display = 'block';
-                        return;
+    const searchInput = document.getElementById('groupSearchInput');
+    const searchResults = document.getElementById('groupSearchResults');
+    let searchTimeout;
+
+    if (searchInput && searchResults) {
+        searchInput.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            const query = this.value.trim();
+
+            if (query.length < 2) {
+                searchResults.innerHTML = '';
+                searchResults.classList.add('d-none');
+                return;
+            }
+
+            searchTimeout = setTimeout(() => {
+                fetch(`/api/groups/search?q=${encodeURIComponent(query)}`, {
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json'
                     }
-                    autocompleteBox.innerHTML = groups.map(group => `
-                        <a href="/groups/${group.id}" class="list-group-item list-group-item-action d-flex align-items-center">
-                            <img src="${group.avatar ? '/storage/' + group.avatar : '/images/default-avatar.jpg'}" class="rounded-circle me-2" style="width:32px;height:32px;object-fit:cover;">
-                            <span>${group.name}</span>
-                        </a>
-                    `).join('');
-                    autocompleteBox.style.display = 'block';
+                })
+                .then(response => response.json())
+                .then(data => {
+                    searchResults.innerHTML = '';
+                    
+                    if (data.length === 0) {
+                        searchResults.innerHTML = `
+                            <div class="list-group-item text-center text-muted">
+                                Không tìm thấy nhóm nào
+                            </div>`;
+                    } else {
+                        data.forEach(group => {
+                            const item = document.createElement('a');
+                            item.href = `/groups/${group.id}`;
+                            item.className = 'list-group-item list-group-item-action';
+                            item.innerHTML = `
+                                <div class="d-flex align-items-center">
+                                    <img src="${group.avatar || '/images/default-avatar.jpg'}" 
+                                         class="rounded-circle me-2" 
+                                         style="width: 32px; height: 32px; object-fit: cover;">
+                                    <div>
+                                        <div class="fw-bold">${group.name}</div>
+                                        <small class="text-muted">${group.members_count || 0} thành viên</small>
+                                    </div>
+                                </div>`;
+                            searchResults.appendChild(item);
+                        });
+                    }
+                    searchResults.classList.remove('d-none');
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    searchResults.innerHTML = `
+                        <div class="list-group-item text-center text-danger">
+                            Đã có lỗi xảy ra khi tìm kiếm
+                        </div>`;
+                    searchResults.classList.remove('d-none');
                 });
-        }, 200);
-    });
-    // Ẩn autocomplete khi click ra ngoài
-    document.addEventListener('click', function(e) {
-        if (!autocompleteBox.contains(e.target) && e.target !== input) {
-            autocompleteBox.style.display = 'none';
-        }
-    });
-    // Hiển thị lại khi focus vào input nếu có dữ liệu
-    input.addEventListener('focus', function() {
-        if (autocompleteBox.innerHTML.trim() !== '') {
-            autocompleteBox.style.display = 'block';
-        }
-    });
+            }, 300);
+        });
+
+        // Ẩn kết quả khi click ra ngoài
+        document.addEventListener('click', function(e) {
+            if (!searchInput.contains(e.target) && !searchResults.contains(e.target)) {
+                searchResults.classList.add('d-none');
+            }
+        });
+
+        // Hiện lại kết quả khi focus vào input
+        searchInput.addEventListener('focus', function() {
+            if (this.value.trim().length >= 2) {
+                searchResults.classList.remove('d-none');
+            }
+        });
+    }
 });
 
 document.addEventListener('DOMContentLoaded', function() {
+    // Xử lý sự kiện like
     document.querySelectorAll('.like-button').forEach(button => {
         button.addEventListener('click', function() {
             const postId = this.dataset.postId;
+            const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+            
             fetch(`/posts/${postId}/like`, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                }
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                },
+                credentials: 'same-origin'
             })
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
             .then(data => {
+                const heartIcon = this.querySelector('i');
+                const likeCount = this.querySelector('.like-count');
+                
                 if (data.liked) {
                     this.classList.add('active');
-                    this.querySelector('i').classList.add('text-danger');
-                    this.querySelector('i').classList.remove('text-muted');
+                    heartIcon.classList.add('text-danger');
+                    heartIcon.classList.remove('text-muted');
                 } else {
                     this.classList.remove('active');
-                    this.querySelector('i').classList.remove('text-danger');
-                    this.querySelector('i').classList.add('text-muted');
+                    heartIcon.classList.remove('text-danger');
+                    heartIcon.classList.add('text-muted');
                 }
-                // Cập nhật số lượng like
-                const likeCount = this.querySelector('.like-count');
+                
                 if (likeCount) {
                     likeCount.textContent = data.likesCount;
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
+                alert('Có lỗi xảy ra khi thực hiện thao tác like');
+            });
+        });
+    });
+
+    // Xử lý sự kiện follow
+    document.querySelectorAll('.follow-button').forEach(button => {
+        button.addEventListener('click', function() {
+            const userId = this.dataset.userId;
+            const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+            const followText = this.querySelector('.follow-text');
+            
+            fetch(`/users/${userId}/follow`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                },
+                credentials: 'same-origin'
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                // Tự động tải lại trang sau khi thao tác thành công
+                window.location.reload();
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Có lỗi xảy ra khi thực hiện thao tác theo dõi');
             });
         });
     });

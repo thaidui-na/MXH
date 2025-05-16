@@ -4,15 +4,15 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class GroupComment extends Model
+class Report extends Model
 {
-    protected $fillable = ['post_id', 'user_id', 'content'];
-
+    protected $fillable = ['post_id', 'user_id', 'reason'];
+    
     public function post()
     {
-        return $this->belongsTo(GroupPost::class, 'post_id');
+        return $this->belongsTo(Post::class);
     }
-
+    
     public function user()
     {
         return $this->belongsTo(User::class);

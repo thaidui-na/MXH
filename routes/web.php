@@ -10,9 +10,12 @@ use App\Http\Controllers\ChatGroupController;
 use App\Http\Controllers\GroupMessageController;
 use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\PasswordController;
-use App\Http\Controllers\CommentReplyController;
-use App\Http\Controllers\CommentController;
 use App\Http\Controllers\GroupController;
+use App\Http\Controllers\UserController;
+use App\Http\Controllers\GroupPostLikeController;
+use App\Http\Controllers\GroupPostController;
+use App\Http\Controllers\CommentController;
+use App\Http\Controllers\GroupPostFavoriteController;
 use App\Http\Controllers\GroupCommentController;
 
 // Route mặc định, hiển thị trang chào mừng
@@ -35,6 +38,8 @@ Route::post('/login', [AuthController::class, 'login']); // Xử lý dữ liệu
 // Route xử lý đăng xuất - yêu cầu phương thức POST để tránh CSRF
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
+
+
 /**
  * PHẦN 2: ROUTES XỬ LÝ PROFILE
  * Tất cả routes trong group này đều yêu cầu user đã đăng nhập (middleware 'auth')
@@ -53,10 +58,11 @@ Route::middleware('auth')->group(function () {
     // Routes quản lý bài viết
     Route::get('/posts', [PostController::class, 'index'])->name('posts.index'); // Hiển thị tất cả bài viết
     Route::get('/my-posts', [PostController::class, 'myPosts'])->name('posts.my_posts'); // Hiển thị bài viết của user hiện tại
-    Route::get('/user/{user}/posts', [PostController::class, 'userPosts'])->name('posts.user_posts'); // Hiển thị bài viết của user khác
+    Route::get('/posts/my_posts/{user}', [PostController::class, 'userPosts'])->name('posts.user_posts'); // Thêm route mới
 
     // Tạo các routes CRUD cho posts (trừ index đã định nghĩa ở trên)
-    Route::resource('posts', PostController::class)->except(['index'])->where(['post' => '[0-9]+']);
+    // Tự động tạo các routes: show, create, store, edit, update, destroy
+    Route::resource('posts', PostController::class)->except(['index']);
 
     // Routes quản lý tin nhắn cá nhân
     Route::get('/messages', [MessageController::class, 'index'])->name('messages.index'); // Danh sách chat
@@ -75,24 +81,61 @@ Route::middleware('auth')->group(function () {
 
     // Routes quản lý nhóm
     Route::resource('groups', GroupController::class);
+    Route::resource('groups.posts', GroupPostController::class);
     Route::post('groups/{group}/join', [GroupController::class, 'join'])->name('groups.join');
     Route::post('groups/{group}/leave', [GroupController::class, 'leave'])->name('groups.leave');
     Route::post('groups/{group}/post', [GroupController::class, 'post'])->name('groups.post');
+   
+    // Routes quản lý thành viên nhóm
     Route::get('groups/{group}/members', [GroupController::class, 'members'])->name('groups.members');
-    Route::put('groups/{group}/members/{member}', [GroupController::class, 'updateMember'])->name('groups.members.update');
-    Route::delete('groups/{group}/members/{member}', [GroupController::class, 'removeMember'])->name('groups.members.remove');
+    Route::put('groups/{group}/members/{member}', [GroupController::class, 'updateMember'])->name('groups.update-member');
+    Route::delete('groups/{group}/members/{member}', [GroupController::class, 'removeMember'])->name('groups.remove-member');
+    Route::post('groups/{group}/add-members', [GroupController::class, 'addMembers'])->name('groups.add-members');
 
-    // API tìm kiếm nhóm cho autocomplete
-    Route::middleware('auth')->get('/api/groups/search', [GroupController::class, 'searchAjax'])->name('groups.searchAjax');
+    // API tìm kiếm
+    Route::get('/api/users/search', [App\Http\Controllers\Api\UserController::class, 'search'])->name('api.users.search');
+    Route::get('/api/groups/search', [GroupController::class, 'searchAjax'])->name('groups.searchAjax');
 
-    // Routes quản lý users
-    Route::get('/users/search', [App\Http\Controllers\Api\UserController::class, 'search'])->name('users.search');
+    // Routes quản lý like/unlike group post
+    Route::post('groups/{group}/posts/{groupPost}/like', [GroupPostLikeController::class, 'toggleLike'])->name('groups.posts.like');
 
-    // Routes quản lý bình luận nhóm
-    Route::post('/group-comments', [GroupCommentController::class, 'store'])->name('group-comments.store');
-
-    // Route like bài viết
+    // Routes quản lý like post
     Route::post('/posts/{post}/like', [PostController::class, 'like'])->name('posts.like');
+
+    // Routes quản lý yêu thích bài viết
+    Route::post('/posts/{post}/favorites/toggle', [PostController::class, 'toggleFavorite'])->name('posts.favorites.toggle');
+
+    // Routes quản lý bình luận
+    Route::get('/posts/{post}/comments', [CommentController::class, 'index'])->name('comments.index');
+    Route::post('/posts/{post}/comments', [CommentController::class, 'store'])->name('comments.store');
+    Route::delete('/comments/{comment}', [CommentController::class, 'destroy'])->name('comments.destroy');
+    Route::post('/comments/{comment}/reply', [CommentController::class, 'reply'])->name('comments.reply');
+
+    // Routes quản lý báo cáo bài viết
+    Route::post('/posts/{post}/report', [PostController::class, 'report'])->name('posts.report');
+
+    // Routes quản lý kết bạn
+    Route::post('/users/{user}/add-friend', [UserController::class, 'addFriend'])->name('users.add-friend');
+    Route::delete('/users/{user}/remove-friend', [UserController::class, 'removeFriend'])->name('users.remove-friend');
+    Route::get('/users/{user}/friends', [UserController::class, 'friends'])->name('users.friends');
+
+    // Routes quản lý chặn người dùng
+    Route::post('/users/{user}/block', [UserController::class, 'block'])->name('users.block');
+    Route::delete('/users/{user}/unblock', [UserController::class, 'unblock'])->name('users.unblock');
+    Route::get('/users/blocked', [UserController::class, 'blocked'])->name('users.blocked');
+
+    // Routes quản lý báo cáo người dùng
+    Route::post('/users/{user}/report', [UserController::class, 'report'])->name('users.report');
+    Route::delete('/users/{user}/unreport', [UserController::class, 'unreport'])->name('users.unreport');
+
+    // Routes cho yêu thích bài viết trong nhóm
+    Route::post('group-posts/{post}/favorite', [GroupPostFavoriteController::class, 'toggle'])->name('group-posts.favorites.toggle');
+
+    // Routes quản lý theo dõi người dùng
+    Route::post('/users/{user}/follow', [UserController::class, 'follow'])->name('users.follow');
+
+    // Routes quản lý bình luận trong nhóm
+    Route::post('/groups/posts/{post}/comments', [GroupCommentController::class, 'store'])->name('groups.posts.comments.store');
 });
 
 /**
@@ -103,6 +146,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/password/change', [PasswordController::class, 'showChangePasswordForm'])->name('password.change'); // Form đổi mật khẩu
     Route::put('/password/change', [PasswordController::class, 'updatePassword'])->name('password.update'); // Xử lý đổi mật khẩu
 });
+
+
+
 
 // Route dashboard - Chuyển hướng đến trang danh sách bài viết
 Route::get('/dashboard', function () {
@@ -132,9 +178,3 @@ Route::middleware(['web', 'auth', \App\Http\Middleware\AdminMiddleware::class])-
     Route::put('/posts/{id}', [AdminController::class, 'updatePost'])->name('admin.posts.update'); // Cập nhật post
     Route::delete('/posts/{id}', [AdminController::class, 'deletePost'])->name('admin.posts.delete'); // Xóa post
 });
-
-// Route hiển thị danh sách bình luận cho một bài viết (ai đăng nhập cũng dùng được)
-Route::get('/posts/{post}/comments', [CommentController::class, 'index'])->name('comments.index')->middleware('auth');
-
-// Route lưu bình luận mới cho một bài viết
-Route::post('/posts/{post}/comments', [CommentController::class, 'store'])->name('comments.store')->middleware('auth');
