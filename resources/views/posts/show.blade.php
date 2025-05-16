@@ -34,7 +34,7 @@
                     </div>
                     
                     <div class="d-flex justify-content-between">
-                        <a href="{{ url()->previous() }}" class="btn btn-secondary">
+                        <a href="{{ route('posts.index') }}" class="btn btn-secondary">
                             <i class="fas fa-arrow-left"></i> Quay lại
                         </a>
                         <a href="{{ route('comments.index', $post->id) }}" class="btn btn-secondary">
