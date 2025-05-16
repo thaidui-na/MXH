@@ -11,11 +11,10 @@
             <div class="row">
                 {{-- Cột bên trái: Avatar và thông tin cơ bản --}}
                 <div class="col-md-3 text-center">
-                    <img src="{{ $user->avatar ? asset('images/' . $user->avatar) : asset('images/default-avatar.jpg') }}"
-                         onerror="this.onerror=null;this.src='{{ asset('images/default-avatar.jpg') }}';"
-                         class="rounded-circle img-thumbnail mb-3"
-                         style="width: 150px; height: 150px; object-fit: cover;"
-                         alt="{{ $user->name }}'s avatar">
+                    <img src="{{ $user->avatar_url }}" 
+                         alt="{{ $user->name }}" 
+                         class="rounded-circle mb-3"
+                         style="width: 120px; height: 120px; object-fit: cover;">
                     <h4 class="mb-0">{{ $user->name }}</h4>
                     @if($user->email)
                         <p class="text-muted mb-2">
