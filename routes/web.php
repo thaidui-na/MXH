@@ -17,6 +17,7 @@ use App\Http\Controllers\GroupPostController;
 use App\Http\Controllers\CommentController;
 use App\Http\Controllers\GroupPostFavoriteController;
 use App\Http\Controllers\GroupCommentController;
+use App\Http\Controllers\StoryController;
 
 // Route mặc định, hiển thị trang chào mừng
 Route::get('/', function () {
@@ -142,6 +143,16 @@ Route::middleware('auth')->group(function () {
 
     // Routes quản lý bình luận trong nhóm
     Route::post('/groups/posts/{post}/comments', [GroupCommentController::class, 'store'])->name('groups.posts.comments.store');
+
+    // Routes quản lý bài viết yêu thích của người dùng
+    Route::get('/my-favorited-posts', [PostController::class, 'myFavoritedPosts'])->name('posts.my_favorited');
+
+    // Routes quản lý story
+    Route::get('/stories', [StoryController::class, 'index'])->name('stories.index');
+    Route::get('/stories/create', [StoryController::class, 'create'])->name('stories.create');
+    Route::post('/stories', [StoryController::class, 'store'])->name('stories.store');
+    Route::get('/stories/{story}', [StoryController::class, 'show'])->name('stories.show');
+    Route::delete('/stories/{story}', [StoryController::class, 'destroy'])->name('stories.destroy');
 });
 
 /**

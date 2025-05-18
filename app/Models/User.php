@@ -296,21 +296,29 @@ class User extends Authenticatable
     }
 
     /**
-     * Định nghĩa quan hệ với những người dùng đã báo cáo người dùng này
+     * Định nghĩa quan hệ với những người dùng đã báo cáo người dùng này (reportedByUsers)
+     * (Ai đã báo cáo tôi)
      */
     public function reportedByUsers()
     {
-        return $this->belongsToMany(User::class, 'user_reports', 'reported_id', 'reporter_id')
+        // Bảng pivot: user_user_reports
+        // Khóa ngoại của model hiện tại (người bị báo cáo): reported_user_id
+        // Khóa ngoại của model liên quan (người báo cáo): reporter_id
+        return $this->belongsToMany(User::class, 'user_user_reports', 'reported_user_id', 'reporter_id')
                     ->withPivot('reason', 'is_resolved', 'admin_note')
                     ->withTimestamps();
     }
 
     /**
-     * Định nghĩa quan hệ với những người dùng mà người dùng này đã báo cáo
+     * Định nghĩa quan hệ với những người dùng mà người dùng này đã báo cáo (reportedUsers)
+     * (Ai được tôi báo cáo)
      */
     public function reportedUsers()
     {
-        return $this->belongsToMany(User::class, 'user_reports', 'reporter_id', 'reported_id')
+        // Bảng pivot: user_user_reports
+        // Khóa ngoại của model hiện tại (người báo cáo): reporter_id
+        // Khóa ngoại của model liên quan (người bị báo cáo): reported_user_id
+        return $this->belongsToMany(User::class, 'user_user_reports', 'reporter_id', 'reported_user_id')
                     ->withPivot('reason', 'is_resolved', 'admin_note')
                     ->withTimestamps();
     }
@@ -320,20 +328,29 @@ class User extends Authenticatable
      */
     public function hasReported($userId)
     {
-        return $this->reportedUsers()->where('reported_id', $userId)->exists();
+        // Sử dụng quan hệ reportedUsers và kiểm tra reported_user_id
+        return $this->reportedUsers()->where('reported_user_id', $userId)->exists();
     }
 
     /**
      * Báo cáo một người dùng
+     *
+     * @param int $userId ID của người dùng bị báo cáo
+     * @param string $reason Lý do báo cáo
+     * @return bool True nếu báo cáo mới được tạo, false nếu đã tồn tại
      */
     public function report($userId, $reason)
     {
+        // Kiểm tra xem người dùng đã báo cáo người dùng này chưa
         if (!$this->hasReported($userId)) {
+            // Sử dụng quan hệ reportedUsers để tạo bản ghi trong bảng pivot user_user_reports
             $this->reportedUsers()->attach($userId, [
                 'reason' => $reason,
-                'is_resolved' => false
+                'is_resolved' => false // Cột này tồn tại trong bảng user_user_reports mới
             ]);
+             return true; // Báo cáo mới được tạo
         }
+        return false; // Đã báo cáo trước đó
     }
 
     /**
@@ -341,6 +358,7 @@ class User extends Authenticatable
      */
     public function unreport($userId)
     {
+        // Sử dụng quan hệ reportedUsers để xóa bản ghi trong bảng pivot
         $this->reportedUsers()->detach($userId);
     }
 
@@ -354,5 +372,13 @@ class User extends Authenticatable
                     ->from('user_blocks')
                     ->where('blocker_id', auth()->id());
         });
+    }
+
+    /**
+     * Định nghĩa quan hệ với các bài viết mà người dùng này đã yêu thích.
+     */
+    public function favoritedPosts()
+    {
+        return $this->belongsToMany(Post::class, 'post_favorites', 'user_id', 'post_id')->withTimestamps();
     }
 }

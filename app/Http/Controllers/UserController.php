@@ -4,212 +4,214 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
 
 class UserController extends Controller
 {
-    // Hàm searchAjax - dùng cho Ajax (JSON response)
+    /**
+     * Tìm kiếm người dùng bằng AJAX.
+     */
     public function searchAjax(Request $request)
     {
-        $query = $request->input('query');
-        
+        $q = $request->q;
         $users = User::query()
-            ->when($query, function($q) use ($query) {
-                $q->where(function($sub) use ($query) {
-                    $sub->where('name', 'like', "%{$query}%")
-                        ->orWhere('email', 'like', "%{$query}%");
+            ->when($q, function($query) use ($q) {
+                $query->where(function($sub) use ($q) {
+                    $sub->where('name', 'like', "%$q%")
+                         ->orWhere('email', 'like', "%$q%");
                 });
             })
-            ->where('id', '!=', auth()->id())
-            ->excludeBlocked()
-            ->select(['id', 'name', 'email', 'avatar'])
+            ->excludeBlocked() // Loại bỏ người dùng đã bị chặn
+            ->where('id', '!=', auth()->id()) // Loại bỏ người dùng hiện tại
             ->limit(10)
-            ->get()
-            ->map(function($user) {
-                return [
-                    'id' => $user->id,
-                    'name' => $user->name,
-                    'email' => $user->email,
-                    'avatar' => $user->avatar,
-                    'isFriend' => auth()->user()->isFollowing($user),
-                    'isBlocked' => auth()->user()->hasBlocked($user->id),
-                    'isReported' => auth()->user()->hasReported($user->id)
-                ];
-            });
+            ->get(['id', 'name', 'email']); // Chỉ lấy các cột cần thiết
 
-        return response()->json([
-            'users' => $users
-        ]);
-    }
-
-    // Hàm search - dùng để render ra view với Log ghi lại
-    public function search(Request $request)
-    {
-        $query = $request->input('q');
-        Log::info('Searching users with query: ' . $query);
-        
-        $users = User::when($query, function($q) use ($query) {
-            $q->where(function($sub) use ($query) {
-                $sub->where('name', 'like', "%{$query}%")
-                    ->orWhere('email', 'like', "%{$query}%");
-            });
-        })
-        ->latest()
-        ->paginate(10);
-        
-        Log::info('Found ' . $users->count() . ' users');
-        
-        return view('users.search', [
-            'users' => $users,
-            'query' => $query
-        ]);
-    }
-
-    public function addFriend(User $user)
-    {
-        if (auth()->id() === $user->id) {
-            return response()->json(['error' => 'Bạn không thể kết bạn với chính mình'], 400);
-        }
-
-        $isFriend = auth()->user()->isFollowing($user);
-        
-        if ($isFriend) {
-            return response()->json(['error' => 'Bạn đã là bạn bè với người dùng này rồi'], 400);
-        }
-
-        auth()->user()->following()->attach($user->id);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Đã gửi lời mời kết bạn thành công',
-            'isFriend' => true
-        ]);
-    }
-
-    public function removeFriend(User $user)
-    {
-        if (auth()->id() === $user->id) {
-            return response()->json(['error' => 'Bạn không thể hủy kết bạn với chính mình'], 400);
-        }
-
-        $isFriend = auth()->user()->isFollowing($user);
-        
-        if (!$isFriend) {
-            return response()->json(['error' => 'Bạn chưa là bạn bè với người dùng này'], 400);
-        }
-
-        auth()->user()->following()->detach($user->id);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Đã hủy kết bạn thành công',
-            'isFriend' => false
-        ]);
-    }
-
-    public function followers(User $user)
-    {
-        $followers = $user->followers()->paginate(20);
-        return view('users.followers', compact('user', 'followers'));
-    }
-
-    public function following(User $user)
-    {
-        $following = $user->following()->paginate(20);
-        return view('users.following', compact('user', 'following'));
+        return response()->json($users);
     }
 
     /**
-     * Hiển thị danh sách người dùng đã bị chặn
-     */
-    public function blocked()
-    {
-        $blockedUsers = auth()->user()->blockedUsers()->paginate(20);
-        return view('users.blocked', compact('blockedUsers'));
-    }
-
-    /**
-     * Chặn một người dùng
-     */
-    public function block(User $user)
-    {
-        if (auth()->id() === $user->id) {
-            return response()->json(['error' => 'Bạn không thể chặn chính mình'], 400);
-        }
-
-        auth()->user()->block($user->id);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Đã chặn người dùng thành công'
-        ]);
-    }
-
-    /**
-     * Bỏ chặn một người dùng
-     */
-    public function unblock(User $user)
-    {
-        if (auth()->id() === $user->id) {
-            return response()->json(['error' => 'Bạn không thể bỏ chặn chính mình'], 400);
-        }
-
-        auth()->user()->unblock($user->id);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Đã bỏ chặn người dùng thành công'
-        ]);
-    }
-
-    /**
-     * Báo cáo một người dùng
+     * Báo cáo một người dùng.
      */
     public function report(Request $request, User $user)
     {
-        if (auth()->id() === $user->id) {
-            return response()->json(['error' => 'Bạn không thể báo cáo chính mình'], 400);
+        // Kiểm tra nếu người dùng báo cáo chính mình
+        if (Auth::id() === $user->id) {
+            Log::warning("User tried to report themselves.", ['user_id' => Auth::id()]);
+            return response()->json(['success' => false, 'error' => 'Không thể báo cáo chính mình.'], 400);
         }
 
-        $request->validate([
-            'reason' => 'required|string|max:1000'
+        // Validate dữ liệu báo cáo
+        $validated = $request->validate([
+            'reason' => 'required|string',
+            'other_reason' => 'nullable|string|max:500' // Lý do khác có thể null nhưng nếu có thì validate
         ]);
 
-        auth()->user()->report($user->id, $request->reason);
+        // Lấy lý do báo cáo, nếu là 'other' thì lấy nội dung từ other_reason
+        $reason = $validated['reason'];
+        if ($reason === 'other' && isset($validated['other_reason'])) {
+             $reason = $validated['other_reason'];
+        } elseif ($reason === 'other' && !isset($validated['other_reason'])) {
+            // Nếu chọn lý do khác nhưng không nhập nội dung
+            return response()->json(['success' => false, 'error' => 'Vui lòng nhập lý do báo cáo chi tiết.'], 400);
+        }
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Đã báo cáo người dùng thành công'
-        ]);
+        try {
+            $reporter = Auth::user();
+            // Gọi phương thức report từ User model
+            // Phương thức report trong model cần trả về true nếu báo cáo mới được tạo, false nếu đã tồn tại
+            $reported = $reporter->report($user->id, $reason);
+
+            if ($reported) {
+                 Log::info("User {$reporter->id} reported user {$user->id} for reason: {$reason}");
+                 return response()->json(['success' => true, 'message' => 'Đã gửi báo cáo thành công']);
+            } else {
+                 // Đây là trường hợp người dùng đã báo cáo trước đó
+                 Log::info("User {$reporter->id} already reported user {$user->id}.");
+                 return response()->json(['success' => false, 'error' => 'Bạn đã báo cáo người dùng này trước đó.']);
+            }
+
+        } catch (\Exception $e) {
+            Log::error("Error reporting user {$user->id} by user " . Auth::id() . ": " . $e->getMessage() . "\nTrace: " . $e->getTraceAsString());
+            return response()->json(['success' => false, 'error' => 'Có lỗi xảy ra khi gửi báo cáo. Vui lòng thử lại.'], 500);
+        }
     }
 
     /**
-     * Hủy báo cáo một người dùng
+     * Chặn một người dùng.
      */
-    public function unreport(User $user)
+    public function block(User $user)
     {
-        if (auth()->id() === $user->id) {
-            return response()->json(['error' => 'Bạn không thể hủy báo cáo chính mình'], 400);
+        // Kiểm tra nếu người dùng chặn chính mình
+         if (Auth::id() === $user->id) {
+            return response()->json(['success' => false, 'error' => 'Không thể chặn chính mình.'], 400);
         }
 
-        auth()->user()->unreport($user->id);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Đã hủy báo cáo người dùng thành công'
-        ]);
+        try {
+            Auth::user()->block($user->id);
+            Log::info("User " . Auth::id() . " blocked user " . $user->id);
+            return response()->json(['success' => true, 'message' => 'Đã chặn người dùng thành công']);
+        } catch (\Exception $e) {
+             Log::error("Error blocking user {$user->id} by user " . Auth::id() . ": " . $e->getMessage());
+             return response()->json(['success' => false, 'error' => 'Có lỗi xảy ra khi chặn người dùng.'], 500);
+        }
     }
 
-    public function follow(User $user)
+    /**
+     * Bỏ chặn một người dùng.
+     */
+    public function unblock(User $user)
     {
-        $follower = auth()->user();
-        
-        if ($follower->isFollowing($user)) {
-            $follower->unfollow($user);
-            return response()->json(['following' => false]);
+        try {
+            Auth::user()->unblock($user->id);
+            Log::info("User " . Auth::id() . " unblocked user " . $user->id);
+            return response()->json(['success' => true, 'message' => 'Đã bỏ chặn người dùng thành công']);
+        } catch (\Exception $e) {
+            Log::error("Error unblocking user {$user->id} by user " . Auth::id() . ": " . $e->getMessage());
+            return response()->json(['success' => false, 'error' => 'Có lỗi xảy ra khi bỏ chặn người dùng.'], 500);
         }
-        
-        $follower->follow($user);
-        return response()->json(['following' => true]);
+    }
+
+    /**
+     * Hiển thị danh sách người dùng đã bị chặn bởi user hiện tại.
+     */
+    public function blocked()
+    {
+        $blockedUsers = Auth::user()->blockedUsers()->get();
+        return view('profile.edit', compact('blockedUsers')); // Giả định view hiển thị danh sách chặn là profile.edit
+    }
+
+
+    /**
+     * Gửi yêu cầu kết bạn.
+     */
+    public function addFriend(User $user)
+    {
+        // Kiểm tra nếu người dùng kết bạn với chính mình
+         if (Auth::id() === $user->id) {
+            return response()->json(['success' => false, 'error' => 'Không thể tự kết bạn với chính mình.'], 400);
+        }
+         // Kiểm tra nếu đã là bạn bè hoặc đã gửi/nhận yêu cầu
+         if (Auth::user()->isFriendWith($user) || Auth::user()->hasSentFriendRequestTo($user) || Auth::user()->hasReceivedFriendRequestFrom($user)) {
+             return response()->json(['success' => false, 'error' => 'Đã kết bạn hoặc đang chờ xác nhận.'], 400);
+         }
+
+        try {
+            Auth::user()->addFriend($user); // Gọi phương thức trong User model
+            return response()->json(['success' => true, 'message' => 'Đã gửi yêu cầu kết bạn']);
+        } catch (\Exception $e) {
+            Log::error("Error adding friend {$user->id} by user " . Auth::id() . ": " . $e->getMessage());
+            return response()->json(['success' => false, 'error' => 'Có lỗi xảy ra khi gửi yêu cầu kết bạn.'], 500);
+        }
+    }
+
+    /**
+     * Hủy kết bạn.
+     */
+    public function removeFriend(User $user)
+    {
+        // Kiểm tra nếu họ thực sự là bạn bè trước khi xóa
+        if (!Auth::user()->isFriendWith($user)) {
+             return response()->json(['success' => false, 'error' => 'Hai người không phải là bạn bè.'], 400);
+        }
+
+        try {
+            Auth::user()->removeFriend($user); // Gọi phương thức trong User model
+            return response()->json(['success' => true, 'message' => 'Đã hủy kết bạn thành công']);
+        } catch (\Exception $e) {
+            Log::error("Error removing friend {$user->id} by user " . Auth::id() . ": " . $e->getMessage());
+            return response()->json(['success' => false, 'error' => 'Có lỗi xảy ra khi hủy kết bạn.'], 500);
+        }
+    }
+
+    /**
+     * Hiển thị danh sách bạn bè của một người dùng.
+     */
+    public function friends(User $user)
+    {
+        $friends = $user->friends()->get();
+        return view('users.friends', compact('user', 'friends')); // Giả định view hiển thị danh sách bạn bè là users.friends
+    }
+
+    /**
+     * Theo dõi một người dùng.
+     */
+     public function follow(User $user)
+    {
+        // Kiểm tra nếu người dùng theo dõi chính mình
+        if (Auth::id() === $user->id) {
+            return response()->json(['success' => false, 'error' => 'Không thể tự theo dõi chính mình.'], 400);
+        }
+         // Kiểm tra nếu đã theo dõi
+         if (Auth::user()->isFollowing($user)) {
+             return response()->json(['success' => false, 'error' => 'Bạn đã theo dõi người dùng này.'], 400);
+         }
+
+        try {
+            Auth::user()->follow($user); // Gọi phương thức trong User model
+            return response()->json(['success' => true, 'message' => 'Đã theo dõi người dùng']);
+        } catch (\Exception $e) {
+            Log::error("Error following user {$user->id} by user " . Auth::id() . ": " . $e->getMessage());
+            return response()->json(['success' => false, 'error' => 'Có lỗi xảy ra khi theo dõi người dùng.'], 500);
+        }
+    }
+
+    /**
+     * Bỏ theo dõi một người dùng.
+     */
+    public function unfollow(User $user)
+    {
+        // Kiểm tra nếu đang theo dõi
+         if (!Auth::user()->isFollowing($user)) {
+             return response()->json(['success' => false, 'error' => 'Bạn không theo dõi người dùng này.'], 400);
+         }
+        try {
+            Auth::user()->unfollow($user); // Gọi phương thức trong User model
+            return response()->json(['success' => true, 'message' => 'Đã bỏ theo dõi người dùng']);
+        } catch (\Exception $e) {
+             Log::error("Error unfollowing user {$user->id} by user " . Auth::id() . ": " . $e->getMessage());
+             return response()->json(['success' => false, 'error' => 'Có lỗi xảy ra khi bỏ theo dõi người dùng.'], 500);
+        }
     }
 }
