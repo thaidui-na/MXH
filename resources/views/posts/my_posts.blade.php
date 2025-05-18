@@ -120,6 +120,12 @@
                 <i class="fas fa-users"></i> Nhóm
             </button>
         </li>
+        <li class="nav-item" role="presentation">
+            {{-- Thêm tab Bài viết yêu thích --}}
+            <a class="nav-link" href="{{ route('posts.my_favorited') }}" role="tab">
+                <i class="fas fa-heart"></i> Bài viết yêu thích
+            </a>
+        </li>
     </ul>
 
     <div class="tab-content" id="profileTabContent">

@@ -142,6 +142,9 @@ Route::middleware('auth')->group(function () {
 
     // Routes quản lý bình luận trong nhóm
     Route::post('/groups/posts/{post}/comments', [GroupCommentController::class, 'store'])->name('groups.posts.comments.store');
+
+    // Routes quản lý bài viết yêu thích của người dùng
+    Route::get('/my-favorited-posts', [PostController::class, 'myFavoritedPosts'])->name('posts.my_favorited');
 });
 
 /**
