@@ -137,6 +137,9 @@
                     <a href="{{ route('groups.create') }}" class="btn btn-success me-2">
                         <i class="fas fa-users"></i> Tạo nhóm
                     </a>
+                    <a href="{{ route('stories.create') }}" class="btn btn-info me-2">
+                        <i class="fas fa-camera"></i> Đăng story
+                    </a>
                     <a href="{{ route('posts.create') }}" class="btn btn-primary">
                         <i class="fas fa-plus"></i> Tạo bài viết mới
                     </a>

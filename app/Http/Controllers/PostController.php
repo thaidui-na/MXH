@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\Report;
+use App\Models\Story;
 
 /**
  * Controller quản lý các chức năng liên quan đến bài viết (Posts)
@@ -33,7 +34,16 @@ class PostController extends Controller
             ->withCount('members')
             ->get();
 
-        return view('posts.index', compact('posts', 'groups'));
+        // Lấy stories của người dùng đang theo dõi và của chính mình
+        $stories = Story::with('user')
+            ->active()
+            ->fromFollowing(auth()->id())
+            ->orWhere('user_id', auth()->id())
+            ->latest()
+            ->get()
+            ->groupBy('user_id');
+
+        return view('posts.index', compact('posts', 'groups', 'stories'));
     }
 
     /**
