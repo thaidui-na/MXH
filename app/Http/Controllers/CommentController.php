@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Post;
 use App\Models\Comment;
 use Illuminate\Http\Request;
+use App\Notifications\PostCommentedNotification;
 
 class CommentController extends Controller
 {
@@ -30,6 +31,11 @@ class CommentController extends Controller
             'content' => $validated['content'],
             'user_id' => auth()->id()
         ]);
+
+        // Gửi notification cho chủ bài viết nếu không phải tự bình luận bài mình
+        if ($post->user_id !== auth()->id()) {
+            $post->user->notify(new PostCommentedNotification(auth()->user(), $post, $validated['content']));
+        }
 
         return back()->with('success', 'Bình luận đã được thêm');
     }

@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\Report;
 use App\Models\Story;
+use App\Notifications\PostLikedNotification;
 
 /**
  * Controller quản lý các chức năng liên quan đến bài viết (Posts)
@@ -243,6 +244,10 @@ class PostController extends Controller
         } else {
             $post->likes()->attach($user->id);
             $liked = true;
+            // Gửi notification cho chủ bài viết nếu không phải tự like bài mình
+            if ($post->user_id !== $user->id) {
+                $post->user->notify(new PostLikedNotification($user, $post));
+            }
         }
         return response()->json([
             'liked' => $liked,

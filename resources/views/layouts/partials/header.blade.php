@@ -28,6 +28,34 @@
                             @endif
                         </a>
                     </li>
+
+                    <li class="nav-item dropdown">
+                        <a class="nav-link position-relative" href="#" id="notificationDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-bell"></i>
+                            @php $unread = auth()->user()->unreadNotifications->count(); @endphp
+                            @if($unread > 0)
+                                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.65em; line-height: 1;">
+                                    {{ $unread }}
+                                </span>
+                            @endif
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end shadow-sm" aria-labelledby="notificationDropdown" style="min-width: 350px; max-width: 400px;">
+                            <li class="dropdown-header fw-bold">Thông báo mới</li>
+                            @forelse(auth()->user()->notifications->take(10) as $notification)
+                                <li>
+                                    <a href="{{ $notification->data['url'] ?? '#' }}" class="dropdown-item small {{ $notification->read_at ? '' : 'fw-bold' }}">
+                                        {{ $notification->data['message'] ?? 'Có thông báo mới' }}
+                                        <br>
+                                        <small class="text-muted">{{ $notification->created_at->diffForHumans() }}</small>
+                                    </a>
+                                </li>
+                            @empty
+                                <li><span class="dropdown-item text-muted">Không có thông báo nào</span></li>
+                            @endforelse
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a href="{{ route('notifications.index') }}" class="dropdown-item text-center">Xem tất cả thông báo</a></li>
+                        </ul>
+                    </li>
                 @endauth
             </ul>
 

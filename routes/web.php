@@ -19,6 +19,7 @@ use App\Http\Controllers\GroupPostFavoriteController;
 use App\Http\Controllers\GroupCommentController;
 use App\Http\Controllers\StoryController;
 use App\Http\Controllers\FollowController;
+use App\Http\Controllers\NotificationController;
 
 // Route mặc định, hiển thị trang chào mừng
 Route::get('/', function () {
@@ -205,3 +206,5 @@ Route::middleware(['web', 'auth', \App\Http\Middleware\AdminMiddleware::class])-
     Route::put('/posts/{id}', [AdminController::class, 'updatePost'])->name('admin.posts.update'); // Cập nhật post
     Route::delete('/posts/{id}', [AdminController::class, 'deletePost'])->name('admin.posts.delete'); // Xóa post
 });
+
+Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
