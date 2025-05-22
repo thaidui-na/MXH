@@ -35,6 +35,12 @@ Route::post('/register', [AuthController::class, 'register']); // Xử lý dữ 
 Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login'); // Hiển thị form đăng nhập
 Route::post('/login', [AuthController::class, 'login']); // Xử lý dữ liệu đăng nhập
 
+// Routes xử lý quên mật khẩu
+Route::get('/forgot-password', [PasswordController::class, 'showForgotForm'])->name('password.request');
+Route::post('/forgot-password', [PasswordController::class, 'sendResetLink'])->name('password.email');
+Route::get('/reset-password/{token}', [PasswordController::class, 'showResetForm'])->name('password.reset');
+Route::post('/reset-password', [PasswordController::class, 'reset'])->name('password.update');
+
 // Route xử lý đăng xuất - yêu cầu phương thức POST để tránh CSRF
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
@@ -144,7 +150,7 @@ Route::middleware('auth')->group(function () {
  */
 Route::middleware('auth')->group(function () {
     Route::get('/password/change', [PasswordController::class, 'showChangePasswordForm'])->name('password.change'); // Form đổi mật khẩu
-    Route::put('/password/change', [PasswordController::class, 'updatePassword'])->name('password.update'); // Xử lý đổi mật khẩu
+    Route::post('/password/change', [PasswordController::class, 'updatePassword'])->name('password.change'); // Xử lý đổi mật khẩu
 });
 
 
