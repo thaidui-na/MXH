@@ -47,6 +47,23 @@ class AuthController extends Controller
             'password' => 'required',
         ]);
 
+        // Kiểm tra trạng thái tài khoản trước khi đăng nhập
+        $user = User::where('email', $credentials['email'])->first();
+        
+        if ($user) {
+            if ($user->isDisabled()) {
+                return back()->withErrors([
+                    'email' => 'Tài khoản của bạn đã bị vô hiệu hóa.',
+                ]);
+            }
+            
+            if ($user->isDeleted()) {
+                return back()->withErrors([
+                    'email' => 'Tài khoản của bạn đã bị xóa.',
+                ]);
+            }
+        }
+
         if (Auth::attempt($credentials)) {
             $request->session()->regenerate();
             return redirect()->intended('/dashboard');

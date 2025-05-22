@@ -81,6 +81,10 @@
                                 <button type="submit" class="btn btn-primary">
                                     <i class="fas fa-save me-2"></i>Lưu thay đổi
                                 </button>
+
+                                <a href="{{ route('profile.delete') }}" class="btn btn-outline-danger ms-2">
+                                    <i class="fas fa-user-times me-2"></i>Xóa tài khoản
+                                </a>
                             </form>
                         </div>
 
