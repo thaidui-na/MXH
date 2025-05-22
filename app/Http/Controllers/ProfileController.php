@@ -79,4 +79,41 @@ class ProfileController extends Controller
     }
 
     // Phương thức updatePassword đã được chuyển sang PasswordController
+
+    /**
+     * Hiển thị form xóa tài khoản
+     */
+    public function showDeleteAccount()
+    {
+        return view('profile.delete-account');
+    }
+
+    /**
+     * Xử lý yêu cầu xóa tài khoản
+     */
+    public function deleteAccount(Request $request)
+    {
+        // Validate mật khẩu
+        $request->validate([
+            'password' => 'required|current_password',
+            'delete_type' => 'required|in:disable,delete'
+        ]);
+
+        $user = auth()->user();
+
+        if ($request->delete_type === 'disable') {
+            $user->disable();
+            $message = 'Tài khoản của bạn đã được vô hiệu hóa.';
+        } else {
+            $user->deletePermanently();
+            $message = 'Tài khoản của bạn đã được xóa vĩnh viễn.';
+        }
+
+        // Đăng xuất người dùng
+        auth()->logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        return redirect()->route('login')->with('success', $message);
+    }
 }

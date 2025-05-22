@@ -290,11 +290,115 @@
         font-weight: 500;
         margin-left: 0.3rem;
     }
+
+    .stories-container {
+        display: flex;
+        gap: 1rem;
+        overflow-x: auto;
+        padding: 0.5rem 0;
+    }
+
+    .story-item {
+        text-align: center;
+        min-width: 80px;
+    }
+
+    .story-avatar {
+        width: 64px;
+        height: 64px;
+        margin: 0 auto;
+        position: relative;
+    }
+
+    .story-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        border: 2px solid #ddd;
+        transition: all 0.3s ease;
+    }
+
+    .story-avatar img.has-story {
+        border: 2px solid #007bff;
+    }
+
+    .story-username {
+        font-size: 0.8rem;
+        margin-top: 0.5rem;
+        color: #333;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 80px;
+    }
+
+    .add-story {
+        position: relative;
+        width: 100%;
+        height: 100%;
+    }
+
+    .add-story-icon {
+        position: absolute;
+        bottom: 0;
+        right: 0;
+        background: #007bff;
+        color: white;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.8rem;
+        border: 2px solid white;
+    }
 </style>
 @endpush
 
 @section('content')
 <div class="container py-4">
+    {{-- Stories Section --}}
+    @if($stories->isNotEmpty())
+        <div class="card mb-4">
+            <div class="card-body">
+                <div class="stories-container">
+                    {{-- Nút đăng story mới --}}
+                    <div class="story-item">
+                        <a href="{{ route('stories.create') }}" class="text-decoration-none">
+                            <div class="story-avatar">
+                                <div class="add-story">
+                                    <img src="{{ auth()->user()->avatar_url }}" alt="{{ auth()->user()->name }}" class="rounded-circle">
+                                    <div class="add-story-icon">
+                                        <i class="fas fa-plus"></i>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="story-username">Đăng story</div>
+                        </a>
+                    </div>
+
+                    {{-- Danh sách stories --}}
+                    @foreach($stories as $userId => $userStories)
+                        @php
+                            $user = $userStories->first()->user;
+                            $latestStory = $userStories->first();
+                        @endphp
+                        <div class="story-item">
+                            <a href="{{ route('stories.show', $latestStory) }}" class="text-decoration-none">
+                                <div class="story-avatar">
+                                    <img src="{{ $user->avatar_url }}" alt="{{ $user->name }}" 
+                                         class="rounded-circle {{ $userStories->where('is_active', true)->count() > 0 ? 'has-story' : '' }}">
+                                </div>
+                                <div class="story-username">{{ $user->name }}</div>
+                            </a>
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+        </div>
+    @endif
+
     {{-- Tabs chuyển đổi --}}
     <ul class="nav nav-tabs mb-4" id="feedTab" role="tablist">
         <li class="nav-item" role="presentation">

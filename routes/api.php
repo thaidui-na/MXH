@@ -2,31 +2,19 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-<<<<<<< Updated upstream
 use App\Http\Controllers\Api\UserController;
-=======
-use App\Http\Controllers\HomeController;
-use App\Http\Controllers\UserController;
 use App\Models\User;
 use Illuminate\Support\Facades\Storage;
->>>>>>> Stashed changes
 
 /*
 |--------------------------------------------------------------------------
 | API Routes
 |--------------------------------------------------------------------------
-<<<<<<< Updated upstream
 */
 
 Route::middleware(['auth', 'web'])->group(function () {
     Route::get('/users/search', [UserController::class, 'search']);
-=======
-|
-| Here is where you can register API routes for your application. These
-| routes are loaded by the RouteServiceProvider and all of them will
-| be assigned to the "api" middleware group. Make something great!
-|
-*/
+}); 
 
 Route::middleware(['web', 'auth'])->group(function () {
     Route::get('/user', function (Request $request) {
@@ -53,6 +41,7 @@ Route::middleware(['web', 'auth'])->group(function () {
                     $q->where('name', 'like', "%{$query}%")
                       ->orWhere('email', 'like', "%{$query}%");
                 })
+                ->excludeBlocked()
                 ->select('id', 'name', 'email', 'avatar')
                 ->limit(12)
                 ->get();
@@ -85,5 +74,4 @@ Route::middleware(['web', 'auth'])->group(function () {
             ], 500);
         }
     });
->>>>>>> Stashed changes
 }); 

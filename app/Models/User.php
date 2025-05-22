@@ -35,7 +35,8 @@ class User extends Authenticatable
         'avatar',       // Đường dẫn tới file avatar của người dùng (có thể null)
         'phone',        // Số điện thoại của người dùng (có thể null)
         'bio',          // Giới thiệu ngắn về người dùng (có thể null)
-        'birthday'      // Ngày sinh của người dùng (có thể null)
+        'birthday',     // Ngày sinh của người dùng (có thể null)
+        'account_status' // Trạng thái tài khoản
     ];
 
     /**
@@ -63,6 +64,7 @@ class User extends Authenticatable
         'password' => 'hashed',
         // Ép kiểu 'birthday' thành đối tượng Carbon (chỉ ngày) khi truy cập
         'birthday' => 'date',
+        'deleted_at' => 'datetime'
     ];
 
     /**
@@ -74,7 +76,10 @@ class User extends Authenticatable
      */
     public function getAvatarUrlAttribute()
     {
-        return $this->avatar ? Storage::url($this->avatar) : asset('images/default-avatar.jpg');
+        if ($this->avatar && Storage::disk('public')->exists($this->avatar)) {
+            return Storage::url($this->avatar);
+        }
+        return asset('stickers/avatar_icon.png');
     }
 
     /**
@@ -233,19 +238,9 @@ class User extends Authenticatable
         return $this->belongsToMany(User::class, 'followers', 'follower_id', 'following_id');
     }
 
-    public function follow(User $user)
+    public function isFollowing($user)
     {
-        return $this->following()->attach($user->id);
-    }
-
-    public function unfollow(User $user)
-    {
-        return $this->following()->detach($user->id);
-    }
-
-    public function isFollowing(User $user)
-    {
-        return $this->following()->where('following_id', $user->id)->exists();
+        return $this->following()->where('users.id', $user->id)->exists();
     }
 
     /**
@@ -293,21 +288,29 @@ class User extends Authenticatable
     }
 
     /**
-     * Định nghĩa quan hệ với những người dùng đã báo cáo người dùng này
+     * Định nghĩa quan hệ với những người dùng đã báo cáo người dùng này (reportedByUsers)
+     * (Ai đã báo cáo tôi)
      */
     public function reportedByUsers()
     {
-        return $this->belongsToMany(User::class, 'user_reports', 'reported_id', 'reporter_id')
+        // Bảng pivot: user_user_reports
+        // Khóa ngoại của model hiện tại (người bị báo cáo): reported_user_id
+        // Khóa ngoại của model liên quan (người báo cáo): reporter_id
+        return $this->belongsToMany(User::class, 'user_user_reports', 'reported_user_id', 'reporter_id')
                     ->withPivot('reason', 'is_resolved', 'admin_note')
                     ->withTimestamps();
     }
 
     /**
-     * Định nghĩa quan hệ với những người dùng mà người dùng này đã báo cáo
+     * Định nghĩa quan hệ với những người dùng mà người dùng này đã báo cáo (reportedUsers)
+     * (Ai được tôi báo cáo)
      */
     public function reportedUsers()
     {
-        return $this->belongsToMany(User::class, 'user_reports', 'reporter_id', 'reported_id')
+        // Bảng pivot: user_user_reports
+        // Khóa ngoại của model hiện tại (người báo cáo): reporter_id
+        // Khóa ngoại của model liên quan (người bị báo cáo): reported_user_id
+        return $this->belongsToMany(User::class, 'user_user_reports', 'reporter_id', 'reported_user_id')
                     ->withPivot('reason', 'is_resolved', 'admin_note')
                     ->withTimestamps();
     }
@@ -317,20 +320,29 @@ class User extends Authenticatable
      */
     public function hasReported($userId)
     {
-        return $this->reportedUsers()->where('reported_id', $userId)->exists();
+        // Sử dụng quan hệ reportedUsers và kiểm tra reported_user_id
+        return $this->reportedUsers()->where('reported_user_id', $userId)->exists();
     }
 
     /**
      * Báo cáo một người dùng
+     *
+     * @param int $userId ID của người dùng bị báo cáo
+     * @param string $reason Lý do báo cáo
+     * @return bool True nếu báo cáo mới được tạo, false nếu đã tồn tại
      */
     public function report($userId, $reason)
     {
+        // Kiểm tra xem người dùng đã báo cáo người dùng này chưa
         if (!$this->hasReported($userId)) {
+            // Sử dụng quan hệ reportedUsers để tạo bản ghi trong bảng pivot user_user_reports
             $this->reportedUsers()->attach($userId, [
                 'reason' => $reason,
-                'is_resolved' => false
+                'is_resolved' => false // Cột này tồn tại trong bảng user_user_reports mới
             ]);
+             return true; // Báo cáo mới được tạo
         }
+        return false; // Đã báo cáo trước đó
     }
 
     /**
@@ -338,6 +350,7 @@ class User extends Authenticatable
      */
     public function unreport($userId)
     {
+        // Sử dụng quan hệ reportedUsers để xóa bản ghi trong bảng pivot
         $this->reportedUsers()->detach($userId);
     }
 
@@ -351,5 +364,98 @@ class User extends Authenticatable
                     ->from('user_blocks')
                     ->where('blocker_id', auth()->id());
         });
+    }
+
+    /**
+     * Định nghĩa quan hệ với các bài viết mà người dùng này đã yêu thích.
+     */
+    public function favoritedPosts()
+    {
+        return $this->belongsToMany(Post::class, 'post_favorites', 'user_id', 'post_id')->withTimestamps();
+    }
+
+    /**
+     * Kiểm tra xem tài khoản có đang hoạt động không
+     */
+    public function isActive()
+    {
+        return $this->account_status === 'active';
+    }
+
+    /**
+     * Kiểm tra xem tài khoản có bị vô hiệu hóa không
+     */
+    public function isDisabled()
+    {
+        return $this->account_status === 'disabled';
+    }
+
+    /**
+     * Kiểm tra xem tài khoản có bị xóa không
+     */
+    public function isDeleted()
+    {
+        return $this->account_status === 'deleted';
+    }
+
+    /**
+     * Vô hiệu hóa tài khoản
+     */
+    public function disable()
+    {
+        $this->update([
+            'account_status' => 'disabled',
+            'deleted_at' => now()
+        ]);
+    }
+
+    /**
+     * Xóa tài khoản vĩnh viễn
+     */
+    public function deletePermanently()
+    {
+        // Xóa avatar nếu có
+        if ($this->avatar) {
+            Storage::disk('public')->delete($this->avatar);
+        }
+
+        // Xóa tất cả các bài viết của người dùng
+        $this->posts()->delete();
+
+        // Xóa tất cả các tin nhắn của người dùng
+        $this->sentMessages()->delete();
+        $this->receivedMessages()->delete();
+
+        // Xóa tất cả các báo cáo liên quan
+        $this->reportedByUsers()->detach();
+        $this->reportedUsers()->detach();
+
+        // Xóa tất cả các mối quan hệ chặn
+        $this->blockedUsers()->detach();
+        $this->blockedByUsers()->detach();
+
+        // Xóa tất cả các mối quan hệ theo dõi
+        $this->followers()->detach();
+        $this->following()->detach();
+
+        // Xóa tất cả các bài viết yêu thích
+        $this->favoritedPosts()->detach();
+
+        // Cập nhật trạng thái tài khoản thành đã xóa
+        $this->update([
+            'account_status' => 'deleted',
+            'deleted_at' => now()
+        ]);
+    }
+
+    /**
+     * Khôi phục tài khoản
+     */
+    public function restore()
+    {
+        $this->update([
+            'account_status' => 'active',
+            'deleted_at' => null
+        ]);
     }
 }

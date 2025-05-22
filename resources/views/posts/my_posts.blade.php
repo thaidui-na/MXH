@@ -11,11 +11,10 @@
             <div class="row">
                 {{-- Cột bên trái: Avatar và thông tin cơ bản --}}
                 <div class="col-md-3 text-center">
-                    <img src="{{ $user->avatar ? asset('images/' . $user->avatar) : asset('images/default-avatar.jpg') }}"
-                         onerror="this.onerror=null;this.src='{{ asset('images/default-avatar.jpg') }}';"
-                         class="rounded-circle img-thumbnail mb-3"
-                         style="width: 150px; height: 150px; object-fit: cover;"
-                         alt="{{ $user->name }}'s avatar">
+                    <img src="{{ $user->avatar_url }}" 
+                         alt="{{ $user->name }}" 
+                         class="rounded-circle mb-3"
+                         style="width: 120px; height: 120px; object-fit: cover;">
                     <h4 class="mb-0">{{ $user->name }}</h4>
                     @if($user->email)
                         <p class="text-muted mb-2">
@@ -89,7 +88,7 @@
                         {{-- Số người đang theo dõi --}}
                         <div class="col-md-4">
                             <div class="stats-item text-center p-3">
-                                <h3 class="mb-0">{{ $user->following()->count() }}</h3>
+                                <h3 class="mb-0 following-count">{{ $user->following()->count() }}</h3>
                                 <p class="text-muted mb-0">Đang theo dõi</p>
                             </div>
                         </div>
@@ -121,6 +120,12 @@
                 <i class="fas fa-users"></i> Nhóm
             </button>
         </li>
+        <li class="nav-item" role="presentation">
+            {{-- Thêm tab Bài viết yêu thích --}}
+            <a class="nav-link" href="{{ route('posts.my_favorited') }}" role="tab">
+                <i class="fas fa-heart"></i> Bài viết yêu thích
+            </a>
+        </li>
     </ul>
 
     <div class="tab-content" id="profileTabContent">
@@ -131,6 +136,9 @@
                 <div>
                     <a href="{{ route('groups.create') }}" class="btn btn-success me-2">
                         <i class="fas fa-users"></i> Tạo nhóm
+                    </a>
+                    <a href="{{ route('stories.create') }}" class="btn btn-info me-2">
+                        <i class="fas fa-camera"></i> Đăng story
                     </a>
                     <a href="{{ route('posts.create') }}" class="btn btn-primary">
                         <i class="fas fa-plus"></i> Tạo bài viết mới
@@ -264,9 +272,9 @@
 
         {{-- Tab Đang theo dõi --}}
         <div class="tab-pane fade" id="following-pane" role="tabpanel" aria-labelledby="following-tab">
-            <div class="row">
+            <div class="row" id="following-list">
                 @forelse($user->following as $following)
-                    <div class="col-md-4 mb-3">
+                    <div class="col-md-4 mb-3 following-item" data-user-id="{{ $following->id }}">
                         <div class="card">
                             <div class="card-body">
                                 <div class="d-flex align-items-center">
@@ -284,7 +292,7 @@
                                         <button class="btn {{ auth()->user()->isFollowing($following) ? 'btn-primary' : 'btn-outline-primary' }} btn-sm follow-button" 
                                                 data-user-id="{{ $following->id }}">
                                             <i class="fas fa-user-plus"></i> 
-                                            <span class="follow-text">{{ auth()->user()->isFollowing($following) ? 'Bỏ theo dõi' : 'Theo dõi' }}</span>
+                                            <span class="follow-text">{{ auth()->user()->isFollowing($following) ? 'Hủy theo dõi' : 'Theo dõi' }}</span>
                                         </button>
                                     </div>
                                 @endif
@@ -419,6 +427,8 @@
 
 @push('scripts')
 <script>
+window.profileId = {{ $user->id }};
+
 document.addEventListener('DOMContentLoaded', function() {
     const searchInput = document.getElementById('groupSearchInput');
     const searchResults = document.getElementById('groupSearchResults');
@@ -546,36 +556,73 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Xử lý sự kiện follow
-    document.querySelectorAll('.follow-button').forEach(button => {
-        button.addEventListener('click', function() {
-            const userId = this.dataset.userId;
-            const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-            const followText = this.querySelector('.follow-text');
-            
-            fetch(`/users/${userId}/follow`, {
-                method: 'POST',
-                headers: {
-                    'X-CSRF-TOKEN': csrfToken,
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json'
-                },
-                credentials: 'same-origin'
-            })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-                return response.json();
-            })
-            .then(data => {
-                // Tự động tải lại trang sau khi thao tác thành công
-                window.location.reload();
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Có lỗi xảy ra khi thực hiện thao tác theo dõi');
-            });
+    function followButtonHandler() {
+        const userId = this.dataset.userId;
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        const followText = this.querySelector('.follow-text');
+        const isFollowing = ['Đang theo dõi', 'Bỏ theo dõi', 'Hủy theo dõi'].includes(followText.textContent.trim());
+
+        this.disabled = true;
+
+        const url = isFollowing ? `/users/${userId}/unfollow` : `/users/${userId}/follow`;
+
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': csrfToken,
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            credentials: 'same-origin'
+        })
+        .then(async response => {
+            this.disabled = false;
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                let message = errorData.message || 'Có lỗi xảy ra khi thực hiện thao tác theo dõi';
+                throw new Error(message);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (isFollowing) {
+                followText.textContent = 'Theo dõi';
+                this.classList.remove('btn-primary');
+                this.classList.add('btn-outline-primary');
+            } else {
+                followText.textContent = 'Đang theo dõi';
+                this.classList.remove('btn-outline-primary');
+                this.classList.add('btn-primary');
+            }
+
+            // Luôn fetch lại danh sách following để đảm bảo số lượng và danh sách đúng
+            fetch(`/users/${window.profileId}/following-list`)
+                .then(res => res.text())
+                .then(html => {
+                    const followingList = document.getElementById('following-list');
+                    if (followingList) {
+                        followingList.innerHTML = html;
+                        // Gắn lại sự kiện cho nút follow/unfollow mới render
+                        followingList.querySelectorAll('.follow-button').forEach(button => {
+                            button.addEventListener('click', followButtonHandler);
+                        });
+                        // Cập nhật lại số lượng "Đang theo dõi" dựa trên số lượng item thực tế
+                        const newCount = followingList.querySelectorAll('.following-item').length;
+                        const followingCount = document.querySelector('.following-count');
+                        if (followingCount) {
+                            followingCount.textContent = newCount;
+                        }
+                    }
+                });
+        })
+        .catch(error => {
+            alert(error.message);
         });
+    }
+
+    // Gắn sự kiện cho tất cả nút follow
+    document.querySelectorAll('.follow-button').forEach(button => {
+        button.addEventListener('click', followButtonHandler);
     });
 
     // Xử lý sự kiện báo cáo bài viết

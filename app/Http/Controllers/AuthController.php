@@ -23,7 +23,7 @@ class AuthController extends Controller
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:8|confirmed',
         ]);
-
+        
         User::create([
             'name' => $request->name,
             'email' => $request->email,
@@ -46,6 +46,23 @@ class AuthController extends Controller
             'email' => 'required|email',
             'password' => 'required',
         ]);
+
+        // Kiểm tra trạng thái tài khoản trước khi đăng nhập
+        $user = User::where('email', $credentials['email'])->first();
+        
+        if ($user) {
+            if ($user->isDisabled()) {
+                return back()->withErrors([
+                    'email' => 'Tài khoản của bạn đã bị vô hiệu hóa.',
+                ]);
+            }
+            
+            if ($user->isDeleted()) {
+                return back()->withErrors([
+                    'email' => 'Tài khoản của bạn đã bị xóa.',
+                ]);
+            }
+        }
 
         if (Auth::attempt($credentials)) {
             $request->session()->regenerate();
