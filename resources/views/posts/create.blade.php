@@ -11,7 +11,7 @@
                     <h5 class="mb-0">Tạo bài viết mới</h5>
                 </div>
                 <div class="card-body">
-                    <form action="{{ route('posts.store') }}" method="POST">
+                    <form action="{{ route('posts.store') }}" method="POST" enctype="multipart/form-data">
                         @csrf
                         
                         <!-- Tiêu đề bài viết -->
@@ -33,10 +33,21 @@
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
+
+                        <!-- Upload ảnh -->
+                        <div class="mb-3">
+                            <label for="image" class="form-label">Ảnh bài viết</label>
+                            <input type="file" class="form-control @error('image') is-invalid @enderror" 
+                                   id="image" name="image" accept="image/*">
+                            <div class="form-text">Định dạng: JPG, PNG, GIF. Kích thước tối đa: 2MB</div>
+                            @error('image')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
                         
-                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                            <a href="{{ route('posts.my_posts') }}" class="btn btn-secondary me-md-2">Hủy</a>
+                        <div class="d-grid gap-2">
                             <button type="submit" class="btn btn-primary">Đăng bài</button>
+                            <a href="{{ route('posts.my_posts') }}" class="btn btn-secondary">Hủy</a>
                         </div>
                     </form>
                 </div>

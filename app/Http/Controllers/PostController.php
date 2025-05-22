@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\Report;
 use App\Models\Story;
+use Illuminate\Support\Facades\Storage;
 
 /**
  * Controller quản lý các chức năng liên quan đến bài viết (Posts)
@@ -110,23 +111,30 @@ class PostController extends Controller
         $validated = $request->validate([
             'title' => 'required|string|max:255', // Tiêu đề là bắt buộc, dạng chuỗi, tối đa 255 ký tự
             'content' => 'required|string', // Nội dung là bắt buộc, dạng chuỗi
-            // 'is_public' không cần validate ở đây vì sẽ được gán cố định
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048', // Ảnh là tùy chọn, phải là ảnh, định dạng jpeg/png/jpg/gif, tối đa 2MB
         ]);
 
         // Thêm user_id của người dùng đang đăng nhập vào mảng dữ liệu đã validate
         $validated['user_id'] = auth()->id();
 
         // Gán giá trị cố định cho trường is_public (mặc định mọi bài viết đều công khai)
-        // Nếu bạn muốn có tùy chọn riêng tư/công khai, cần thêm trường này vào form và validate
         $validated['is_public'] = true;
+
+        // Xử lý upload ảnh nếu có
+        if ($request->hasFile('image')) {
+            $image = $request->file('image');
+            $imageName = time() . '_' . $image->getClientOriginalName();
+            $image->storeAs('public/posts', $imageName);
+            $validated['image'] = 'posts/' . $imageName;
+        }
 
         // Tạo bản ghi bài viết mới trong database với dữ liệu đã chuẩn bị
         Post::create($validated);
 
         // Chuyển hướng người dùng về trang "Bài viết của tôi"
         return redirect()
-            ->route('posts.my_posts') // Route name của trang danh sách bài viết của tôi
-            ->with('success', 'Bài viết đã được đăng thành công!'); // Gửi kèm thông báo thành công (flash message)
+            ->route('posts.my_posts')
+            ->with('success', 'Bài viết đã được đăng thành công!');
     }
 
     /**
@@ -183,7 +191,7 @@ class PostController extends Controller
      */
     public function update(Request $request, Post $post) // Inject Request và Post
     {
-        // Kiểm tra quyền chỉnh sửa (giống như trong hàm edit)
+        // Kiểm tra quyền chỉnh sửa
         if ($post->user_id !== auth()->id()) {
             abort(403, 'Bạn không có quyền chỉnh sửa bài viết này.');
         }
@@ -192,19 +200,31 @@ class PostController extends Controller
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'content' => 'required|string',
-             // 'is_public' không cần validate nếu luôn là true
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
-        // Gán lại giá trị is_public (nếu logic ứng dụng yêu cầu mọi bài viết đều công khai)
+        // Gán lại giá trị is_public
         $validated['is_public'] = true;
 
-        // Cập nhật bản ghi bài viết trong database với dữ liệu đã validate
+        // Xử lý upload ảnh mới nếu có
+        if ($request->hasFile('image')) {
+            // Xóa ảnh cũ nếu có
+            if ($post->image) {
+                Storage::disk('public')->delete($post->image);
+            }
+            
+            $image = $request->file('image');
+            $imageName = time() . '_' . $image->getClientOriginalName();
+            $image->storeAs('public/posts', $imageName);
+            $validated['image'] = 'posts/' . $imageName;
+        }
+
+        // Cập nhật bản ghi bài viết trong database
         $post->update($validated);
 
-        // Chuyển hướng người dùng về trang xem chi tiết bài viết vừa cập nhật
         return redirect()
-            ->route('posts.show', $post) // Route name của trang xem chi tiết, truyền đối tượng post
-            ->with('success', 'Bài viết đã được cập nhật thành công!'); // Gửi kèm thông báo thành công
+            ->route('posts.show', $post)
+            ->with('success', 'Bài viết đã được cập nhật thành công!');
     }
 
     /**

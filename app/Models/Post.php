@@ -24,6 +24,7 @@ class Post extends Model
         'user_id',    // ID của người dùng đã đăng bài viết (khóa ngoại tới 'users')
         'title',      // Tiêu đề của bài viết
         'content',    // Nội dung của bài viết
+        'image',      // Đường dẫn ảnh của bài viết
         'is_public'   // Trạng thái công khai/riêng tư của bài viết (boolean)
     ];
 

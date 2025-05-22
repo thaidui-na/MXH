@@ -32,6 +32,17 @@
                     <div class="card-text mb-4">
                         {!! nl2br(e($post->content)) !!}
                     </div>
+
+                    @if($post->image)
+                        <div class="post-image mb-4">
+                            <img src="{{ Storage::url($post->image) }}" 
+                                 alt="Ảnh bài viết" 
+                                 class="img-fluid rounded"
+                                 style="max-height: 500px; width: auto;">
+                        </div>
+                    @endif
+                    
+                    <hr>
                     
                     <div class="d-flex justify-content-between">
                         <a href="{{ route('posts.index') }}" class="btn btn-secondary">
