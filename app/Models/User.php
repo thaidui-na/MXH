@@ -35,7 +35,8 @@ class User extends Authenticatable
         'avatar',       // Đường dẫn tới file avatar của người dùng (có thể null)
         'phone',        // Số điện thoại của người dùng (có thể null)
         'bio',          // Giới thiệu ngắn về người dùng (có thể null)
-        'birthday'      // Ngày sinh của người dùng (có thể null)
+        'birthday',     // Ngày sinh của người dùng (có thể null)
+        'account_status' // Trạng thái tài khoản
     ];
 
     /**
@@ -63,6 +64,7 @@ class User extends Authenticatable
         'password' => 'hashed',
         // Ép kiểu 'birthday' thành đối tượng Carbon (chỉ ngày) khi truy cập
         'birthday' => 'date',
+        'deleted_at' => 'datetime'
     ];
 
     /**
@@ -370,5 +372,90 @@ class User extends Authenticatable
     public function favoritedPosts()
     {
         return $this->belongsToMany(Post::class, 'post_favorites', 'user_id', 'post_id')->withTimestamps();
+    }
+
+    /**
+     * Kiểm tra xem tài khoản có đang hoạt động không
+     */
+    public function isActive()
+    {
+        return $this->account_status === 'active';
+    }
+
+    /**
+     * Kiểm tra xem tài khoản có bị vô hiệu hóa không
+     */
+    public function isDisabled()
+    {
+        return $this->account_status === 'disabled';
+    }
+
+    /**
+     * Kiểm tra xem tài khoản có bị xóa không
+     */
+    public function isDeleted()
+    {
+        return $this->account_status === 'deleted';
+    }
+
+    /**
+     * Vô hiệu hóa tài khoản
+     */
+    public function disable()
+    {
+        $this->update([
+            'account_status' => 'disabled',
+            'deleted_at' => now()
+        ]);
+    }
+
+    /**
+     * Xóa tài khoản vĩnh viễn
+     */
+    public function deletePermanently()
+    {
+        // Xóa avatar nếu có
+        if ($this->avatar) {
+            Storage::disk('public')->delete($this->avatar);
+        }
+
+        // Xóa tất cả các bài viết của người dùng
+        $this->posts()->delete();
+
+        // Xóa tất cả các tin nhắn của người dùng
+        $this->sentMessages()->delete();
+        $this->receivedMessages()->delete();
+
+        // Xóa tất cả các báo cáo liên quan
+        $this->reportedByUsers()->detach();
+        $this->reportedUsers()->detach();
+
+        // Xóa tất cả các mối quan hệ chặn
+        $this->blockedUsers()->detach();
+        $this->blockedByUsers()->detach();
+
+        // Xóa tất cả các mối quan hệ theo dõi
+        $this->followers()->detach();
+        $this->following()->detach();
+
+        // Xóa tất cả các bài viết yêu thích
+        $this->favoritedPosts()->detach();
+
+        // Cập nhật trạng thái tài khoản thành đã xóa
+        $this->update([
+            'account_status' => 'deleted',
+            'deleted_at' => now()
+        ]);
+    }
+
+    /**
+     * Khôi phục tài khoản
+     */
+    public function restore()
+    {
+        $this->update([
+            'account_status' => 'active',
+            'deleted_at' => null
+        ]);
     }
 }

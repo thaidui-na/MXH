@@ -56,6 +56,10 @@ Route::middleware('auth')->group(function () {
     // Routes quản lý thông tin cá nhân
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit'); // Hiển thị form chỉnh sửa profile
     Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update'); // Cập nhật thông tin profile
+    
+    // Routes xóa tài khoản
+    Route::get('/profile/delete', [ProfileController::class, 'showDeleteAccount'])->name('profile.delete');
+    Route::post('/profile/delete', [ProfileController::class, 'deleteAccount'])->name('profile.delete.confirm');
 });
 
 /**
