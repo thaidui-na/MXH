@@ -5,6 +5,10 @@ namespace Database\Seeders;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
+use App\Models\User;
+use App\Models\Group;
+use App\Models\GroupMember;
+use App\Models\GroupPost;
 
 class GroupDemoSeeder extends Seeder
 {
@@ -13,15 +17,15 @@ class GroupDemoSeeder extends Seeder
      */
     public function run(): void
     {
-        \DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+        DB::statement('SET FOREIGN_KEY_CHECKS=0;');
         // truncate các bảng
-        \App\Models\GroupMember::truncate();
-        \App\Models\GroupPost::truncate();
-        \App\Models\Group::truncate();
-        \DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+        GroupMember::truncate();
+        GroupPost::truncate();
+        Group::truncate();
+        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
 
-        // Tạo 5 user mẫu
-        $users = \App\Models\User::factory()->count(5)->create();
+        // Lấy 5 user đầu tiên từ database
+        $users = User::take(5)->get();
 
         // Thêm các nhóm mẫu liên quan đến TDC
         $tdcGroups = [
@@ -51,9 +55,9 @@ class GroupDemoSeeder extends Seeder
             ],
         ];
         foreach ($tdcGroups as $groupData) {
-            $group = \App\Models\Group::create($groupData);
+            $group = Group::create($groupData);
             foreach ($users as $user) {
-                \App\Models\GroupMember::create([
+                GroupMember::create([
                     'group_id' => $group->id,
                     'user_id' => $user->id,
                     'role' => 'member',
@@ -61,7 +65,7 @@ class GroupDemoSeeder extends Seeder
                 ]);
             }
             for ($i = 0; $i < 2; $i++) {
-                \App\Models\GroupPost::create([
+                GroupPost::create([
                     'group_id' => $group->id,
                     'user_id' => $users->random()->id,
                     'title' => 'Bài viết TDC ' . ($i + 1) . ' trong nhóm ' . $group->name,
