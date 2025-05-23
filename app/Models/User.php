@@ -58,10 +58,10 @@ class User extends Authenticatable
      */
     protected $casts = [
         // Ép kiểu 'email_verified_at' thành đối tượng Carbon (ngày giờ) khi truy cập
-        'email_verified_at' => 'datetime',
+            'email_verified_at' => 'datetime',
         // Tự động hash giá trị được gán cho 'password' khi lưu vào DB
         // và đảm bảo giá trị hash không bao giờ bị trả về khi truy cập thuộc tính này
-        'password' => 'hashed',
+            'password' => 'hashed',
         // Ép kiểu 'birthday' thành đối tượng Carbon (chỉ ngày) khi truy cập
         'birthday' => 'date',
         'deleted_at' => 'datetime'
