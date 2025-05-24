@@ -451,13 +451,29 @@
     background-color: rgba(13,110,253,0.05);
 }
 
-/* Giới hạn chiều cao danh sách và thêm scroll */
-.list-group {
-    max-height: 600px;
+/* Sửa lại phần scroll */
+.card-body {
+    height: calc(100vh - 200px); /* Điều chỉnh chiều cao phù hợp */
+    overflow: hidden; /* Thay đổi từ auto thành hidden */
+}
+
+.tab-content {
+    height: calc(100% - 40px); /* Trừ đi chiều cao của tab navigation */
+    overflow: hidden;
+}
+
+.tab-pane {
+    height: 100%;
     overflow-y: auto;
 }
 
-/* Đảm bảo tin nhắn dài không bị tràn */
+.list-group {
+    height: 100%;
+    overflow-y: auto;
+    margin-bottom: 0; /* Loại bỏ margin bottom */
+}
+
+/* Giữ nguyên các style khác */
 .min-width-0 {
     min-width: 0;
 }
@@ -498,11 +514,6 @@
 
 .emoji-list span:hover {
     background-color: #f0f0f0;
-}
-
-.tab-content {
-    max-height: 200px;
-    overflow-y: auto;
 }
 
 .sticker-picker {

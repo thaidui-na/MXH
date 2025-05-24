@@ -14,6 +14,9 @@ class DatabaseSeeder extends Seeder
         $this->call([
             UserSeeder::class,
             PostSeeder::class,
+            ChatGroupSeeder::class,
+            GroupMessageSeeder::class,
+            MessageSeeder::class,
             GroupDemoSeeder::class,
         ]);
     }
