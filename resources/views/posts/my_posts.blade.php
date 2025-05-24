@@ -106,6 +106,11 @@
             </button>
         </li>
         <li class="nav-item" role="presentation">
+            <button class="nav-link" id="friends-tab" data-bs-toggle="tab" data-bs-target="#friends-pane" type="button" role="tab" aria-controls="friends-pane" aria-selected="false">
+                <i class="fas fa-user-friends"></i> Bạn bè
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
             <button class="nav-link" id="followers-tab" data-bs-toggle="tab" data-bs-target="#followers-pane" type="button" role="tab" aria-controls="followers-pane" aria-selected="false">
                 <i class="fas fa-users"></i> Người theo dõi
             </button>
@@ -229,6 +234,45 @@
                     Bạn chưa có bài viết nào. <a href="{{ route('posts.create') }}">Tạo bài viết đầu tiên</a>
                 </div>
             @endif
+        </div>
+
+        {{-- Tab Bạn bè --}}
+        <div class="tab-pane fade" id="friends-pane" role="tabpanel" aria-labelledby="friends-tab">
+            <div class="row">
+                @forelse($user->acceptedFriends() as $friend)
+                    <div class="col-md-4 mb-3">
+                        <div class="card">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center">
+                                    <img src="{{ $friend->avatar_url }}" 
+                                         alt="{{ $friend->name }}" 
+                                         class="rounded-circle me-3"
+                                         style="width: 50px; height: 50px; object-fit: cover;">
+                                    <div>
+                                        <h5 class="mb-0">{{ $friend->name }}</h5>
+                                        <p class="text-muted mb-0">{{ $friend->email }}</p>
+                                    </div>
+                                </div>
+                                <div class="mt-3">
+                                    <a href="{{ route('posts.user_posts', $friend->id) }}" class="btn btn-sm btn-outline-primary me-2">
+                                        <i class="fas fa-user"></i> Xem trang cá nhân
+                                    </a>
+                                    <a href="{{ route('messages.show', $friend->id) }}" class="btn btn-sm btn-outline-success">
+                                        <i class="fas fa-comment"></i> Nhắn tin
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                @empty
+                    <div class="col-12">
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            Chưa có bạn bè nào.
+                        </div>
+                    </div>
+                @endforelse
+            </div>
         </div>
 
         {{-- Tab Người theo dõi --}}

@@ -19,6 +19,7 @@ use App\Http\Controllers\GroupPostFavoriteController;
 use App\Http\Controllers\GroupCommentController;
 use App\Http\Controllers\StoryController;
 use App\Http\Controllers\FollowController;
+use App\Http\Controllers\NotificationController;
 
 // Route mặc định, hiển thị trang chào mừng
 Route::get('/', function () {
@@ -56,6 +57,7 @@ Route::middleware('auth')->group(function () {
     // Routes quản lý thông tin cá nhân
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit'); // Hiển thị form chỉnh sửa profile
     Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update'); // Cập nhật thông tin profile
+    Route::get('/profile/friends', [ProfileController::class, 'friends'])->name('profile.friends'); // Hiển thị danh sách bạn bè
     
     // Routes xóa tài khoản
     Route::get('/profile/delete', [ProfileController::class, 'showDeleteAccount'])->name('profile.delete');
@@ -174,8 +176,13 @@ Route::middleware('auth')->group(function () {
     Route::post('/password/change', [PasswordController::class, 'updatePassword'])->name('password.change'); // Xử lý đổi mật khẩu
 });
 
-
-
+// Notification Routes
+Route::middleware(['auth'])->group(function () {
+    Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::delete('/notifications/{id}', [NotificationController::class, 'destroy'])->name('notifications.destroy');
+    Route::post('/notifications/{id}/mark-as-read', [NotificationController::class, 'markAsRead'])->name('notifications.markAsRead');
+    Route::delete('/notifications/clear-all', [NotificationController::class, 'clearAll'])->name('notifications.clearAll');
+});
 
 // Route dashboard - Chuyển hướng đến trang danh sách bài viết
 Route::get('/dashboard', function () {

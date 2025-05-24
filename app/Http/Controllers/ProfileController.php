@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use App\Http\Controllers\Controller;
+use App\Models\User;
 
 /**
  * Controller quản lý các chức năng liên quan đến hồ sơ người dùng (Profile)
@@ -115,5 +116,20 @@ class ProfileController extends Controller
         $request->session()->regenerateToken();
 
         return redirect()->route('login')->with('success', $message);
+    }
+
+    /**
+     * Hiển thị danh sách bạn bè của người dùng
+     *
+     * @return \Illuminate\View\View
+     */
+    public function friends()
+    {
+        $user = auth()->user();
+        $friends = $user->friends()->paginate(12);
+
+        return view('profile.friends', [
+            'friends' => $friends
+        ]);
     }
 }

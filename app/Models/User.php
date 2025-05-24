@@ -458,4 +458,34 @@ class User extends Authenticatable
             'deleted_at' => null
         ]);
     }
+
+    /**
+     * Get the friends of the user.
+     * This is a many-to-many relationship through the friends table.
+     */
+    public function friends()
+    {
+        return $this->belongsToMany(User::class, 'friends', 'user_id', 'friend_id')
+            ->withPivot('status')
+            ->withTimestamps();
+    }
+
+    /**
+     * Get the pending friend requests sent by the user.
+     */
+    public function pendingFriends()
+    {
+        return $this->friends()->wherePivot('status', 'pending');
+    }
+
+    /**
+     * Get the accepted friends of the user.
+     */
+    public function acceptedFriends()
+    {
+        return $this->belongsToMany(User::class, 'friends', 'user_id', 'friend_id')
+            ->wherePivot('status', 'accepted')
+            ->withTimestamps()
+            ->get();
+    }
 }
