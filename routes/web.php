@@ -20,6 +20,7 @@ use App\Http\Controllers\GroupCommentController;
 use App\Http\Controllers\StoryController;
 use App\Http\Controllers\FollowController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\EventController;
 
 // Route mặc định, hiển thị trang chào mừng
 Route::get('/', function () {
@@ -165,6 +166,9 @@ Route::middleware('auth')->group(function () {
     Route::post('/stories', [StoryController::class, 'store'])->name('stories.store');
     Route::get('/stories/{story}', [StoryController::class, 'show'])->name('stories.show');
     Route::delete('/stories/{story}', [StoryController::class, 'destroy'])->name('stories.destroy');
+
+    // Routes quản lý sự kiện
+    Route::resource('events', EventController::class);
 });
 
 /**
