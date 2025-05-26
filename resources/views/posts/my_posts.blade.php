@@ -126,6 +126,11 @@
             </button>
         </li>
         <li class="nav-item" role="presentation">
+            <button class="nav-link" id="events-tab" data-bs-toggle="tab" data-bs-target="#events-pane" type="button" role="tab" aria-controls="events-pane" aria-selected="false">
+                <i class="fas fa-calendar-alt"></i> Sự kiện
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
             {{-- Thêm tab Bài viết yêu thích --}}
             <a class="nav-link" href="{{ route('posts.my_favorited') }}" role="tab">
                 <i class="fas fa-heart"></i> Bài viết yêu thích
@@ -432,6 +437,124 @@
                     Không tìm thấy nhóm nào phù hợp. <a href="{{ route('groups.create') }}">Tạo nhóm mới</a>
                 </div>
             @endif
+        </div>
+
+        {{-- Tab Sự kiện --}}
+        <div class="tab-pane fade" id="events-pane" role="tabpanel" aria-labelledby="events-tab">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h4>Sự kiện của tôi</h4>
+                <a href="{{ route('events.create') }}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Tạo sự kiện mới
+                </a>
+            </div>
+
+            {{-- Sự kiện đang tham gia --}}
+            <div class="mb-5">
+                <h5 class="mb-3">Sự kiện đang tham gia</h5>
+                <div class="row">
+                    @forelse($user->joinedEvents as $event)
+                        <div class="col-md-6 mb-3">
+                            <div class="card h-100">
+                                @if($event->image_path)
+                                    <img src="{{ asset('storage/' . $event->image_path) }}" 
+                                         class="card-img-top" 
+                                         alt="{{ $event->title }}"
+                                         style="height: 200px; object-fit: cover;">
+                                @endif
+                                <div class="card-body">
+                                    <h5 class="card-title">{{ $event->title }}</h5>
+                                    <p class="card-text text-muted">
+                                        <i class="fas fa-clock me-2"></i>{{ $event->event_time->format('d/m/Y H:i') }}
+                                    </p>
+                                    <p class="card-text text-muted">
+                                        <i class="fas fa-map-marker-alt me-2"></i>{{ $event->location }}
+                                    </p>
+                                    <p class="card-text">{{ Str::limit($event->description, 100) }}</p>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span class="badge bg-primary">
+                                            <i class="fas fa-users me-1"></i>{{ $event->participants_count }} người tham gia
+                                        </span>
+                                        <div>
+                                            <a href="{{ route('events.show', $event) }}" class="btn btn-sm btn-info me-2">
+                                                <i class="fas fa-eye"></i> Xem chi tiết
+                                            </a>
+                                            <form action="{{ route('events.leave', $event) }}" method="POST" class="d-inline">
+                                                @csrf
+                                                <button type="submit" class="btn btn-sm btn-danger">
+                                                    <i class="fas fa-sign-out-alt"></i> Rời khỏi
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    @empty
+                        <div class="col-12">
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle me-2"></i>
+                                Bạn chưa tham gia sự kiện nào.
+                            </div>
+                        </div>
+                    @endforelse
+                </div>
+            </div>
+
+            {{-- Sự kiện đã tạo --}}
+            <div>
+                <h5 class="mb-3">Sự kiện đã tạo</h5>
+                <div class="row">
+                    @forelse($user->events as $event)
+                        <div class="col-md-6 mb-3">
+                            <div class="card h-100">
+                                @if($event->image_path)
+                                    <img src="{{ asset('storage/' . $event->image_path) }}" 
+                                         class="card-img-top" 
+                                         alt="{{ $event->title }}"
+                                         style="height: 200px; object-fit: cover;">
+                                @endif
+                                <div class="card-body">
+                                    <h5 class="card-title">{{ $event->title }}</h5>
+                                    <p class="card-text text-muted">
+                                        <i class="fas fa-clock me-2"></i>{{ $event->event_time->format('d/m/Y H:i') }}
+                                    </p>
+                                    <p class="card-text text-muted">
+                                        <i class="fas fa-map-marker-alt me-2"></i>{{ $event->location }}
+                                    </p>
+                                    <p class="card-text">{{ Str::limit($event->description, 100) }}</p>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span class="badge bg-primary">
+                                            <i class="fas fa-users me-1"></i>{{ $event->participants_count }} người tham gia
+                                        </span>
+                                        <div>
+                                            <a href="{{ route('events.show', $event) }}" class="btn btn-sm btn-info me-2">
+                                                <i class="fas fa-eye"></i> Xem chi tiết
+                                            </a>
+                                            <a href="{{ route('events.edit', $event) }}" class="btn btn-sm btn-warning me-2">
+                                                <i class="fas fa-edit"></i> Chỉnh sửa
+                                            </a>
+                                            <form action="{{ route('events.destroy', $event) }}" method="POST" class="d-inline" onsubmit="return confirm('Bạn có chắc chắn muốn xóa sự kiện này?');">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="btn btn-sm btn-danger">
+                                                    <i class="fas fa-trash"></i> Xóa
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    @empty
+                        <div class="col-12">
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle me-2"></i>
+                                Bạn chưa tạo sự kiện nào.
+                            </div>
+                        </div>
+                    @endforelse
+                </div>
+            </div>
         </div>
     </div>
 </div>

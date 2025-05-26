@@ -168,7 +168,17 @@ Route::middleware('auth')->group(function () {
     Route::delete('/stories/{story}', [StoryController::class, 'destroy'])->name('stories.destroy');
 
     // Routes quản lý sự kiện
-    Route::resource('events', EventController::class);
+    Route::get('/events', [EventController::class, 'index'])->name('events.index');
+    Route::get('/events/create', [EventController::class, 'create'])->name('events.create');
+    Route::post('/events', [EventController::class, 'store'])->name('events.store');
+    Route::get('/events/{event}', [EventController::class, 'show'])->name('events.show');
+    Route::get('/events/{event}/edit', [EventController::class, 'edit'])->name('events.edit');
+    Route::put('/events/{event}', [EventController::class, 'update'])->name('events.update');
+    Route::delete('/events/{event}', [EventController::class, 'destroy'])->name('events.destroy');
+    
+    // Event participation routes
+    Route::post('/events/{event}/join', [EventController::class, 'join'])->name('events.join');
+    Route::post('/events/{event}/leave', [EventController::class, 'leave'])->name('events.leave');
 });
 
 /**

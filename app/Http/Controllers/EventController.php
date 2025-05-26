@@ -61,8 +61,16 @@ class EventController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(Event $event)
+    public function show($id)
     {
+        $event = Event::withTrashed()->findOrFail($id);
+        
+        // Nếu sự kiện đã bị xóa
+        if ($event->trashed()) {
+            return back()->with('error', 'Sự kiện này đã bị xóa.');
+        }
+
+        $event->load(['user', 'activeParticipants']);
         return view('events.show', compact('event'));
     }
 
@@ -143,5 +151,56 @@ class EventController extends Controller
             return redirect()->back()
                 ->with('error', 'Có lỗi xảy ra khi xóa sự kiện: ' . $e->getMessage());
         }
+    }
+
+    public function join($id)
+    {
+        $event = Event::withTrashed()->findOrFail($id);
+        
+        // Nếu sự kiện đã bị xóa
+        if ($event->trashed()) {
+            return back()->with('error', 'Sự kiện này đã bị xóa.');
+        }
+
+        // Kiểm tra xem người dùng đã tham gia chưa
+        $existingParticipation = $event->participants()
+            ->where('user_id', auth()->id())
+            ->first();
+
+        if ($existingParticipation) {
+            // Nếu đã tham gia và đang ở trạng thái 'joined'
+            if ($existingParticipation->pivot->status === 'joined') {
+                return back()->with('error', 'Bạn đã tham gia sự kiện này.');
+            }
+            
+            // Nếu đã tham gia nhưng đã rời đi, cập nhật lại trạng thái
+            $event->participants()->updateExistingPivot(auth()->id(), [
+                'status' => 'joined',
+                'joined_at' => now(),
+                'left_at' => null
+            ]);
+        } else {
+            // Nếu chưa tham gia, tạo bản ghi mới
+            $event->participants()->attach(auth()->id(), [
+                'status' => 'joined',
+                'joined_at' => now()
+            ]);
+        }
+
+        return back()->with('success', 'Bạn đã tham gia sự kiện thành công.');
+    }
+
+    public function leave(Event $event)
+    {
+        if (!$event->isParticipant(auth()->user())) {
+            return back()->with('error', 'Bạn chưa tham gia sự kiện này.');
+        }
+
+        $event->participants()->updateExistingPivot(auth()->id(), [
+            'status' => 'left',
+            'left_at' => now()
+        ]);
+
+        return back()->with('success', 'Bạn đã rời khỏi sự kiện thành công.');
     }
 }
