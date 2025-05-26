@@ -18,20 +18,27 @@
                         <div class="notification-item mb-3 p-3 border rounded" id="notification-{{ $notification->id }}">
                             <div class="d-flex justify-content-between align-items-start">
                                 <div class="d-flex align-items-center">
-                                    @if($notification->data['avatar'] ?? false)
-                                        <img src="{{ $notification->data['avatar'] }}" 
-                                             alt="Avatar" 
-                                             class="rounded-circle me-3"
-                                             style="width: 40px; height: 40px; object-fit: cover;">
-                                    @else
-                                        <div class="rounded-circle me-3 bg-primary text-white d-flex align-items-center justify-content-center"
-                                             style="width: 40px; height: 40px;">
-                                            <i class="fas fa-bell"></i>
-                                        </div>
-                                    @endif
-                                    <div>
-                                        <p class="mb-1">{{ $notification->data['message'] }}</p>
+                                    <img src="{{ $notification->data['avatar'] ?? asset('images/default-avatar.jpg') }}" 
+                                         class="rounded-circle me-3" 
+                                         style="width: 50px; height: 50px; object-fit: cover;"
+                                         alt="Avatar">
+                                    <div class="flex-grow-1">
+                                        <p class="mb-0">{{ $notification->data['message'] }}</p>
                                         <small class="text-muted">{{ $notification->created_at->diffForHumans() }}</small>
+                                    </div>
+                                    <div class="ms-3">
+                                        @if($notification->type === 'App\\Notifications\\FriendRequestNotification')
+                                            <button class="btn btn-sm btn-success me-2" onclick="acceptFriendRequest({{ $notification->data['user_id'] }}, {{ $notification->id }})">
+                                                <i class="fas fa-check"></i> Chấp nhận
+                                            </button>
+                                            <button class="btn btn-sm btn-danger" onclick="rejectFriendRequest({{ $notification->data['user_id'] }}, {{ $notification->id }})">
+                                                <i class="fas fa-times"></i> Từ chối
+                                            </button>
+                                        @else
+                                            <button class="btn btn-sm btn-danger" onclick="deleteNotification({{ $notification->id }})">
+                                                <i class="fas fa-trash"></i> Xóa
+                                            </button>
+                                        @endif
                                     </div>
                                 </div>
                                 <div class="dropdown">
@@ -82,6 +89,7 @@ function deleteNotification(id) {
             if (data.success) {
                 document.getElementById(`notification-${id}`).remove();
                 updateNotificationCount();
+                setTimeout(() => location.reload(), 300);
             }
         })
         .catch(error => {
@@ -123,6 +131,60 @@ function updateNotificationCount() {
             countElement.remove();
         }
     }
+}
+
+function acceptFriendRequest(userId, notificationId) {
+    fetch(`/friends/accept/${userId}`, {
+        method: 'POST',
+        headers: {
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+            'Accept': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Thay đổi nội dung thông báo thay vì xóa
+            const noti = document.getElementById(`notification-${notificationId}`);
+            if (noti) {
+                noti.querySelector('.flex-grow-1 p').textContent = 'Bạn đã chấp nhận lời mời kết bạn này.';
+                // Ẩn các nút chấp nhận/từ chối
+                const btns = noti.querySelectorAll('button');
+                btns.forEach(btn => btn.style.display = 'none');
+            }
+            alert('Đã chấp nhận lời mời kết bạn!');
+        } else {
+            alert(data.message || 'Có lỗi xảy ra khi chấp nhận lời mời kết bạn.');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Có lỗi xảy ra khi chấp nhận lời mời kết bạn.');
+    });
+}
+
+function rejectFriendRequest(userId, notificationId) {
+    fetch(`/friends/reject/${userId}`, {
+        method: 'POST',
+        headers: {
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+            'Accept': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Xóa thông báo sau khi từ chối
+            deleteNotification(notificationId);
+            alert('Đã từ chối lời mời kết bạn.');
+        } else {
+            alert(data.message || 'Có lỗi xảy ra khi từ chối lời mời kết bạn.');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Có lỗi xảy ra khi từ chối lời mời kết bạn.');
+    });
 }
 </script>
 @endpush

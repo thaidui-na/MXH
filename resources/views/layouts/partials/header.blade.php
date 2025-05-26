@@ -83,7 +83,7 @@
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" aria-labelledby="navbarDropdown">
                             <li><a class="dropdown-item" href="{{ route('profile.edit') }}"><i class="fas fa-user-edit me-2"></i>Hồ sơ</a></li>
-                            <li><a class="dropdown-item" href="{{ route('profile.friends') }}"><i class="fas fa-users me-2"></i>Danh sách bạn bè</a></li>
+                            {{-- <li><a class="dropdown-item" href="{{ route('profile.friends') }}"><i class="fas fa-users me-2"></i>Danh sách bạn bè</a></li> --}}
                             <li><a class="dropdown-item" href="{{ route('password.change') }}"><i class="fas fa-key me-2"></i>Đổi mật khẩu</a></li>
                             <li><hr class="dropdown-divider"></li>
                             <li>
