@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Model đại diện cho một người dùng (User) trong hệ thống.
@@ -496,8 +497,9 @@ class User extends Authenticatable
      */
     public function hasReceivedFriendRequestFrom(User $user)
     {
-        return $this->belongsToMany(User::class, 'friends', 'friend_id', 'user_id')
+        return DB::table('friends')
             ->where('user_id', $user->id)
+            ->where('friend_id', $this->id)
             ->where('status', 'pending')
             ->exists();
     }
