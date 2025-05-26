@@ -12,16 +12,18 @@ class Event extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'user_id',
         'title',
         'description',
+        'event_type',
         'event_time',
         'location',
-        'image_path'
+        'image_path',
+        'user_id'
     ];
 
     protected $casts = [
-        'event_time' => 'datetime'
+        'event_time' => 'datetime',
+        'event_type' => 'string'
     ];
 
     public function user()

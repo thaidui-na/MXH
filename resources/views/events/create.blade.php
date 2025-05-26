@@ -70,6 +70,25 @@
                             @enderror
                         </div>
 
+                        <div class="mb-3">
+                            <label class="form-label">Loại sự kiện</label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="event_type" id="online" value="online" {{ old('event_type') == 'online' ? 'checked' : '' }}>
+                                <label class="form-check-label" for="online">
+                                    Online
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="event_type" id="offline" value="offline" {{ old('event_type') == 'offline' ? 'checked' : '' }}>
+                                <label class="form-check-label" for="offline">
+                                    Offline
+                                </label>
+                            </div>
+                            @error('event_type')
+                                <div class="invalid-feedback d-block">{{ $message }}</div>
+                            @enderror
+                        </div>
+
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label for="event_time" class="form-label">
@@ -101,7 +120,7 @@
                                        name="location" 
                                        value="{{ old('location') }}" 
                                        required
-                                       placeholder="Nhập địa điểm">
+                                       placeholder="Nhập địa chỉ tổ chức sự kiện">
                                 @error('location')
                                     <div class="invalid-feedback">
                                         <i class="fas fa-exclamation-circle me-1"></i>
@@ -173,5 +192,43 @@
         color: #6c757d;
     }
 </style>
+@endpush
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const eventTypeInputs = document.querySelectorAll('input[name="event_type"]');
+    const locationInput = document.getElementById('location');
+    const form = document.querySelector('form');
+
+    function updateLocationField() {
+        const selectedType = document.querySelector('input[name="event_type"]:checked').value;
+        if (selectedType === 'online') {
+            locationInput.value = 'Online Meeting';
+            locationInput.readOnly = true;
+            locationInput.placeholder = 'Tự động điền cho sự kiện online';
+        } else {
+            locationInput.value = '';
+            locationInput.readOnly = false;
+            locationInput.placeholder = 'Nhập địa chỉ tổ chức sự kiện';
+        }
+    }
+
+    eventTypeInputs.forEach(input => {
+        input.addEventListener('change', updateLocationField);
+    });
+
+    // Set initial state
+    updateLocationField();
+
+    // Ensure location value is set before form submission
+    form.addEventListener('submit', function(e) {
+        const selectedType = document.querySelector('input[name="event_type"]:checked').value;
+        if (selectedType === 'online') {
+            locationInput.value = 'Online Meeting';
+        }
+    });
+});
+</script>
 @endpush
 @endsection 
