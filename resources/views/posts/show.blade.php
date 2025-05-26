@@ -33,16 +33,22 @@
                         {!! nl2br(e($post->content)) !!}
                     </div>
                     
-                    <div class="d-flex justify-content-between">
-                        <a href="{{ route('posts.index') }}" class="btn btn-secondary">
-                            <i class="fas fa-arrow-left"></i> Quay lại
-                        </a>
-                        <a href="{{ route('comments.index', $post->id) }}" class="btn btn-secondary">
-                            <i class="fas fa-comments"></i> Bình luận
-                        </a>
-                        
-                        @if($post->user_id === auth()->id())
-                            <div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <button class="btn btn-sm like-button {{ $post->isLikedBy(auth()->id()) ? 'btn-primary' : 'btn-outline-primary' }}"
+                                    data-post-id="{{ $post->id }}">
+                                <i class="fas fa-heart"></i>
+                                <span class="like-count">{{ $post->getLikesCount() }}</span>
+                            </button>
+                            <a href="{{ route('comments.index', $post->id) }}" class="btn btn-sm btn-secondary ms-2">
+                                <i class="fas fa-comments"></i> Bình luận
+                            </a>
+                        </div>
+                        <div>
+                            <a href="{{ route('posts.index') }}" class="btn btn-secondary me-2">
+                                <i class="fas fa-arrow-left"></i> Quay lại
+                            </a>
+                            @if($post->user_id === auth()->id())
                                 <a href="{{ route('posts.edit', $post) }}" class="btn btn-warning me-2">
                                     <i class="fas fa-edit"></i> Sửa
                                 </a>
@@ -54,8 +60,8 @@
                                         <i class="fas fa-trash"></i> Xóa
                                     </button>
                                 </form>
-                            </div>
-                        @endif
+                            @endif
+                        </div>
                     </div>
                 </div>
             </div>
@@ -165,6 +171,40 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // Submit the form
             this.submit();
+        });
+    }
+
+    // Xử lý nút like
+    const likeButton = document.querySelector('.like-button');
+    if (likeButton) {
+        likeButton.addEventListener('click', function() {
+            const postId = this.dataset.postId;
+            fetch(`/posts/${postId}/like`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                const likeCount = this.querySelector('.like-count');
+                if (likeCount) {
+                    likeCount.textContent = data.likesCount;
+                }
+                
+                if (data.liked) {
+                    this.classList.remove('btn-outline-primary');
+                    this.classList.add('btn-primary');
+                } else {
+                    this.classList.remove('btn-primary');
+                    this.classList.add('btn-outline-primary');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
         });
     }
 });

@@ -243,6 +243,11 @@ class PostController extends Controller
         } else {
             $post->likes()->attach($user->id);
             $liked = true;
+            
+            // Gửi thông báo cho chủ bài viết nếu người like không phải là chủ bài viết
+            if ($post->user_id !== $user->id) {
+                $post->user->notify(new \App\Notifications\PostLikeNotification($user, $post));
+            }
         }
         return response()->json([
             'liked' => $liked,
