@@ -20,6 +20,7 @@ class DatabaseSeeder extends Seeder
             GroupDemoSeeder::class,
             CommentSeeder::class,
             FollowSeeder::class,
+            EventSeeder::class,
         ]);
     }
 }
