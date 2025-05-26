@@ -135,6 +135,23 @@
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Xử lý scroll đến bình luận cụ thể nếu có hash trong URL
+    const hash = window.location.hash;
+    if (hash && hash.startsWith('#comment-')) {
+        const commentId = hash.replace('#comment-', '');
+        const commentElement = document.getElementById(`comment-${commentId}`);
+        if (commentElement) {
+            // Thêm highlight cho bình luận
+            commentElement.classList.add('highlight-comment');
+            // Scroll đến bình luận
+            commentElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            // Xóa highlight sau 2 giây
+            setTimeout(() => {
+                commentElement.classList.remove('highlight-comment');
+            }, 2000);
+        }
+    }
+
     // Handle other reason textarea visibility
     const otherRadio = document.getElementById('reason6');
     const otherReasonContainer = document.getElementById('otherReasonContainer');
@@ -209,6 +226,20 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 </script>
+<style>
+.highlight-comment {
+    animation: highlight 2s ease-out;
+}
+
+@keyframes highlight {
+    0% {
+        background-color: #fff3cd;
+    }
+    100% {
+        background-color: transparent;
+    }
+}
+</style>
 @endpush
 
 @endsection 
