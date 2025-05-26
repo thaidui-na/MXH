@@ -21,27 +21,29 @@ class CommentSeeder extends Seeder
         $userIds = User::pluck('id')->toArray();
         $postIds = Post::pluck('id')->toArray();
         
-        // Create 100 comments
-        for ($i = 0; $i < 100; $i++) {
-            $comment = Comment::create([
-                'post_id' => $faker->randomElement($postIds),
-                'user_id' => $faker->randomElement($userIds),
-                'parent_id' => null, // Main comment
-                'content' => $faker->paragraph(2),
-                'created_at' => $faker->dateTimeBetween('-1 year', 'now'),
-                'updated_at' => now(),
-            ]);
-            
-            // 30% chance to create a reply to this comment
-            if ($faker->boolean(30)) {
-                Comment::create([
-                    'post_id' => $comment->post_id,
+        // Create 100 comments for each post
+        foreach ($postIds as $postId) {
+            for ($i = 0; $i < 100; $i++) {
+                $comment = Comment::create([
+                    'post_id' => $postId,
                     'user_id' => $faker->randomElement($userIds),
-                    'parent_id' => $comment->id,
-                    'content' => $faker->paragraph(1),
-                    'created_at' => $faker->dateTimeBetween($comment->created_at, 'now'),
+                    'parent_id' => null, // Main comment
+                    'content' => $faker->paragraph(2),
+                    'created_at' => $faker->dateTimeBetween('-1 year', 'now'),
                     'updated_at' => now(),
                 ]);
+                
+                // 30% chance to create a reply to this comment
+                if ($faker->boolean(30)) {
+                    Comment::create([
+                        'post_id' => $comment->post_id,
+                        'user_id' => $faker->randomElement($userIds),
+                        'parent_id' => $comment->id,
+                        'content' => $faker->paragraph(1),
+                        'created_at' => $faker->dateTimeBetween($comment->created_at, 'now'),
+                        'updated_at' => now(),
+                    ]);
+                }
             }
         }
     }

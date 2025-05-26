@@ -18,6 +18,8 @@ class DatabaseSeeder extends Seeder
             GroupMessageSeeder::class,
             MessageSeeder::class,
             GroupDemoSeeder::class,
+            CommentSeeder::class,
+            FollowSeeder::class,
         ]);
     }
 }
