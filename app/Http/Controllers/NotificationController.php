@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class NotificationController extends Controller
 {
@@ -39,8 +40,19 @@ class NotificationController extends Controller
     public function destroy($id)
     {
         $user = Auth::user();
-        $user->notifications()->findOrFail($id)->delete();
-        
+        $notification = $user->notifications()->findOrFail($id);
+        // Nếu là thông báo kết bạn thì xóa luôn bản ghi pending trong bảng friends
+        if ($notification->type === 'App\\Notifications\\FriendRequestNotification') {
+            $fromUserId = $notification->data['user_id'] ?? null;
+            if ($fromUserId) {
+                DB::table('friends')
+                    ->where('user_id', $fromUserId)
+                    ->where('friend_id', $user->id)
+                    ->where('status', 'pending')
+                    ->delete();
+            }
+        }
+        $notification->delete();
         return response()->json(['success' => true]);
     }
 

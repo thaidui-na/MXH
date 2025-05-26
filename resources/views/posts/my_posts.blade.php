@@ -239,26 +239,26 @@
         {{-- Tab Bạn bè --}}
         <div class="tab-pane fade" id="friends-pane" role="tabpanel" aria-labelledby="friends-tab">
             <div class="row">
-                @forelse($user->acceptedFriends() as $friend)
+                @forelse($user->acceptedFriends as $friend)
                     <div class="col-md-4 mb-3">
                         <div class="card">
                             <div class="card-body">
                                 <div class="d-flex align-items-center">
-                                    <img src="{{ $friend->avatar_url }}" 
-                                         alt="{{ $friend->name }}" 
+                                    <img src="{{ $friend->avatar ? asset('storage/' . $friend->avatar) : asset('images/default-avatar.jpg') }}"
                                          class="rounded-circle me-3"
-                                         style="width: 50px; height: 50px; object-fit: cover;">
+                                         style="width: 50px; height: 50px; object-fit: cover;"
+                                         alt="{{ $friend->name }}'s avatar">
                                     <div>
                                         <h5 class="mb-0">{{ $friend->name }}</h5>
                                         <p class="text-muted mb-0">{{ $friend->email }}</p>
                                     </div>
                                 </div>
                                 <div class="mt-3">
-                                    <a href="{{ route('posts.user_posts', $friend->id) }}" class="btn btn-sm btn-outline-primary me-2">
-                                        <i class="fas fa-user"></i> Xem trang cá nhân
+                                    <a href="{{ route('posts.user_posts', $friend) }}" class="btn btn-sm btn-info me-2">
+                                        <i class="fas fa-user me-1"></i>Xem trang cá nhân
                                     </a>
-                                    <a href="{{ route('messages.show', $friend->id) }}" class="btn btn-sm btn-outline-success">
-                                        <i class="fas fa-comment"></i> Nhắn tin
+                                    <a href="{{ route('messages.show', $friend) }}" class="btn btn-sm btn-primary">
+                                        <i class="fas fa-envelope me-1"></i>Nhắn tin
                                     </a>
                                 </div>
                             </div>
@@ -283,7 +283,7 @@
                         <div class="card">
                             <div class="card-body">
                                 <div class="d-flex align-items-center">
-                                    <img src="{{ $follower->avatar ? asset('images/' . $follower->avatar) : asset('images/default-avatar.jpg') }}"
+                                    <img src="{{ $follower->avatar ? asset('storage/' . $follower->avatar) : asset('stickers/avatar_icon.png') }}"
                                          class="rounded-circle me-3"
                                          style="width: 50px; height: 50px; object-fit: cover;"
                                          alt="{{ $follower->name }}'s avatar">
@@ -322,7 +322,7 @@
                         <div class="card">
                             <div class="card-body">
                                 <div class="d-flex align-items-center">
-                                    <img src="{{ $following->avatar ? asset('images/' . $following->avatar) : asset('images/default-avatar.jpg') }}"
+                                    <img src="{{ $following->avatar ? asset('storage/' . $following->avatar) : asset('stickers/avatar_icon.png') }}"
                                          class="rounded-circle me-3"
                                          style="width: 50px; height: 50px; object-fit: cover;"
                                          alt="{{ $following->name }}'s avatar">

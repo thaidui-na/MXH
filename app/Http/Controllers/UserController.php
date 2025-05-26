@@ -128,21 +128,54 @@ class UserController extends Controller
      */
     public function addFriend(User $user)
     {
+        $currentUser = auth()->user();
+
         // Kiểm tra nếu người dùng kết bạn với chính mình
-         if (Auth::id() === $user->id) {
-            return response()->json(['success' => false, 'error' => 'Không thể tự kết bạn với chính mình.'], 400);
+        if ($currentUser->id === $user->id) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Không thể kết bạn với chính mình'
+            ]);
         }
-         // Kiểm tra nếu đã là bạn bè hoặc đã gửi/nhận yêu cầu
-         if (Auth::user()->isFriendWith($user) || Auth::user()->hasSentFriendRequestTo($user) || Auth::user()->hasReceivedFriendRequestFrom($user)) {
-             return response()->json(['success' => false, 'error' => 'Đã kết bạn hoặc đang chờ xác nhận.'], 400);
-         }
+
+        // Kiểm tra xem đã là bạn bè chưa
+        if ($currentUser->isFriendWith($user)) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Bạn đã là bạn bè với người dùng này'
+            ]);
+        }
+
+        // Kiểm tra xem đã gửi lời mời kết bạn chưa
+        if (DB::table('friends')->where('user_id', $currentUser->id)->where('friend_id', $user->id)->where('status', 'pending')->exists()) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Bạn đã gửi lời mời kết bạn cho người dùng này'
+            ]);
+        }
 
         try {
-            Auth::user()->addFriend($user); // Gọi phương thức trong User model
-            return response()->json(['success' => true, 'message' => 'Đã gửi yêu cầu kết bạn']);
+            // Thêm vào danh sách bạn bè
+            $currentUser->friends()->attach($user->id, [
+                'status' => 'pending',
+                'created_at' => now(),
+                'updated_at' => now()
+            ]);
+
+            // Gửi thông báo cho người nhận
+            $user->notify(new \App\Notifications\FriendRequestNotification($currentUser));
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Đã gửi lời mời kết bạn thành công',
+                'isFriend' => false
+            ]);
         } catch (\Exception $e) {
-            Log::error("Error adding friend {$user->id} by user " . Auth::id() . ": " . $e->getMessage());
-            return response()->json(['success' => false, 'error' => 'Có lỗi xảy ra khi gửi yêu cầu kết bạn.'], 500);
+            \Log::error('Error adding friend: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'error' => 'Có lỗi xảy ra khi gửi lời mời kết bạn'
+            ]);
         }
     }
 
@@ -213,5 +246,29 @@ class UserController extends Controller
              Log::error("Error unfollowing user {$user->id} by user " . Auth::id() . ": " . $e->getMessage());
              return response()->json(['success' => false, 'error' => 'Có lỗi xảy ra khi bỏ theo dõi người dùng.'], 500);
         }
+    }
+
+    /**
+     * Chấp nhận lời mời kết bạn
+     */
+    public function acceptFriendRequest(User $user)
+    {
+        $currentUser = auth()->user();
+        // Cập nhật trạng thái kết bạn (chiều nhận)
+        $currentUser->pendingFriendRequests()->updateExistingPivot($user->id, ['status' => 'accepted']);
+        // Đảm bảo cả 2 chiều là bạn bè
+        $user->friends()->syncWithoutDetaching([$currentUser->id => ['status' => 'accepted']]);
+        return response()->json(['success' => true, 'message' => 'Đã chấp nhận lời mời kết bạn!']);
+    }
+
+    /**
+     * Từ chối lời mời kết bạn
+     */
+    public function rejectFriendRequest(User $user)
+    {
+        $currentUser = auth()->user();
+        // Xóa lời mời kết bạn (chiều nhận)
+        $currentUser->pendingFriendRequests()->detach($user->id);
+        return response()->json(['success' => true, 'message' => 'Đã từ chối lời mời kết bạn.']);
     }
 }

@@ -270,7 +270,7 @@ class User extends Authenticatable
     }
 
     /**
-     * Chặn một người dùng khác
+     * Chặn một người dùng
      */
     public function block($userId)
     {
@@ -460,8 +460,7 @@ class User extends Authenticatable
     }
 
     /**
-     * Get the friends of the user.
-     * This is a many-to-many relationship through the friends table.
+     * Lấy danh sách bạn bè
      */
     public function friends()
     {
@@ -471,21 +470,65 @@ class User extends Authenticatable
     }
 
     /**
-     * Get the pending friend requests sent by the user.
+     * Kiểm tra xem người dùng hiện tại có phải là bạn với người dùng khác không
      */
-    public function pendingFriends()
+    public function isFriendWith(User $user)
     {
-        return $this->friends()->wherePivot('status', 'pending');
+        return $this->friends()
+            ->where('friend_id', $user->id)
+            ->where('status', 'accepted')
+            ->exists();
     }
 
     /**
-     * Get the accepted friends of the user.
+     * Kiểm tra xem người dùng hiện tại đã gửi lời mời kết bạn cho người dùng khác chưa
+     */
+    public function hasSentFriendRequestTo(User $user)
+    {
+        return $this->friends()
+            ->where('friend_id', $user->id)
+            ->where('status', 'pending')
+            ->exists();
+    }
+
+    /**
+     * Kiểm tra xem người dùng hiện tại đã nhận lời mời kết bạn từ người dùng khác chưa
+     */
+    public function hasReceivedFriendRequestFrom(User $user)
+    {
+        return $this->belongsToMany(User::class, 'friends', 'friend_id', 'user_id')
+            ->where('user_id', $user->id)
+            ->where('status', 'pending')
+            ->exists();
+    }
+
+    /**
+     * Lấy danh sách bạn bè đã chấp nhận
      */
     public function acceptedFriends()
     {
         return $this->belongsToMany(User::class, 'friends', 'user_id', 'friend_id')
             ->wherePivot('status', 'accepted')
-            ->withTimestamps()
-            ->get();
+            ->withTimestamps();
+    }
+
+    /**
+     * Lấy danh sách lời mời kết bạn đang chờ
+     */
+    public function pendingFriendRequests()
+    {
+        return $this->belongsToMany(User::class, 'friends', 'friend_id', 'user_id')
+            ->wherePivot('status', 'pending')
+            ->withTimestamps();
+    }
+
+    /**
+     * Lấy danh sách lời mời kết bạn đã gửi
+     */
+    public function sentFriendRequests()
+    {
+        return $this->belongsToMany(User::class, 'friends', 'user_id', 'friend_id')
+            ->wherePivot('status', 'pending')
+            ->withTimestamps();
     }
 }
