@@ -19,9 +19,11 @@
                 <div class="card-body">
                     @forelse($notifications as $notification)
                         <div class="notification-item mb-3 p-3 border rounded" id="notification-{{ $notification->id }}">
-                            <div class="d-flex justify-content-between align-items-start">
+                            <div class="d-flex align-items-center">
                                 @if($notification->type === 'App\\Notifications\\PostLikeNotification')
                                     <a href="{{ route('posts.show', $notification->data['post_id']) }}" class="text-decoration-none text-dark flex-grow-1">
+                                @elseif($notification->type === 'App\\Notifications\\CommentNotification')
+                                    <a href="{{ route('comments.index', $notification->data['post_id']) }}#comment-{{ $notification->data['comment_id'] }}" class="text-decoration-none text-dark flex-grow-1">
                                 @else
                                     <a href="{{ route('posts.my_posts', $notification->data['user_id']) }}" class="text-decoration-none text-dark flex-grow-1">
                                 @endif
@@ -33,21 +35,19 @@
                                         </div>
                                     </div>
                                 </a>
-                                <div class="ms-3">
-                                    @if($notification->type === 'App\\Notifications\\FriendRequestNotification')
-                                        <div class="mb-2">
-                                            <button class="btn btn-sm btn-primary me-2 accept-friend" data-user-id="{{ $notification->data['user_id'] }}">
-                                                <i class="fas fa-check"></i> Chấp nhận
-                                            </button>
-                                            <button class="btn btn-sm btn-danger reject-friend" data-user-id="{{ $notification->data['user_id'] }}">
-                                                <i class="fas fa-times"></i> Từ chối
-                                            </button>
-                                        </div>
-                                    @endif
-                                    <button class="btn btn-sm btn-link text-danger delete-notification" data-notification-id="{{ $notification->id }}">
-                                        <i class="fas fa-times"></i>
-                                    </button>
-                                </div>
+                                @if($notification->type === 'App\\Notifications\\FriendRequestNotification')
+                                    <div class="ms-2 mt-2">
+                                        <button class="btn btn-sm btn-primary me-2 accept-friend" data-user-id="{{ $notification->data['user_id'] }}">
+                                            <i class="fas fa-check"></i> Chấp nhận
+                                        </button>
+                                        <button class="btn btn-sm btn-danger reject-friend" data-user-id="{{ $notification->data['user_id'] }}">
+                                            <i class="fas fa-times"></i> Từ chối
+                                        </button>
+                                    </div>
+                                @endif
+                                <button class="btn btn-sm btn-link text-danger ms-2 delete-notification" data-notification-id="{{ $notification->id }}">
+                                    <i class="fas fa-times"></i>
+                                </button>
                             </div>
                         </div>
                     @empty

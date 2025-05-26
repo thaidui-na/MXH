@@ -22,16 +22,24 @@ class CommentController extends Controller
 
     public function store(Request $request, Post $post)
     {
-        $validated = $request->validate([
-            'content' => 'required|string'
+        $request->validate([
+            'content' => 'required|string|max:1000'
         ]);
 
         $comment = $post->comments()->create([
-            'content' => $validated['content'],
-            'user_id' => auth()->id()
+            'user_id' => auth()->id(),
+            'content' => $request->content
         ]);
 
-        return back()->with('success', 'Bình luận đã được thêm');
+        // Gửi thông báo cho chủ bài viết nếu người bình luận không phải là chủ bài viết
+        if ($post->user_id !== auth()->id()) {
+            $post->user->notify(new \App\Notifications\CommentNotification(auth()->user(), $comment));
+        }
+
+        return response()->json([
+            'success' => true,
+            'comment' => $comment->load('user')
+        ]);
     }
 
     public function reply(Request $request, Comment $comment)
