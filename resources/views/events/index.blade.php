@@ -29,6 +29,58 @@
         </div>
     @endif
 
+    <!-- Form tìm kiếm và lọc -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form action="{{ route('events.index') }}" method="GET">
+                <div class="row g-3">
+                    <!-- Tìm kiếm -->
+                    <div class="col-md-6">
+                        <div class="input-group">
+                            <span class="input-group-text">
+                                <i class="fas fa-search"></i>
+                            </span>
+                            <input type="text" name="search" class="form-control" 
+                                value="{{ request('search') }}"
+                                placeholder="Tìm theo tên, mô tả hoặc người tạo...">
+                        </div>
+                    </div>
+
+                    <!-- Lọc theo thời gian -->
+                    <div class="col-md-3">
+                        <select name="time_filter" class="form-select">
+                            <option value="">Tất cả thời gian</option>
+                            <option value="today" {{ request('time_filter') == 'today' ? 'selected' : '' }}>Hôm nay</option>
+                            <option value="this_week" {{ request('time_filter') == 'this_week' ? 'selected' : '' }}>Tuần này</option>
+                            <option value="this_month" {{ request('time_filter') == 'this_month' ? 'selected' : '' }}>Tháng này</option>
+                            <option value="next_month" {{ request('time_filter') == 'next_month' ? 'selected' : '' }}>Tháng sau</option>
+                            <option value="future" {{ request('time_filter') == 'future' ? 'selected' : '' }}>Sắp tới</option>
+                        </select>
+                    </div>
+
+                    <!-- Lọc theo loại sự kiện -->
+                    <div class="col-md-3">
+                        <select name="location_filter" class="form-select">
+                            <option value="">Tất cả loại</option>
+                            <option value="online" {{ request('location_filter') == 'online' ? 'selected' : '' }}>Online</option>
+                            <option value="offline" {{ request('location_filter') == 'offline' ? 'selected' : '' }}>Offline</option>
+                        </select>
+                    </div>
+
+                    <!-- Nút tìm kiếm và xóa bộ lọc -->
+                    <div class="col-12 text-end">
+                        <a href="{{ route('events.index') }}" class="btn btn-outline-secondary me-2">
+                            <i class="fas fa-redo"></i> Xóa bộ lọc
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-search"></i> Tìm kiếm
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
         @forelse($events as $event)
             <div class="col">
@@ -76,7 +128,7 @@
             <div class="col-12">
                 <div class="text-center py-5">
                     <i class="fas fa-calendar-times fa-3x text-muted mb-3"></i>
-                    <p class="text-muted">Chưa có sự kiện nào.</p>
+                    <p class="text-muted">Không tìm thấy sự kiện nào.</p>
                 </div>
             </div>
         @endforelse

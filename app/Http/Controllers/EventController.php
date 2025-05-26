@@ -11,9 +11,63 @@ class EventController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $events = Event::with('user')->latest()->paginate(10);
+        $query = Event::with('user');
+
+        // Tìm kiếm theo từ khóa
+        if ($request->has('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('title', 'like', "%{$search}%")
+                  ->orWhere('description', 'like', "%{$search}%")
+                  ->orWhereHas('user', function($q) use ($search) {
+                      $q->where('name', 'like', "%{$search}%");
+                  });
+            });
+        }
+
+        // Lọc theo thời gian
+        if ($request->has('time_filter')) {
+            $now = now();
+            switch ($request->time_filter) {
+                case 'today':
+                    $query->whereDate('event_time', $now->toDateString());
+                    break;
+                case 'this_week':
+                    $query->whereBetween('event_time', [
+                        $now->startOfWeek(),
+                        $now->endOfWeek()
+                    ]);
+                    break;
+                case 'this_month':
+                    $query->whereMonth('event_time', $now->month)
+                          ->whereYear('event_time', $now->year);
+                    break;
+                case 'next_month':
+                    $nextMonth = $now->addMonth();
+                    $query->whereMonth('event_time', $nextMonth->month)
+                          ->whereYear('event_time', $nextMonth->year);
+                    break;
+                case 'future':
+                    $query->where('event_time', '>', $now);
+                    break;
+            }
+        }
+
+        // Lọc theo loại sự kiện (online/offline)
+        if ($request->has('location_filter')) {
+            switch ($request->location_filter) {
+                case 'online':
+                    $query->where('event_type', 'online');
+                    break;
+                case 'offline':
+                    $query->where('event_type', 'offline');
+                    break;
+            }
+        }
+
+        $events = $query->latest()->paginate(10);
         return view('events.index', compact('events'));
     }
 
@@ -36,11 +90,17 @@ class EventController extends Controller
                 'description' => 'required|string',
                 'event_time' => 'required|date',
                 'location' => 'required|string|max:255',
+                'event_type' => 'required|in:online,offline',
                 'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048'
             ]);
 
             $data = $request->all();
             $data['user_id'] = auth()->id();
+
+            // Thêm prefix cho địa điểm dựa vào loại sự kiện
+            if ($data['event_type'] === 'online') {
+                $data['location'] = 'Online: ' . $data['location'];
+            }
 
             if ($request->hasFile('image')) {
                 $path = $request->file('image')->store('events', 'public');
@@ -94,10 +154,16 @@ class EventController extends Controller
                 'description' => 'required|string',
                 'event_time' => 'required|date',
                 'location' => 'required|string|max:255',
+                'event_type' => 'required|in:online,offline',
                 'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048'
             ]);
 
             $data = $request->all();
+
+            // Thêm prefix cho địa điểm dựa vào loại sự kiện
+            if ($data['event_type'] === 'online') {
+                $data['location'] = 'Online: ' . $data['location'];
+            }
 
             if ($request->hasFile('image')) {
                 // Delete old image
@@ -131,10 +197,18 @@ class EventController extends Controller
                     ->with('error', 'Bạn không có quyền xóa sự kiện này.');
             }
 
+            // Kiểm tra xem sự kiện có người tham gia không
+            if ($event->activeParticipants()->count() > 0) {
+                return redirect()->route('events.index')
+                    ->with('error', 'Không thể xóa sự kiện vì đã có người tham gia.');
+            }
+
+            // Xóa ảnh nếu có
             if ($event->image_path) {
                 Storage::disk('public')->delete($event->image_path);
             }
 
+            // Xóa sự kiện
             $event->delete();
 
             return redirect()->route('events.index')
