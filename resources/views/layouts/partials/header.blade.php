@@ -49,6 +49,20 @@
                 </div>
                 <div id="searchResults" class="hidden">
                     <!-- Kết quả tìm kiếm sẽ được thêm vào đây -->
+                    <template id="searchResultTemplate">
+                        <a href="#" class="search-result-item">
+                            <img src="" alt="" class="user-avatar">
+                            <div class="user-info">
+                                <h6 class="user-name"></h6>
+                                <p class="user-email"></p>
+                            </div>
+                            <div class="user-actions">
+                                <button class="btn btn-primary btn-sm rounded-pill">
+                                    <i class="fas fa-user-plus"></i> Kết bạn
+                                </button>
+                            </div>
+                        </a>
+                    </template>
                 </div>
             </div>
             @endauth
@@ -110,31 +124,40 @@
     }
 
     /* Style cho thanh tìm kiếm */
-    #navbarSearchResults {
-        max-height: 400px;
-        overflow-y: auto;
+    #searchResults {
+        max-height: none; /* Xóa giới hạn chiều cao */
+        overflow-y: visible; /* Xóa thanh cuộn */
         border: 1px solid #dee2e6;
+        border-radius: 8px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        background: white;
+        margin-top: 5px;
     }
 
     .search-result-item {
-        padding: 10px 15px;
+        padding: 12px 15px;
         border-bottom: 1px solid #eee;
         display: flex;
         align-items: center;
-        gap: 10px;
+        gap: 12px;
         text-decoration: none;
         color: inherit;
-        transition: background-color 0.2s ease;
+        transition: all 0.2s ease;
+    }
+
+    .search-result-item:last-child {
+        border-bottom: none;
     }
 
     .search-result-item:hover {
         background-color: #f8f9fa;
         text-decoration: none;
+        transform: translateX(5px);
     }
 
     .search-result-item img {
-        width: 40px;
-        height: 40px;
+        width: 45px;
+        height: 45px;
         border-radius: 50%;
         object-fit: cover;
         border: 2px solid #fff;
@@ -146,15 +169,84 @@
     }
 
     .search-result-item .user-name {
-        font-weight: 500;
+        font-weight: 600;
         margin: 0;
         color: #2c3e50;
+        font-size: 1rem;
     }
 
     .search-result-item .user-email {
         font-size: 0.875rem;
         color: #6c757d;
         margin: 0;
+    }
+
+    .search-result-item .user-actions {
+        display: flex;
+        gap: 8px;
+    }
+
+    .search-result-item .btn {
+        padding: 4px 8px;
+        font-size: 0.875rem;
+        border-radius: 20px;
+    }
+
+    .search-result-item .btn-group .btn {
+        border-radius: 20px;
+    }
+
+    .search-container {
+        position: relative;
+        width: 400px;
+    }
+
+    .search-container .input-group {
+        border-radius: 20px;
+        overflow: hidden;
+    }
+
+    .search-container .form-control {
+        border-radius: 20px 0 0 20px;
+        border: 1px solid #dee2e6;
+        padding-left: 15px;
+    }
+
+    .search-container .btn {
+        border-radius: 0 20px 20px 0;
+        padding: 0.375rem 1rem;
+    }
+
+    .search-container .form-control:focus {
+        box-shadow: none;
+        border-color: #dee2e6;
+    }
+
+    .search-container .btn:focus {
+        box-shadow: none;
+    }
+
+    .no-results {
+        padding: 20px;
+        text-align: center;
+        color: #6c757d;
+    }
+
+    .no-results i {
+        font-size: 2rem;
+        margin-bottom: 10px;
+        color: #dee2e6;
+    }
+
+    .search-error {
+        padding: 20px;
+        text-align: center;
+        color: #dc3545;
+    }
+
+    .search-error i {
+        font-size: 2rem;
+        margin-bottom: 10px;
     }
 
     .navbar {

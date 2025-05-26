@@ -220,6 +220,10 @@
                                             <i class="fas fa-heart {{ $post->isLikedBy(auth()->id()) ? 'text-danger' : '' }}"></i>
                                             <span class="like-count">{{ $post->getLikesCount() }}</span>
                                         </button>
+                                        <a href="{{ route('comments.index', $post->id) }}" class="btn btn-sm comment-button ms-2">
+                                            <i class="fas fa-comment"></i>
+                                            <span class="comment-count">{{ $post->comments()->count() }}</span>
+                                        </a>
                                     </div>
                                 </div>
                             </div>
@@ -465,6 +469,83 @@
     }
     .autocomplete-results .list-group-item:last-child {
         border-bottom: none;
+    }
+    .like-button {
+        transition: all 0.3s ease;
+        padding: 8px 14px;
+        font-size: 0.875rem;
+        border-radius: 20px;
+        border: 1px solid #dc3545;
+        background-color: transparent;
+        color: #dc3545;
+        width: 70px;
+        text-align: center;
+        flex-shrink: 0;
+    }
+
+    .like-button i {
+        font-size: 1.1rem;
+        margin-right: 0.3rem;
+        transition: all 0.3s ease;
+    }
+
+    .like-button.active {
+        background-color: #ffebee;
+        border-color: #ffcdd2;
+    }
+
+    .like-button.active i {
+        color: #e53935 !important;
+        transform: scale(1.1);
+    }
+
+    .like-button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        background-color: #ffebee;
+    }
+
+    .like-button:hover i {
+        transform: scale(1.1);
+    }
+
+    .like-count {
+        font-weight: 500;
+        margin-left: 0.3rem;
+    }
+
+    .comment-button {
+        transition: all 0.3s ease;
+        padding: 8px 14px;
+        font-size: 0.875rem;
+        border-radius: 20px;
+        border: 1px solid #6c757d;
+        background-color: transparent;
+        color: #6c757d;
+        width: 70px;
+        text-align: center;
+        flex-shrink: 0;
+    }
+
+    .comment-button i {
+        font-size: 1.1rem;
+        margin-right: 0.3rem;
+        transition: all 0.3s ease;
+    }
+
+    .comment-button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        background-color: #f8f9fa;
+    }
+
+    .comment-button:hover i {
+        transform: scale(1.1);
+    }
+
+    .comment-count {
+        font-weight: 500;
+        margin-left: 0.3rem;
     }
 </style>
 @endpush
