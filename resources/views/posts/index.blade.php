@@ -132,28 +132,43 @@
 
     /* Style cho nút xem chi tiết */
     .btn-view-post {
-        padding: 0.5rem 1rem;
-        border-radius: 20px;
-        font-size: 0.875rem;
         transition: all 0.3s ease;
-        background-color: #3498db;
-        border-color: #3498db;
-        color: white;
-    }
-
-    .btn-view-post:hover {
-        background-color: #2980b9;
-        border-color: #2980b9;
-        transform: translateX(5px);
+        padding: 8px 14px;
+        font-size: 0.875rem;
+        border-radius: 20px;
+        border: 1px solid #3498db;
+        background-color: transparent;
+        color: #3498db;
+        min-width: 120px;
+        text-align: center;
+        flex-shrink: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.3rem;
+        white-space: nowrap;
     }
 
     .btn-view-post i {
-        margin-right: 0.5rem;
-        transition: transform 0.3s ease;
+        font-size: 1.1rem;
+        transition: all 0.3s ease;
+        line-height: 1;
+    }
+
+    .btn-view-post span {
+        line-height: 1;
+    }
+
+    .btn-view-post:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        background-color: #e3f2fd;
+        color: #1976d2;
+        border-color: #90caf9;
     }
 
     .btn-view-post:hover i {
-        transform: translateX(3px);
+        transform: scale(1.1);
     }
 
     /* Style cho phân trang */
@@ -256,20 +271,31 @@
     /* Style cho nút like */
     .like-button {
         transition: all 0.3s ease;
-        padding: 0.5rem 1rem;
+        padding: 8px 14px;
+        font-size: 0.875rem;
         border-radius: 20px;
-        font-size: 0.9rem;
+        border: 1px solid #6c757d;
+        background-color: transparent;
+        color: #6c757d;
+        width: 70px;
+        text-align: center;
+        flex-shrink: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.3rem;
     }
 
     .like-button i {
         font-size: 1.1rem;
-        margin-right: 0.3rem;
         transition: all 0.3s ease;
+        line-height: 1;
     }
 
     .like-button.active {
         background-color: #ffebee;
         border-color: #ffcdd2;
+        color: #dc3545;
     }
 
     .like-button.active i {
@@ -280,6 +306,7 @@
     .like-button:hover {
         transform: translateY(-2px);
         box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        background-color: #f8f9fa;
     }
 
     .like-button:hover i {
@@ -288,7 +315,7 @@
 
     .like-count {
         font-weight: 500;
-        margin-left: 0.3rem;
+        line-height: 1;
     }
 
     .stories-container {
@@ -352,6 +379,55 @@
         justify-content: center;
         font-size: 0.8rem;
         border: 2px solid white;
+    }
+
+    .favorite-button {
+        transition: all 0.3s ease;
+        padding: 8px 14px;
+        font-size: 0.875rem;
+        border-radius: 20px;
+        border: 1px solid #6c757d;
+        background-color: transparent;
+        color: #6c757d;
+        width: 70px;
+        text-align: center;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .favorite-button i {
+        font-size: 1.1rem;
+        margin-right: 0.3rem;
+        transition: all 0.3s ease;
+        line-height: 1;
+    }
+
+    .favorite-button.active {
+        background-color: #e3f2fd;
+        border-color: #90caf9;
+        color: #1976d2;
+    }
+
+    .favorite-button.active i {
+        color: #1976d2;
+        transform: scale(1.1);
+    }
+
+    .favorite-button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        background-color: #f8f9fa;
+    }
+
+    .favorite-button:hover i {
+        transform: scale(1.1);
+    }
+
+    .favorite-text {
+        font-weight: 500;
+        line-height: 1;
     }
 </style>
 @endpush
@@ -448,8 +524,8 @@
                                 </a>
                                 <form action="{{ route('posts.favorites.toggle', $post) }}" method="POST" class="d-inline ms-2">
                                     @csrf
-                                    <button type="submit" class="btn btn-sm btn-outline-danger {{ $post->isFavoritedBy(auth()->id()) ? 'active' : '' }}">
-                                        <i class="{{ $post->isFavoritedBy(auth()->id()) ? 'fas' : 'far' }} fa-heart"></i>
+                                    <button type="submit" class="btn btn-sm favorite-button {{ $post->isFavoritedBy(auth()->id()) ? 'active' : '' }}">
+                                        <i class="{{ $post->isFavoritedBy(auth()->id()) ? 'fas' : 'far' }} fa-bookmark"></i>
                                         <span class="favorite-text">{{ $post->isFavoritedBy(auth()->id()) ? 'Đã lưu' : 'Lưu' }}</span>
                                     </button>
                                 </form>

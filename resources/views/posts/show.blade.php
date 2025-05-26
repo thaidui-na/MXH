@@ -21,7 +21,7 @@
                             <i class="fas fa-calendar"></i> {{ $post->created_at->format('d/m/Y H:i') }}
                         </p>
                         @if($post->user_id !== auth()->id())
-                            <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#reportModal">
+                            <button type="button" class="btn btn-sm report-button" data-bs-toggle="modal" data-bs-target="#reportModal">
                                 <i class="fas fa-flag"></i> Báo cáo
                             </button>
                         @endif
@@ -35,28 +35,29 @@
                     
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <button class="btn btn-sm like-button {{ $post->isLikedBy(auth()->id()) ? 'btn-primary' : 'btn-outline-primary' }}"
+                            <button class="btn btn-sm like-button {{ $post->isLikedBy(auth()->id()) ? 'active' : '' }}"
                                     data-post-id="{{ $post->id }}">
-                                <i class="fas fa-heart"></i>
+                                <i class="fas fa-heart {{ $post->isLikedBy(auth()->id()) ? 'text-danger' : '' }}"></i>
                                 <span class="like-count">{{ $post->getLikesCount() }}</span>
                             </button>
-                            <a href="{{ route('comments.index', $post->id) }}" class="btn btn-sm btn-secondary ms-2">
-                                <i class="fas fa-comments"></i> Bình luận
+                            <a href="{{ route('comments.index', $post->id) }}" class="btn btn-sm comment-button ms-2">
+                                <i class="fas fa-comment"></i>
+                                <span class="comment-count">{{ $post->comments()->count() }}</span>
                             </a>
                         </div>
                         <div>
-                            <a href="{{ route('posts.index') }}" class="btn btn-secondary me-2">
+                            <a href="{{ route('posts.index') }}" class="btn btn-sm back-button me-2">
                                 <i class="fas fa-arrow-left"></i> Quay lại
                             </a>
                             @if($post->user_id === auth()->id())
-                                <a href="{{ route('posts.edit', $post) }}" class="btn btn-warning me-2">
+                                <a href="{{ route('posts.edit', $post) }}" class="btn btn-sm edit-button me-2">
                                     <i class="fas fa-edit"></i> Sửa
                                 </a>
                                 <form action="{{ route('posts.destroy', $post) }}" method="POST" class="d-inline"
                                       onsubmit="return confirm('Bạn có chắc chắn muốn xóa bài viết này?');">
                                     @csrf
                                     @method('DELETE')
-                                    <button type="submit" class="btn btn-danger">
+                                    <button type="submit" class="btn btn-sm delete-button">
                                         <i class="fas fa-trash"></i> Xóa
                                     </button>
                                 </form>
@@ -238,6 +239,184 @@ document.addEventListener('DOMContentLoaded', function() {
     100% {
         background-color: transparent;
     }
+}
+
+.like-button {
+    transition: all 0.3s ease;
+    padding: 8px 14px;
+    font-size: 0.875rem;
+    border-radius: 20px;
+    border: 1px solid #dc3545;
+    background-color: transparent;
+    color: #dc3545;
+    width: 70px;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.like-button i {
+    font-size: 1.1rem;
+    margin-right: 0.3rem;
+    transition: all 0.3s ease;
+}
+
+.like-button.active {
+    background-color: #ffebee;
+    border-color: #ffcdd2;
+}
+
+.like-button.active i {
+    color: #e53935 !important;
+    transform: scale(1.1);
+}
+
+.like-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    background-color: #ffebee;
+}
+
+.like-button:hover i {
+    transform: scale(1.1);
+}
+
+.like-count {
+    font-weight: 500;
+    margin-left: 0.3rem;
+}
+
+.comment-button {
+    transition: all 0.3s ease;
+    padding: 8px 14px;
+    font-size: 0.875rem;
+    border-radius: 20px;
+    border: 1px solid #6c757d;
+    background-color: transparent;
+    color: #6c757d;
+    width: 70px;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.comment-button i {
+    font-size: 1.1rem;
+    margin-right: 0.3rem;
+    transition: all 0.3s ease;
+}
+
+.comment-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    background-color: #f8f9fa;
+}
+
+.comment-button:hover i {
+    transform: scale(1.1);
+}
+
+.comment-count {
+    font-weight: 500;
+    margin-left: 0.3rem;
+}
+
+.back-button {
+    transition: all 0.3s ease;
+    padding: 8px 14px;
+    font-size: 0.875rem;
+    border-radius: 20px;
+    border: 1px solid #6c757d;
+    background-color: transparent;
+    color: #6c757d;
+    text-align: center;
+}
+
+.back-button i {
+    font-size: 1.1rem;
+    margin-right: 0.3rem;
+    transition: all 0.3s ease;
+}
+
+.back-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    background-color: #f8f9fa;
+    color: #495057;
+}
+
+.edit-button {
+    transition: all 0.3s ease;
+    padding: 8px 14px;
+    font-size: 0.875rem;
+    border-radius: 20px;
+    border: 1px solid #ffc107;
+    background-color: transparent;
+    color: #ffc107;
+    text-align: center;
+}
+
+.edit-button i {
+    font-size: 1.1rem;
+    margin-right: 0.3rem;
+    transition: all 0.3s ease;
+}
+
+.edit-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+.delete-button {
+    transition: all 0.3s ease;
+    padding: 8px 14px;
+    font-size: 0.875rem;
+    border-radius: 20px;
+    border: 1px solid #dc3545;
+    background-color: transparent;
+    color: #dc3545;
+    text-align: center;
+}
+
+.delete-button i {
+    font-size: 1.1rem;
+    margin-right: 0.3rem;
+    transition: all 0.3s ease;
+}
+
+.delete-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    background-color: #ffebee;
+    color: #dc3545;
+}
+
+.report-button {
+    transition: all 0.3s ease;
+    padding: 8px 14px;
+    font-size: 0.875rem;
+    border-radius: 20px;
+    border: 1px solid #dc3545;
+    background-color: transparent;
+    color: #dc3545;
+    text-align: center;
+}
+
+.report-button i {
+    font-size: 1.1rem;
+    margin-right: 0.3rem;
+    transition: all 0.3s ease;
+}
+
+.report-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    background-color: #ffebee;
+    color: #dc3545;
+}
+
+.report-button:hover i {
+    transform: scale(1.1);
 }
 </style>
 @endpush

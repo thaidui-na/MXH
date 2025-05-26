@@ -52,109 +52,30 @@
 
         .search-result-item {
             padding: 10px 15px;
-            border-bottom: 1px solid #eee;
-            text-decoration: none;
-            color: #2c3e50;
-            transition: background-color 0.2s ease;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .search-result-item:last-child {
-            border-bottom: none;
-        }
-
-        .search-result-item:hover {
-            background-color: #f8f9fa;
-            text-decoration: none;
-        }
-
-        .search-result-item img {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            object-fit: cover;
-            border: 2px solid #fff;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-
-        .search-result-item .user-name {
-            margin: 0;
-            font-size: 1rem;
-            font-weight: 500;
-        }
-
-        /* Search Container */
-        .search-container {
-            position: relative;
-            width: 300px;
-        }
-
-        /* Style cho nút like */
-        .like-button {
-            transition: all 0.3s ease;
-            padding: 0.5rem 1rem;
-            border-radius: 20px;
-            font-size: 0.9rem;
-            border: 1px solid #dc3545;
-            background-color: transparent;
-            color: #dc3545;
-        }
-
-        .like-button i {
-            font-size: 1.1rem;
-            margin-right: 0.3rem;
-            transition: all 0.3s ease;
-        }
-
-        .like-button.active {
-            background-color: #ffebee;
-            border-color: #ffcdd2;
-        }
-
-        .like-button.active i {
-            color: #e53935 !important;
-            transform: scale(1.1);
-        }
-
-        .like-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            background-color: #ffebee;
-        }
-
-        .like-button:hover i {
-            transform: scale(1.1);
-        }
-
-        .like-count {
-            font-weight: 500;
-            margin-left: 0.3rem;
-        }
-
-        .search-container {
-            width: 300px;
-            z-index: 1050;
-        }
-
-        .search-results {
-            background: white;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            max-height: 400px;
-            overflow-y: auto;
-        }
-
-        .search-result-item {
-            padding: 10px 15px;
             display: flex;
             align-items: center;
             text-decoration: none;
             color: inherit;
             transition: background-color 0.2s;
             border-bottom: 1px solid #eee;
+            flex-wrap: nowrap;
+        }
+
+        .search-result-item .flex-grow-1 {
+            min-width: 0;
+            margin-right: 10px;
+        }
+
+        .search-result-item .fw-bold {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .search-result-item .friend-button {
+            flex-shrink: 0;
+            width: 100px;
+            text-align: center;
         }
 
         .search-result-item:last-child {
@@ -269,7 +190,7 @@
                                     <div class="fw-bold text-dark">${user.name}</div>
                                     ${user.email ? `<div class="text-muted small">${user.email}</div>` : ''}
                                 </div>
-                                <button class="btn btn-sm ${user.isFriend ? 'btn-primary' : 'btn-outline-primary'} friend-button ms-2" 
+                                <button class="btn btn-sm ${user.isFriend ? 'btn-primary' : 'btn-outline-primary'} rounded-pill friend-button ms-2" 
                                         data-user-id="${user.id}"
                                         onclick="event.preventDefault(); toggleFriend(${user.id}, this);">
                                     <i class="fas fa-${user.isFriend ? 'user-friends' : 'user-plus'}"></i> 
