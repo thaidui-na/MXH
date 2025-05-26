@@ -212,3 +212,6 @@ Route::middleware(['web', 'auth', \App\Http\Middleware\AdminMiddleware::class])-
     Route::put('/posts/{id}', [AdminController::class, 'updatePost'])->name('admin.posts.update'); // Cập nhật post
     Route::delete('/posts/{id}', [AdminController::class, 'deletePost'])->name('admin.posts.delete'); // Xóa post
 });
+
+Route::post('/friends/accept/{user}', [UserController::class, 'acceptFriendRequest'])->name('friends.accept');
+Route::post('/friends/reject/{user}', [UserController::class, 'rejectFriendRequest'])->name('friends.reject');

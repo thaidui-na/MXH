@@ -330,8 +330,11 @@
                     button.classList.add('btn-outline-primary');
                     button.innerHTML = '<i class="fas fa-user-plus"></i> Kết bạn';
                 }
+                // Hiển thị thông báo thành công
+                alert(data.message || 'Thao tác thành công');
             } else {
-                alert(data.error);
+                // Hiển thị thông báo lỗi
+                alert(data.error || 'Có lỗi xảy ra');
             }
         })
         .catch(error => {
