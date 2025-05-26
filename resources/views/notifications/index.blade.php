@@ -20,37 +20,33 @@
                     @forelse($notifications as $notification)
                         <div class="notification-item mb-3 p-3 border rounded" id="notification-{{ $notification->id }}">
                             <div class="d-flex justify-content-between align-items-start">
-                                <div class="d-flex align-items-center flex-grow-1">
-                                    <img src="{{ $notification->data['avatar'] ?? asset('images/default-avatar.jpg') }}" 
-                                         class="rounded-circle me-3" 
-                                         style="width: 50px; height: 50px; object-fit: cover;"
-                                         alt="Avatar">
-                                    <div class="flex-grow-1">
-                                        <p class="mb-0">{{ $notification->data['message'] }}</p>
-                                        <small class="text-muted">{{ $notification->created_at->diffForHumans() }}</small>
+                                @if($notification->type === 'App\\Notifications\\PostLikeNotification')
+                                    <a href="{{ route('posts.show', $notification->data['post_id']) }}" class="text-decoration-none text-dark flex-grow-1">
+                                @else
+                                    <a href="{{ route('posts.my_posts', $notification->data['user_id']) }}" class="text-decoration-none text-dark flex-grow-1">
+                                @endif
+                                    <div class="d-flex align-items-center">
+                                        <img src="{{ $notification->data['avatar'] }}" alt="Avatar" class="rounded-circle me-2" style="width: 40px; height: 40px; object-fit: cover;">
+                                        <div class="flex-grow-1">
+                                            <p class="mb-0">{{ $notification->data['message'] }}</p>
+                                            <small class="text-muted">{{ $notification->created_at->diffForHumans() }}</small>
+                                        </div>
                                     </div>
-                                </div>
+                                </a>
                                 <div class="ms-3">
                                     @if($notification->type === 'App\\Notifications\\FriendRequestNotification')
-                                        <button type="button" 
-                                                class="btn btn-sm btn-success me-2 accept-friend-btn" 
-                                                data-user-id="{{ $notification->data['user_id'] }}"
-                                                data-notification-id="{{ $notification->id }}">
-                                            <i class="fas fa-check"></i> Chấp nhận
-                                        </button>
-                                        <button type="button" 
-                                                class="btn btn-sm btn-danger reject-friend-btn"
-                                                data-user-id="{{ $notification->data['user_id'] }}"
-                                                data-notification-id="{{ $notification->id }}">
-                                            <i class="fas fa-times"></i> Từ chối
-                                        </button>
-                                    @else
-                                        <button type="button" 
-                                                class="btn btn-sm btn-danger delete-notification-btn"
-                                                data-notification-id="{{ $notification->id }}">
-                                            <i class="fas fa-trash"></i> Xóa
-                                        </button>
+                                        <div class="mb-2">
+                                            <button class="btn btn-sm btn-primary me-2 accept-friend" data-user-id="{{ $notification->data['user_id'] }}">
+                                                <i class="fas fa-check"></i> Chấp nhận
+                                            </button>
+                                            <button class="btn btn-sm btn-danger reject-friend" data-user-id="{{ $notification->data['user_id'] }}">
+                                                <i class="fas fa-times"></i> Từ chối
+                                            </button>
+                                        </div>
                                     @endif
+                                    <button class="btn btn-sm btn-link text-danger delete-notification" data-notification-id="{{ $notification->id }}">
+                                        <i class="fas fa-times"></i>
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -78,27 +74,25 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM loaded, setting up event listeners');
 
     // Xử lý nút chấp nhận kết bạn
-    document.querySelectorAll('.accept-friend-btn').forEach(button => {
+    document.querySelectorAll('.accept-friend').forEach(button => {
         button.addEventListener('click', function() {
             const userId = this.dataset.userId;
-            const notificationId = this.dataset.notificationId;
-            console.log('Accept button clicked:', { userId, notificationId });
-            handleFriendRequest('accept', userId, notificationId);
+            console.log('Accept button clicked:', { userId });
+            handleFriendRequest('accept', userId);
         });
     });
 
     // Xử lý nút từ chối kết bạn
-    document.querySelectorAll('.reject-friend-btn').forEach(button => {
+    document.querySelectorAll('.reject-friend').forEach(button => {
         button.addEventListener('click', function() {
             const userId = this.dataset.userId;
-            const notificationId = this.dataset.notificationId;
-            console.log('Reject button clicked:', { userId, notificationId });
-            handleFriendRequest('reject', userId, notificationId);
+            console.log('Reject button clicked:', { userId });
+            handleFriendRequest('reject', userId);
         });
     });
 
     // Xử lý nút xóa thông báo
-    document.querySelectorAll('.delete-notification-btn').forEach(button => {
+    document.querySelectorAll('.delete-notification').forEach(button => {
         button.addEventListener('click', function() {
             const notificationId = this.dataset.notificationId;
             console.log('Delete button clicked:', notificationId);
@@ -130,8 +124,8 @@ function showAlert(message, type = 'success') {
     }, 3000);
 }
 
-function handleFriendRequest(action, userId, notificationId) {
-    console.log('Handling friend request:', { action, userId, notificationId });
+function handleFriendRequest(action, userId) {
+    console.log('Handling friend request:', { action, userId });
     
     const url = action === 'accept' ? `/friends/accept/${userId}` : `/friends/reject/${userId}`;
     const method = 'POST';
@@ -154,7 +148,7 @@ function handleFriendRequest(action, userId, notificationId) {
         console.log('Response data:', data);
         
         if (data.success) {
-            const noti = document.getElementById(`notification-${notificationId}`);
+            const noti = document.getElementById(`notification-${userId}`);
             if (noti) {
                 const messageElement = noti.querySelector('.flex-grow-1 p');
                 if (messageElement) {
@@ -163,7 +157,7 @@ function handleFriendRequest(action, userId, notificationId) {
                         : 'Bạn đã từ chối lời mời kết bạn này.';
                 }
                 
-                const buttonsContainer = noti.querySelector('.ms-3');
+                const buttonsContainer = noti.querySelector('.ms-2');
                 if (buttonsContainer) {
                     buttonsContainer.innerHTML = '';
                 }
@@ -173,7 +167,7 @@ function handleFriendRequest(action, userId, notificationId) {
 
             if (action === 'reject') {
                 setTimeout(() => {
-                    const noti = document.getElementById(`notification-${notificationId}`);
+                    const noti = document.getElementById(`notification-${userId}`);
                     if (noti) {
                         noti.remove();
                         updateNotificationCount();
@@ -274,22 +268,60 @@ function deleteNotification(id) {
 
 function clearAllNotifications() {
     if (confirm('Bạn có chắc chắn muốn xóa tất cả thông báo?')) {
-        fetch('/notifications/clear-all', {
+        const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        const url = '{{ route("notifications.clearAll") }}';
+        console.log('Request URL:', url); // Debug log
+        console.log('CSRF Token:', token); // Debug log
+
+        fetch(url, {
             method: 'DELETE',
             headers: {
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                'Accept': 'application/json'
-            }
+                'X-CSRF-TOKEN': token,
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            credentials: 'same-origin'
         })
-        .then(response => response.json())
+        .then(async response => {
+            console.log('Response status:', response.status); // Debug log
+            const data = await response.json();
+            console.log('Response data:', data); // Debug log
+            
+            if (!response.ok) {
+                throw new Error(data.message || `HTTP error! status: ${response.status}`);
+            }
+            return data;
+        })
         .then(data => {
             if (data.success) {
-                location.reload();
+                // Xóa tất cả các thông báo khỏi giao diện
+                document.querySelectorAll('.notification-item').forEach(item => {
+                    item.remove();
+                });
+                
+                // Hiển thị thông báo trống
+                const cardBody = document.querySelector('.card-body');
+                cardBody.innerHTML = `
+                    <div class="text-center py-4">
+                        <i class="fas fa-bell fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">Không có thông báo nào</p>
+                    </div>
+                `;
+                
+                // Cập nhật số lượng thông báo
+                const countElement = document.querySelector('.notification-count');
+                if (countElement) {
+                    countElement.remove();
+                }
+                
+                showAlert('Đã xóa tất cả thông báo thành công');
+            } else {
+                showAlert(data.error || 'Có lỗi xảy ra khi xóa thông báo', 'danger');
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            showAlert('Có lỗi xảy ra khi xóa thông báo', 'danger');
+            showAlert('Có lỗi xảy ra khi xóa thông báo: ' + error.message, 'danger');
         });
     }
 }

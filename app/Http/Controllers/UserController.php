@@ -278,6 +278,19 @@ class UserController extends Controller
                 ]
             ]);
 
+            // Xóa tất cả các lời mời kết bạn chưa được chấp nhận từ người dùng này
+            DB::table('friends')
+                ->where('user_id', $user->id)
+                ->where('friend_id', $currentUser->id)
+                ->where('status', 'pending')
+                ->delete();
+
+            // Xóa tất cả các thông báo lời mời kết bạn từ người dùng này
+            $currentUser->notifications()
+                ->where('type', 'App\\Notifications\\FriendRequestNotification')
+                ->where('data->user_id', $user->id)
+                ->delete();
+
             // Gửi thông báo cho người gửi lời mời
             $user->notify(new \App\Notifications\FriendRequestAcceptedNotification($currentUser));
 
