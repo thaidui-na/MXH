@@ -254,11 +254,50 @@ class UserController extends Controller
     public function acceptFriendRequest(User $user)
     {
         $currentUser = auth()->user();
-        // Cập nhật trạng thái kết bạn (chiều nhận)
-        $currentUser->pendingFriendRequests()->updateExistingPivot($user->id, ['status' => 'accepted']);
-        // Đảm bảo cả 2 chiều là bạn bè
-        $user->friends()->syncWithoutDetaching([$currentUser->id => ['status' => 'accepted']]);
-        return response()->json(['success' => true, 'message' => 'Đã chấp nhận lời mời kết bạn!']);
+        
+        try {
+            // Kiểm tra xem có lời mời kết bạn đang chờ không
+            if (!$currentUser->hasReceivedFriendRequestFrom($user)) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Không tìm thấy lời mời kết bạn từ người dùng này'
+                ], 400);
+            }
+
+            // Cập nhật trạng thái kết bạn (chiều nhận)
+            $currentUser->pendingFriendRequests()->updateExistingPivot($user->id, [
+                'status' => 'accepted',
+                'updated_at' => now()
+            ]);
+            
+            // Đảm bảo cả 2 chiều là bạn bè
+            $user->friends()->syncWithoutDetaching([
+                $currentUser->id => [
+                    'status' => 'accepted',
+                    'updated_at' => now()
+                ]
+            ]);
+
+            // Gửi thông báo cho người gửi lời mời
+            $user->notify(new \App\Notifications\FriendRequestAcceptedNotification($currentUser));
+
+            return response()->json([
+                'success' => true, 
+                'message' => 'Đã chấp nhận lời mời kết bạn!',
+                'friend' => [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'avatar' => $user->avatar_url,
+                    'email' => $user->email
+                ]
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error accepting friend request: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'error' => 'Có lỗi xảy ra khi chấp nhận lời mời kết bạn'
+            ], 500);
+        }
     }
 
     /**
@@ -267,8 +306,29 @@ class UserController extends Controller
     public function rejectFriendRequest(User $user)
     {
         $currentUser = auth()->user();
-        // Xóa lời mời kết bạn (chiều nhận)
-        $currentUser->pendingFriendRequests()->detach($user->id);
-        return response()->json(['success' => true, 'message' => 'Đã từ chối lời mời kết bạn.']);
+        
+        try {
+            // Kiểm tra xem có lời mời kết bạn đang chờ không
+            if (!$currentUser->hasReceivedFriendRequestFrom($user)) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Không tìm thấy lời mời kết bạn từ người dùng này'
+                ], 400);
+            }
+
+            // Xóa lời mời kết bạn (chiều nhận)
+            $currentUser->pendingFriendRequests()->detach($user->id);
+
+            return response()->json([
+                'success' => true, 
+                'message' => 'Đã từ chối lời mời kết bạn.'
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error rejecting friend request: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'error' => 'Có lỗi xảy ra khi từ chối lời mời kết bạn'
+            ], 500);
+        }
     }
 }
