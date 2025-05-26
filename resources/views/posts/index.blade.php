@@ -318,6 +318,36 @@
         line-height: 1;
     }
 
+    .btn-view-likes {
+        transition: all 0.3s ease;
+        padding: 8px 14px;
+        font-size: 0.875rem;
+        border-radius: 20px;
+        border: 1px solid #6c757d;
+        background-color: transparent;
+        color: #6c757d;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.3rem;
+    }
+
+    .btn-view-likes i {
+        font-size: 1.1rem;
+        transition: all 0.3s ease;
+        line-height: 1;
+    }
+
+    .btn-view-likes:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        background-color: #f8f9fa;
+    }
+
+    .btn-view-likes:hover i {
+        transform: scale(1.1);
+    }
+
     .stories-container {
         display: flex;
         gap: 1rem;
@@ -519,6 +549,12 @@
                                     <i class="fas fa-heart {{ $post->isLikedBy(auth()->id()) ? 'text-danger' : '' }}"></i>
                                     <span class="like-count">{{ $post->getLikesCount() }}</span>
                                 </button>
+                                <button class="btn btn-sm btn-view-likes ms-2" 
+                                    data-bs-toggle="modal" 
+                                    data-bs-target="#likesModal{{ $post->id }}">
+                                    <i class="fas fa-users"></i>
+                                    <span>Xem người thích</span>
+                                </button>
                                 <a href="{{ route('posts.show', $post) }}" class="btn btn-view-post ms-2">
                                     <i class="fas fa-eye"></i> Xem chi tiết
                                 </a>
@@ -529,6 +565,31 @@
                                         <span class="favorite-text">{{ $post->isFavoritedBy(auth()->id()) ? 'Đã lưu' : 'Lưu' }}</span>
                                     </button>
                                 </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Modal hiển thị danh sách người like -->
+                <div class="modal fade" id="likesModal{{ $post->id }}" tabindex="-1" aria-labelledby="likesModalLabel{{ $post->id }}" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="likesModalLabel{{ $post->id }}">Người đã thích bài viết</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="likes-list">
+                                    @foreach($post->likes as $user)
+                                    <div class="d-flex align-items-center mb-2">
+                                        <img src="{{ $user->avatar_url }}" alt="{{ $user->name }}" class="rounded-circle me-2" style="width: 40px; height: 40px; object-fit: cover;">
+                                        <div>
+                                            <h6 class="mb-0">{{ $user->name }}</h6>
+                                            <small class="text-muted">{{ $user->email }}</small>
+                                        </div>
+                                    </div>
+                                    @endforeach
+                                </div>
                             </div>
                         </div>
                     </div>
