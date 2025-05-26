@@ -533,4 +533,25 @@ class User extends Authenticatable
             ->wherePivot('status', 'pending')
             ->withTimestamps();
     }
+
+    public function events()
+    {
+        return $this->hasMany(Event::class);
+    }
+
+    public function joinedEvents()
+    {
+        return $this->belongsToMany(Event::class)
+                    ->wherePivot('status', 'joined')
+                    ->withPivot('joined_at')
+                    ->withTimestamps();
+    }
+
+    public function getParticipatedEventsAttribute()
+    {
+        return $this->belongsToMany(Event::class)
+                    ->wherePivot('status', 'joined')
+                    ->withPivot('joined_at')
+                    ->withTimestamps();
+    }
 }
