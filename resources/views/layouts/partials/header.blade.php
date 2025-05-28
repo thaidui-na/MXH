@@ -80,9 +80,9 @@
                     <li class="nav-item">
                         <a href="{{ route('notifications.index') }}" class="nav-link position-relative {{ request()->routeIs('notifications.index') ? 'active text-primary fw-semibold' : '' }}">
                             <i class="fas fa-bell"></i>
-                            @if(auth()->user()->unreadNotifications->count() > 0)
+                            @if(auth()->check() && auth()->user()->notifications->where('read', false)->count() > 0)
                                 <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger notification-count" style="font-size: 0.65em; line-height: 1;">
-                                    {{ auth()->user()->unreadNotifications->count() }}
+                                    {{ auth()->user()->notifications->where('read', false)->count() }}
                                     <span class="visually-hidden">unread notifications</span>
                                 </span>
                             @endif

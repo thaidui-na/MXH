@@ -649,32 +649,31 @@
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    document.querySelectorAll('.like-button').forEach(button => {
-        button.addEventListener('click', function() {
+    document.querySelectorAll('.like-button').forEach(function(likeButton) {
+        likeButton.addEventListener('click', function() {
             const postId = this.dataset.postId;
+            const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+
             fetch(`/posts/${postId}/like`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json'
                 }
             })
             .then(response => response.json())
             .then(data => {
+                const likeCount = this.querySelector('.like-count');
+                const heartIcon = this.querySelector('.fa-heart');
                 if (data.liked) {
                     this.classList.add('active');
-                    this.querySelector('i').classList.add('text-danger');
-                    this.querySelector('i').classList.remove('text-muted');
+                    heartIcon.classList.add('text-danger');
                 } else {
                     this.classList.remove('active');
-                    this.querySelector('i').classList.remove('text-danger');
-                    this.querySelector('i').classList.add('text-muted');
+                    heartIcon.classList.remove('text-danger');
                 }
-                // Cập nhật số lượng like
-                const likeCount = this.querySelector('.like-count');
-                if (likeCount) {
-                    likeCount.textContent = data.likesCount;
-                }
+                likeCount.textContent = data.likesCount;
             })
             .catch(error => {
                 console.error('Error:', error);

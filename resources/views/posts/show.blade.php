@@ -2,6 +2,35 @@
 
 @section('title', $post->title)
 
+@push('styles')
+<style>
+    .like-button {
+        background: none;
+        border: none;
+        padding: 5px 10px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .like-button:hover {
+        transform: scale(1.1);
+    }
+
+    .like-button.active .fa-heart {
+        color: #dc3545;
+    }
+
+    .like-button .fa-heart {
+        transition: all 0.3s ease;
+    }
+
+    .like-count {
+        margin-left: 5px;
+        font-weight: 500;
+    }
+</style>
+@endpush
+
 @section('content')
 <div class="container py-4">
     <div class="row justify-content-center">
@@ -197,28 +226,30 @@ document.addEventListener('DOMContentLoaded', function() {
     if (likeButton) {
         likeButton.addEventListener('click', function() {
             const postId = this.dataset.postId;
+            const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+            
             fetch(`/posts/${postId}/like`, {
                 method: 'POST',
                 headers: {
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json'
                 }
             })
             .then(response => response.json())
             .then(data => {
                 const likeCount = this.querySelector('.like-count');
-                if (likeCount) {
-                    likeCount.textContent = data.likesCount;
-                }
+                const heartIcon = this.querySelector('.fa-heart');
                 
                 if (data.liked) {
-                    this.classList.remove('btn-outline-primary');
-                    this.classList.add('btn-primary');
+                    this.classList.add('active');
+                    heartIcon.classList.add('text-danger');
                 } else {
-                    this.classList.remove('btn-primary');
-                    this.classList.add('btn-outline-primary');
+                    this.classList.remove('active');
+                    heartIcon.classList.remove('text-danger');
                 }
+                
+                likeCount.textContent = data.likesCount;
             })
             .catch(error => {
                 console.error('Error:', error);

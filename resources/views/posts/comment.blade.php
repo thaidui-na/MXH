@@ -158,12 +158,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     commentForm.addEventListener('submit', function(e) {
         e.preventDefault();
-        
         const content = contentInput.value.trim();
         if (!content) return;
-
         const token = document.querySelector('meta[name="csrf-token"]').content;
-        
         fetch(`/posts/{{ $post->id }}/comments`, {
             method: 'POST',
             headers: {
@@ -182,10 +179,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     commentsList.innerHTML = '';
                 }
                 commentsList.insertAdjacentHTML('afterbegin', commentHtml);
-                
                 // Xóa nội dung input
                 contentInput.value = '';
-                
                 // Xóa thông báo lỗi nếu có
                 contentInput.classList.remove('is-invalid');
                 contentInput.nextElementSibling.textContent = '';
@@ -215,55 +210,9 @@ document.addEventListener('DOMContentLoaded', function() {
                                     <small class="text-muted">Vừa xong</small>
                                 </div>
                             </div>
-                            <div class="dropdown">
-                                <button class="btn btn-link text-dark p-0" data-bs-toggle="dropdown">
-                                    <i class="fas fa-ellipsis-v"></i>
-                                </button>
-                                <ul class="dropdown-menu">
-                                    <li>
-                                        <button class="dropdown-item" onclick="editComment(${comment.id})">
-                                            <i class="fas fa-edit"></i> Sửa
-                                        </button>
-                                    </li>
-                                    <li>
-                                        <form action="/comments/${comment.id}" method="POST" 
-                                              onsubmit="return confirm('Bạn có chắc muốn xóa bình luận này?')">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="dropdown-item text-danger">
-                                                <i class="fas fa-trash"></i> Xóa
-                                            </button>
-                                        </form>
-                                    </li>
-                                </ul>
-                            </div>
                         </div>
-                        
                         <div class="comment-content mt-2">
                             <p class="mb-2">${comment.content}</p>
-                            <button class="btn btn-sm btn-link p-0" 
-                                    onclick="showReplyForm(${comment.id})">
-                                <i class="fas fa-reply"></i> Trả lời
-                            </button>
-                        </div>
-
-                        <div class="reply-form mt-3" id="reply-form-${comment.id}" style="display: none;">
-                            <form action="/comments/${comment.id}/reply" method="POST">
-                                @csrf
-                                <div class="input-group">
-                                    <textarea class="form-control" 
-                                              name="content" 
-                                              rows="1" 
-                                              placeholder="Viết trả lời..." 
-                                              required></textarea>
-                                    <button type="submit" class="btn btn-primary">Gửi</button>
-                                    <button type="button" 
-                                            class="btn btn-secondary" 
-                                            onclick="hideReplyForm(${comment.id})">
-                                        Hủy
-                                    </button>
-                                </div>
-                            </form>
                         </div>
                     </div>
                 </div>

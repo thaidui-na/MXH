@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use App\Models\Notification;
 
 class NotificationController extends Controller
 {
@@ -13,12 +14,11 @@ class NotificationController extends Controller
      */
     public function index()
     {
-        $user = Auth::user();
-        $notifications = $user->notifications()->paginate(20);
-        
-        // Đánh dấu tất cả thông báo là đã đọc
-        $user->unreadNotifications->markAsRead();
-        
+        $notifications = auth()->user()->notifications()
+            ->with(['sender', 'notifiable'])
+            ->latest()
+            ->paginate(20);
+
         return view('notifications.index', compact('notifications'));
     }
 
@@ -27,10 +27,9 @@ class NotificationController extends Controller
      */
     public function markAsRead($id)
     {
-        $user = Auth::user();
-        $notification = $user->notifications()->findOrFail($id);
-        $notification->markAsRead();
-        
+        $notification = auth()->user()->notifications()->findOrFail($id);
+        $notification->update(['read' => true]);
+
         return response()->json(['success' => true]);
     }
 
@@ -65,5 +64,19 @@ class NotificationController extends Controller
         $user->notifications()->delete();
         
         return response()->json(['success' => true]);
+    }
+
+    public function markAllAsRead()
+    {
+        auth()->user()->notifications()->update(['read' => true]);
+
+        return response()->json(['success' => true]);
+    }
+
+    public function getUnreadCount()
+    {
+        $count = auth()->user()->notifications()->where('read', false)->count();
+        
+        return response()->json(['count' => $count]);
     }
 } 

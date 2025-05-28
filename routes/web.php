@@ -179,6 +179,12 @@ Route::middleware('auth')->group(function () {
     // Event participation routes
     Route::post('/events/{event}/join', [EventController::class, 'join'])->name('events.join');
     Route::post('/events/{event}/leave', [EventController::class, 'leave'])->name('events.leave');
+
+    // Routes cho thông báo
+    Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::post('/notifications/{id}/read', [NotificationController::class, 'markAsRead'])->name('notifications.read');
+    Route::post('/notifications/read-all', [NotificationController::class, 'markAllAsRead'])->name('notifications.read-all');
+    Route::get('/notifications/unread-count', [NotificationController::class, 'getUnreadCount'])->name('notifications.unread-count');
 });
 
 /**

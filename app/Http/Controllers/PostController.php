@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\Report;
 use App\Models\Story;
+use App\Models\Notification;
 
 /**
  * Controller quản lý các chức năng liên quan đến bài viết (Posts)
@@ -237,21 +238,32 @@ class PostController extends Controller
     public function like(Post $post)
     {
         $user = auth()->user();
-        if ($post->isLikedBy($user->id)) {
+        $liked = false;
+        if ($post->likes()->where('user_id', $user->id)->exists()) {
             $post->likes()->detach($user->id);
-            $liked = false;
         } else {
             $post->likes()->attach($user->id);
             $liked = true;
-            
-            // Gửi thông báo cho chủ bài viết nếu người like không phải là chủ bài viết
+            // Tạo thông báo cho chủ bài viết
             if ($post->user_id !== $user->id) {
-                $post->user->notify(new \App\Notifications\PostLikeNotification($user, $post));
+                \App\Models\Notification::create([
+                    'user_id' => $post->user_id,
+                    'sender_id' => $user->id,
+                    'type' => 'like',
+                    'notifiable_type' => 'App\\Models\\Post',
+                    'notifiable_id' => $post->id,
+                    'data' => [
+                        'post_id' => $post->id,
+                        'post_title' => $post->title
+                    ]
+                ]);
             }
         }
+        $likesCount = $post->likes()->count();
         return response()->json([
+            'success' => true,
             'liked' => $liked,
-            'likesCount' => $post->getLikesCount()
+            'likesCount' => $likesCount
         ]);
     }
 

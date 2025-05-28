@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Post;
 use App\Models\Comment;
+use App\Models\Notification;
 use Illuminate\Http\Request;
 
 class CommentController extends Controller
@@ -31,9 +32,28 @@ class CommentController extends Controller
             'content' => $request->content
         ]);
 
-        // Gửi thông báo cho chủ bài viết nếu người bình luận không phải là chủ bài viết
+        // Tạo thông báo cho chủ bài viết
         if ($post->user_id !== auth()->id()) {
-            $post->user->notify(new \App\Notifications\CommentNotification(auth()->user(), $comment));
+            \App\Models\Notification::create([
+                'user_id' => $post->user_id,
+                'sender_id' => auth()->id(),
+                'type' => 'comment',
+                'notifiable_type' => 'App\\Models\\Comment',
+                'notifiable_id' => $comment->id,
+                'data' => [
+                    'post_id' => $post->id,
+                    'post_title' => $post->title,
+                    'comment_id' => $comment->id
+                ]
+            ]);
+            
+            \Log::info('Notification created for comment', [
+                'user_id' => $post->user_id,
+                'sender_id' => auth()->id(),
+                'type' => 'comment',
+                'notifiable_type' => 'App\\Models\\Comment',
+                'notifiable_id' => $comment->id,
+            ]);
         }
 
         return response()->json([
