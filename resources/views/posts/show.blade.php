@@ -35,11 +35,14 @@
                     
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <button class="btn btn-sm like-button {{ $post->isLikedBy(auth()->id()) ? 'active' : '' }}"
-                                    data-post-id="{{ $post->id }}">
-                                <i class="fas fa-heart {{ $post->isLikedBy(auth()->id()) ? 'text-danger' : '' }}"></i>
-                                <span class="like-count">{{ $post->getLikesCount() }}</span>
-                            </button>
+                            <div class="post-actions">
+                                <button class="btn btn-sm btn-outline-primary like-button" data-post-id="{{ $post->id }}">
+                                    <i class="fas fa-heart"></i> <span class="likes-count">{{ $post->likes_count }}</span>
+                                </button>
+                                <button class="btn btn-sm btn-outline-primary share-button" data-bs-toggle="modal" data-bs-target="#shareModal">
+                                    <i class="fas fa-share"></i> <span class="shares-count">{{ $post->shares_count }}</span>
+                                </button>
+                            </div>
                             <a href="{{ route('comments.index', $post->id) }}" class="btn btn-sm comment-button ms-2">
                                 <i class="fas fa-comment"></i>
                                 <span class="comment-count">{{ $post->comments()->count() }}</span>
@@ -133,6 +136,54 @@
     </div>
 </div>
 
+<!-- Share Modal -->
+<div class="modal fade" id="shareModal" tabindex="-1" aria-labelledby="shareModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="shareModalLabel">Chia sẻ bài viết</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="shareForm">
+                    <div class="mb-3">
+                        <label for="shareCaption" class="form-label">Thêm nội dung (tùy chọn)</label>
+                        <textarea class="form-control" id="shareCaption" rows="3" maxlength="500"></textarea>
+                    </div>
+                    <div class="d-grid gap-2">
+                        <button type="button" class="btn btn-primary" onclick="sharePost()">
+                            <i class="fas fa-share"></i> Chia sẻ lên trang cá nhân
+                        </button>
+                        <button type="button" class="btn btn-outline-primary" onclick="showMessageShare()">
+                            <i class="fas fa-paper-plane"></i> Gửi qua tin nhắn
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Message Share Modal -->
+<div class="modal fade" id="messageShareModal" tabindex="-1" aria-labelledby="messageShareModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="messageShareModalLabel">Gửi qua tin nhắn</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <input type="text" class="form-control" id="messageSearch" placeholder="Tìm kiếm người dùng...">
+                </div>
+                <div id="messageUsers" class="list-group">
+                    <!-- Danh sách người dùng sẽ được thêm vào đây -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function() {
@@ -207,7 +258,7 @@ document.addEventListener('DOMContentLoaded', function() {
             })
             .then(response => response.json())
             .then(data => {
-                const likeCount = this.querySelector('.like-count');
+                const likeCount = this.querySelector('.likes-count');
                 if (likeCount) {
                     likeCount.textContent = data.likesCount;
                 }
@@ -226,6 +277,146 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
+
+function sharePost() {
+    const caption = document.getElementById('shareCaption').value;
+
+    fetch(`/posts/{{ $post->id }}/share`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+        },
+        body: JSON.stringify({ caption })
+    })
+    .then(async response => {
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+            const data = await response.json();
+            if (data.success) {
+                document.querySelector('.shares-count').textContent = parseInt(document.querySelector('.shares-count').textContent) + 1;
+                bootstrap.Modal.getInstance(document.getElementById('shareModal')).hide();
+                alert(data.message);
+            } else {
+                alert(data.message || 'Có lỗi xảy ra khi chia sẻ bài viết');
+            }
+        } else {
+            // Nếu không phải JSON, có thể là bị logout hoặc lỗi CSRF
+            if (response.status === 419) {
+                alert('Phiên đăng nhập đã hết hạn hoặc lỗi CSRF. Vui lòng tải lại trang và thử lại.');
+            } else if (response.status === 401) {
+                alert('Bạn cần đăng nhập để thực hiện chức năng này.');
+            } else {
+                alert('Có lỗi xảy ra (không nhận được dữ liệu hợp lệ từ server).');
+            }
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Có lỗi xảy ra khi chia sẻ bài viết. Vui lòng thử lại sau.');
+    });
+}
+
+function showMessageShare() {
+    // Đóng modal chia sẻ
+    bootstrap.Modal.getInstance(document.getElementById('shareModal')).hide();
+    // Mở modal tin nhắn
+    new bootstrap.Modal(document.getElementById('messageShareModal')).show();
+}
+
+// Tìm kiếm người dùng khi nhập
+document.getElementById('messageSearch').addEventListener('input', function(e) {
+    const query = e.target.value.trim();
+    if (query.length < 2) return;
+
+    fetch(`/api/users/search?q=${encodeURIComponent(query)}`, {
+        headers: {
+            'Accept': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+        }
+    })
+    .then(async response => {
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+            const data = await response.json();
+            const usersList = document.getElementById('messageUsers');
+            usersList.innerHTML = '';
+            
+            if (data.users && data.users.length > 0) {
+                data.users.forEach(user => {
+                    const userElement = document.createElement('button');
+                    userElement.className = 'list-group-item list-group-item-action d-flex align-items-center';
+                    userElement.innerHTML = `
+                        <img src="${user.avatar || '/images/default-avatar.jpg'}" 
+                             class="rounded-circle me-2" 
+                             style="width: 40px; height: 40px; object-fit: cover;"
+                             onerror="this.src='/images/default-avatar.jpg'">
+                        <div>
+                            <div class="fw-bold">${user.name}</div>
+                            <small class="text-muted">${user.email}</small>
+                        </div>
+                    `;
+                    userElement.onclick = () => shareToMessage(user.id);
+                    usersList.appendChild(userElement);
+                });
+            } else {
+                usersList.innerHTML = '<div class="list-group-item text-center text-muted">Không tìm thấy người dùng</div>';
+            }
+        } else {
+            if (response.status === 419) {
+                alert('Phiên đăng nhập đã hết hạn. Vui lòng tải lại trang và thử lại.');
+            } else if (response.status === 401) {
+                alert('Bạn cần đăng nhập để thực hiện chức năng này.');
+            } else {
+                alert('Có lỗi xảy ra khi tìm kiếm người dùng.');
+            }
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Có lỗi xảy ra khi tìm kiếm người dùng. Vui lòng thử lại sau.');
+    });
+});
+
+function shareToMessage(userId) {
+    fetch(`/posts/{{ $post->id }}/share-to-message`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+        },
+        body: JSON.stringify({ user_id: userId })
+    })
+    .then(async response => {
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+            const data = await response.json();
+            if (data.success) {
+                // Đóng modal
+                bootstrap.Modal.getInstance(document.getElementById('messageShareModal')).hide();
+                // Hiển thị thông báo thành công
+                alert(data.message);
+            } else {
+                alert(data.message || 'Có lỗi xảy ra khi gửi bài viết qua tin nhắn');
+            }
+        } else {
+            // Nếu không phải JSON, có thể là bị logout hoặc lỗi CSRF
+            if (response.status === 419) {
+                alert('Phiên đăng nhập đã hết hạn hoặc lỗi CSRF. Vui lòng tải lại trang và thử lại.');
+            } else if (response.status === 401) {
+                alert('Bạn cần đăng nhập để thực hiện chức năng này.');
+            } else {
+                alert('Có lỗi xảy ra khi gửi bài viết qua tin nhắn.');
+            }
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Có lỗi xảy ra khi gửi bài viết qua tin nhắn. Vui lòng thử lại sau.');
+    });
+}
 </script>
 <style>
 .highlight-comment {

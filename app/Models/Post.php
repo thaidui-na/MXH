@@ -133,4 +133,14 @@ class Post extends Model
                     ->orderByDesc('favorites_count')
                     ->orderByDesc('posts.created_at');
     }
+
+    public function shares()
+    {
+        return $this->hasMany(PostShare::class);
+    }
+
+    public function getSharesCountAttribute()
+    {
+        return $this->shares()->count();
+    }
 } 

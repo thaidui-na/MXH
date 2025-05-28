@@ -21,6 +21,7 @@ use App\Http\Controllers\StoryController;
 use App\Http\Controllers\FollowController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\EventController;
+use App\Http\Controllers\PostShareController;
 
 // Route mặc định, hiển thị trang chào mừng
 Route::get('/', function () {
@@ -179,6 +180,10 @@ Route::middleware('auth')->group(function () {
     // Event participation routes
     Route::post('/events/{event}/join', [EventController::class, 'join'])->name('events.join');
     Route::post('/events/{event}/leave', [EventController::class, 'leave'])->name('events.leave');
+
+    // Routes quản lý chia sẻ bài viết
+    Route::post('/posts/{post}/share', [PostShareController::class, 'share'])->name('posts.share');
+    Route::post('/posts/{post}/share-to-message', [PostShareController::class, 'shareToMessage'])->name('posts.share-to-message');
 });
 
 /**
