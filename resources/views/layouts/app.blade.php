@@ -16,6 +16,62 @@
     
     <!-- Custom CSS -->
     <style>
+        body.dark-mode {
+            background: #18191a !important;
+            color: #e4e6eb !important;
+        }
+        .dark-mode .navbar, .dark-mode .card, .dark-mode .dropdown-menu {
+            background: #242526 !important;
+            color: #e4e6eb !important;
+            border-color: #3a3b3c !important;
+        }
+        .dark-mode .card-header, .dark-mode .card-footer {
+            background: #242526 !important;
+            color: #e4e6eb !important;
+        }
+        .dark-mode .form-control, .dark-mode .form-select {
+            background: #3a3b3c !important;
+            color: #e4e6eb !important;
+            border-color: #555;
+        }
+        .dark-mode .form-control:focus, .dark-mode .form-select:focus {
+            background: #242526 !important;
+            color: #e4e6eb !important;
+        }
+        .dark-mode .btn-outline-secondary {
+            color: #e4e6eb;
+            border-color: #555;
+        }
+        .dark-mode .btn-outline-secondary:hover {
+            background: #3a3b3c;
+            color: #fff;
+        }
+        .dark-mode .list-group-item {
+            background: #242526 !important;
+            color: #e4e6eb !important;
+            border-color: #3a3b3c !important;
+        }
+        .dark-mode .bg-light {
+            background: #3a3b3c !important;
+            color: #e4e6eb !important;
+        }
+        .dark-mode .dropdown-item {
+            color: #e4e6eb !important;
+        }
+        .dark-mode .dropdown-item:hover {
+            background: #3a3b3c !important;
+            color: #fff !important;
+        }
+        .dark-mode .modal-content {
+            background: #242526 !important;
+            color: #e4e6eb !important;
+        }
+        .dark-mode .border, .dark-mode .border-bottom, .dark-mode .border-top {
+            border-color: #3a3b3c !important;
+        }
+        .dark-mode .text-muted {
+            color: #b0b3b8 !important;
+        }
         .navbar-brand {
             font-weight: bold;
         }
