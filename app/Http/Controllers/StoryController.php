@@ -123,7 +123,21 @@ class StoryController extends Controller
             abort(404);
         }
 
-        return view('stories.show', compact('story'));
+        // Ghi nhận lượt xem nếu người dùng chưa xem story này
+        if (!$story->isViewedBy(auth()->id())) {
+            $story->views()->create([
+                'user_id' => auth()->id(),
+                'viewed_at' => now()
+            ]);
+        }
+
+        // Lấy danh sách người đã xem story
+        $viewers = $story->views()
+            ->with('user')
+            ->latest('viewed_at')
+            ->get();
+
+        return view('stories.show', compact('story', 'viewers'));
     }
 
     public function destroy(Story $story)
