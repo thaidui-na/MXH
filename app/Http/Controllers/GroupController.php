@@ -36,7 +36,7 @@ class GroupController extends Controller
                 'required',
                 'string',
                 'max:255',
-                'regex:/^[^\s　]*[^\s　]+[^\s　]*$/', // Không cho phép toàn khoảng trắng
+                'regex:/^[a-zA-ZÀÁẠẢÃĂẮẶẲẪẬÂẤẦẨẪẶĐÈÉẸẺẼÊẾỀỂỄỆÌÍỊỈĨÒÓỌỎÕÔỐỒỔỖỘƠỚỜỞỠỢÙÚỤỦŨƯỨỪỬỮỰỲÝỴỶỸ][a-zA-ZÀÁẠẢÃĂẮẶẲẪẬÂẤẦẨẪẶĐÈÉẸẺẼÊẾỀỂỄỆÌÍỊỈĨÒÓỌỎÕÔỐỒỔỖỘƠỚỜỞỠỢÙÚỤỦŨƯỨỪỬỮỰỲÝỴỶỸ ]*[a-zA-ZÀÁẠẢÃĂẮẶẲẪẬÂẤẦẨẪẶĐÈÉẸẺẼÊẾỀỂỄỆÌÍỊỈĨÒÓỌỎÕÔỐỒỔỖỘƠỚỜỞỠỢÙÚỤỦŨƯỨỪỬỮỰỲÝỴỶỸ]$/', // Chỉ cho phép chữ, không khoảng trắng đầu/cuối
                 'unique:groups,name', // Kiểm tra tên nhóm trùng
             ],
             'description' => [
@@ -52,7 +52,7 @@ class GroupController extends Controller
             'name.required' => 'Vui lòng nhập tên nhóm',
             'name.string' => 'Tên nhóm phải là chuỗi ký tự',
             'name.max' => 'Tên nhóm không được vượt quá 255 ký tự',
-            'name.regex' => 'Tên nhóm không được chứa toàn khoảng trắng',
+            'name.regex' => 'Tên nhóm chỉ được chứa chữ cái và khoảng trắng (không ở đầu/cuối), không được chứa số hoặc ký tự đặc biệt.',
             'name.unique' => 'Tên nhóm này đã tồn tại. Vui lòng chọn tên khác',
             'description.max' => 'Mô tả không được vượt quá 1000 ký tự',
             'description.regex' => 'Mô tả không được chứa toàn khoảng trắng',
@@ -156,21 +156,24 @@ class GroupController extends Controller
             ->with('success', 'Cập nhật nhóm thành công!');
     }
 
-    public function destroy(Group $group)
+    public function destroy($id)
     {
+        // Tìm nhóm bằng ID
+        $group = Group::find($id);
+
+        // Kiểm tra nếu nhóm không tồn tại (đã bị xóa)
+        if (!$group) {
+            return redirect()->route('groups.index')
+                ->with('error', 'Nhóm này đã bị xóa hoặc không tồn tại!');
+        }
+
+        // Kiểm tra quyền xóa (logic hiện tại vẫn giữ nguyên)
         if ($group->created_by !== auth()->id() && !$group->hasAdmin(auth()->id())) {
             return redirect()->route('groups.show', $group)
                 ->with('error', 'Bạn không có quyền xóa nhóm này!');
         }
 
         try {
-            // Kiểm tra lại xem nhóm có tồn tại không
-            $group = Group::find($group->id);
-            if (!$group) {
-                return redirect()->route('groups.index')
-                    ->with('error', 'Nhóm này đã bị xóa hoặc không tồn tại!');
-            }
-
             // Xóa ảnh
             if ($group->cover_image) {
                 Storage::disk('public')->delete($group->cover_image);
