@@ -23,6 +23,7 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\AdminReportController;
 use App\Http\Controllers\UserReportController;
+use App\Http\Controllers\ThemeController;
 
 // Route mặc định, hiển thị trang chào mừng
 Route::get('/', function () {
@@ -252,4 +253,11 @@ Route::middleware(['web', 'auth', \App\Http\Middleware\AdminMiddleware::class])-
     // Routes xử lý hành động trên báo cáo người dùng
     Route::put('/user-reports/{userReport}/mark-resolved', [AdminController::class, 'markUserReportResolved'])->name('admin.user-reports.mark-resolved'); // Đánh dấu báo cáo đã xử lý
     Route::delete('/user-reports/{userReport}', [AdminController::class, 'deleteUserReport'])->name('admin.user-reports.delete'); // Xóa báo cáo người dùng
+});
+
+// Theme routes
+Route::middleware(['auth'])->group(function () {
+    Route::get('/theme', [ThemeController::class, 'index'])->name('theme.index');
+    Route::post('/theme/update', [ThemeController::class, 'update'])->name('theme.update');
+    Route::post('/theme/reset', [ThemeController::class, 'reset'])->name('theme.reset');
 });

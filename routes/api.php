@@ -21,3 +21,9 @@ Route::middleware(['web', 'auth'])->group(function () {
         return $request->user();
     });
 }); 
+
+Route::middleware(['web', 'auth'])->group(function () {
+    Route::get('/theme', function (Request $request) {
+        // Implementation of the theme route
+    });
+}); 
