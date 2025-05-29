@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\Report;
 use App\Models\Story;
+use App\Models\ReadPost;
 
 /**
  * Controller quản lý các chức năng liên quan đến bài viết (Posts)
@@ -41,7 +42,10 @@ class PostController extends Controller
             ->get()
             ->groupBy('user_id');
 
-        return view('posts.index', compact('posts', 'groups', 'stories'));
+        // Lấy danh sách id các bài viết đã đọc của user hiện tại
+        $readPostIds = ReadPost::where('user_id', auth()->id())->pluck('post_id')->toArray();
+
+        return view('posts.index', compact('posts', 'groups', 'stories', 'readPostIds'));
     }
 
     /**

@@ -550,7 +550,7 @@
             <div class="row">
                 @foreach($posts as $index => $post)
                 <div class="col-md-12" style="animation-delay: {{ $index * 0.1 }}s;">
-                    <div class="card post-card">
+                    <div class="card post-card {{ in_array($post->id, $readPostIds) ? 'opacity-50' : '' }}">
                         <div class="card-body">
                             <a href="{{ route('posts.show', $post) }}" class="text-decoration-none">
                                 <h5 class="post-title">{{ $post->title }}</h5>
@@ -588,6 +588,13 @@
                                         <span class="favorite-text">{{ $post->isFavoritedBy(auth()->id()) ? 'Đã lưu' : 'Lưu' }}</span>
                                     </button>
                                 </form>
+                                @if(in_array($post->id, $readPostIds))
+                                    <span class="badge bg-success ms-2">Đã đọc</span>
+                                @else
+                                    <button type="button" class="btn btn-sm btn-outline-secondary ms-2 mark-as-read-btn" data-post-id="{{ $post->id }}">
+                                        <i class="fas fa-check"></i> Đánh dấu đã đọc
+                                    </button>
+                                @endif
                             </div>
                         </div>
                     </div>
@@ -848,6 +855,29 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+
+    document.querySelectorAll('.mark-as-read-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var postId = this.getAttribute('data-post-id');
+            var button = this;
+            fetch('/posts/' + postId + '/read', {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Làm mờ card và đổi nút thành badge
+                    var card = button.closest('.post-card');
+                    card.classList.add('opacity-50');
+                    button.outerHTML = '<span class="badge bg-success ms-2">Đã đọc</span>';
+                }
+            });
+        });
+    });
 });
 </script>
 @endpush

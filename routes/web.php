@@ -23,6 +23,7 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\AdminReportController;
 use App\Http\Controllers\UserReportController;
+use App\Http\Controllers\ReadPostController;
 
 // Route mặc định, hiển thị trang chào mừng
 Route::get('/', function () {
@@ -190,6 +191,9 @@ Route::middleware('auth')->group(function () {
 
     // Routes quản lý danh sách người đã like bài viết (AJAX)
     Route::get('/posts/{post}/likes-list', [PostController::class, 'likesList'])->name('posts.likesList');
+
+    // Routes quản lý đánh dấu bài viết là đã đọc
+    Route::post('/posts/{post}/read', [\App\Http\Controllers\ReadPostController::class, 'markAsRead'])->name('posts.markAsRead');
 });
 
 /**
