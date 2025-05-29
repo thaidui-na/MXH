@@ -140,6 +140,11 @@
                             <i class="bi bi-file-text-fill"></i>
                             <span>Bài viết</span>
                         </a>
+                        <a href="{{ route('admin.reports') }}" 
+                           class="nav-link {{ request()->routeIs('admin.reports*') ? 'active' : '' }}">
+                            <i class="bi bi-flag-fill"></i>
+                            <span>Báo cáo bài viết</span>
+                        </a>
                     </div>
                 </nav>
             </div>
