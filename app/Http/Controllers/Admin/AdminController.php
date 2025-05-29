@@ -69,10 +69,18 @@ class AdminController extends Controller
      */
     public function deleteUser($id)
     {
-        // Tìm người dùng bằng ID và thực hiện xóa
-        User::find($id)->delete();
-        // Quay lại trang trước đó với thông báo thành công
-        return back()->with('success', 'Đã xóa người dùng');
+        try {
+            $user = User::find($id);
+            
+            if (!$user) {
+                return back()->with('error', 'Người dùng không tồn tại hoặc đã bị xóa.');
+            }
+
+            $user->delete();
+            return back()->with('success', 'Đã xóa người dùng thành công.');
+        } catch (\Exception $e) {
+            return back()->with('error', 'Có lỗi xảy ra khi xóa người dùng. Vui lòng thử lại sau.');
+        }
     }
 
     /**
@@ -83,10 +91,18 @@ class AdminController extends Controller
      */
     public function deletePost($id)
     {
-        // Tìm bài viết bằng ID và thực hiện xóa
-        Post::find($id)->delete();
-        // Quay lại trang trước đó với thông báo thành công
-        return back()->with('success', 'Đã xóa bài viết');
+        try {
+            $post = Post::find($id);
+
+            if (!$post) {
+                return back()->with('error', 'Bài viết không tồn tại hoặc đã bị xóa.');
+            }
+
+            $post->delete();
+            return back()->with('success', 'Đã xóa bài viết thành công.');
+        } catch (\Exception $e) {
+            return back()->with('error', 'Có lỗi xảy ra khi xóa bài viết. Vui lòng thử lại sau.');
+        }
     }
 
     /**

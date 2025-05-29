@@ -15,6 +15,12 @@ class EventController extends Controller
     {
         $query = Event::with('user');
 
+        // Xử trang không tồn tại
+        $page = $request->input('page');
+        if ($page !== null && (!is_numeric($page) || (int) $page <= 0)) {
+            return redirect()->route('events.index')->with('error', 'Số trang không hợp lệ.');
+        }
+
         // Tìm kiếm theo từ khóa
         if ($request->has('search')) {
             $search = $request->search;
@@ -28,9 +34,12 @@ class EventController extends Controller
         }
 
         // Lọc theo thời gian
-        if ($request->has('time_filter')) {
+        $allowedTimeFilters = ['today', 'this_week', 'this_month', 'next_month', 'future'];
+        $timeFilter = $request->input('time_filter');
+
+        if ($timeFilter && in_array($timeFilter, $allowedTimeFilters)) {
             $now = now();
-            switch ($request->time_filter) {
+            switch ($timeFilter) {
                 case 'today':
                     $query->whereDate('event_time', $now->toDateString());
                     break;
@@ -53,11 +62,17 @@ class EventController extends Controller
                     $query->where('event_time', '>', $now);
                     break;
             }
+        } elseif ($timeFilter !== null) {
+            // Handle invalid time_filter
+            session()->flash('error', 'Giá trị lọc thời gian không hợp lệ.');
         }
 
         // Lọc theo loại sự kiện (online/offline)
-        if ($request->has('location_filter')) {
-            switch ($request->location_filter) {
+        $allowedLocationFilters = ['online', 'offline'];
+        $locationFilter = $request->input('location_filter');
+
+        if ($locationFilter && in_array($locationFilter, $allowedLocationFilters)) {
+            switch ($locationFilter) {
                 case 'online':
                     $query->where('event_type', 'online');
                     break;
@@ -65,9 +80,18 @@ class EventController extends Controller
                     $query->where('event_type', 'offline');
                     break;
             }
+        } elseif ($locationFilter !== null) {
+            // Handle invalid location_filter
+            session()->flash('error', 'Giá trị lọc địa điểm không hợp lệ.');
         }
 
         $events = $query->latest()->paginate(10);
+
+        // Check if the requested page is out of range after pagination
+        if ($page !== null && $events->currentPage() > $events->lastPage() && $events->lastPage() > 0) {
+             return redirect()->route('events.index')->with('error', 'Số trang bạn yêu cầu không tồn tại.');
+        }
+
         return view('events.index', compact('events'));
     }
 
@@ -116,7 +140,7 @@ class EventController extends Controller
             ->first();
 
         if ($duplicateEvent) {
-            return redirect()->back()
+            return redirect()->route('events.index')
                 ->withInput()
                 ->with('error', 'Bạn đã tạo một sự kiện trùng lặp với cùng tiêu đề và thời gian.');
         }
@@ -145,27 +169,46 @@ class EventController extends Controller
      */
     public function show($id)
     {
-        $event = Event::withTrashed()->findOrFail($id);
-        
-        // Nếu sự kiện đã bị xóa
-        if ($event->trashed()) {
-            return back()->with('error', 'Sự kiện này đã bị xóa.');
-        }
+        try {
+            $event = Event::withTrashed()->findOrFail($id);
+            
+            // Nếu sự kiện đã bị xóa
+            if ($event->trashed()) {
+                // Chuyển hướng đến trang danh sách sự kiện với thông báo lỗi
+                return redirect()->route('events.index')->with('error', 'Sự kiện này đã bị xóa.');
+            }
 
-        $event->load(['user', 'activeParticipants']);
-        return view('events.show', compact('event'));
+            $event->load(['user', 'activeParticipants']);
+            return view('events.show', compact('event'));
+
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            // If ModelNotFoundException is caught (ID not found or invalid format)
+            return redirect()->route('events.index')->with('error', 'Không tìm thấy sự kiện.');
+        }
     }
 
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(Event $event)
+    public function edit($id)
     {
-        if (auth()->id() !== $event->user_id) {
-            return redirect()->route('events.index')
-                ->with('error', 'Bạn không có quyền chỉnh sửa sự kiện này.');
+        try {
+           
+            $event = Event::findOrFail($id);
+
+            // Kiểm tra quyền chỉnh sửa. Nếu không có quyền, chuyển hướng về trang index với lỗi.
+            if (auth()->id() !== $event->user_id) {
+                return redirect()->route('events.index')
+                    ->with('error', 'Bạn không có quyền chỉnh sửa sự kiện này.');
+            }
+            
+            // Nếu mọi thứ hợp lệ, hiển thị form chỉnh sửa.
+            return view('events.edit', compact('event'));
+
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            // If ModelNotFoundException is caught (ID not found or invalid format)
+            return redirect()->route('events.index')->with('error', 'Không tìm thấy sự kiện.');
         }
-        return view('events.edit', compact('event'));
     }
 
     /**
@@ -262,10 +305,10 @@ class EventController extends Controller
             }
 
             // Kiểm tra xem sự kiện có người tham gia không
-            if ($event->activeParticipants()->count() > 0) {
-                return redirect()->route('events.index')
-                    ->with('error', 'Không thể xóa sự kiện vì đã có người tham gia.');
-            }
+            // if ($event->activeParticipants()->count() > 0) {
+            //     return redirect()->route('events.index')
+            //         ->with('error', 'Không thể xóa sự kiện vì đã có người tham gia.');
+            // }
 
             // Xóa ảnh nếu tồn tại
             if ($event->image_path) {
@@ -293,7 +336,8 @@ class EventController extends Controller
         
         // Nếu sự kiện đã bị xóa
         if ($event->trashed()) {
-            return back()->with('error', 'Sự kiện này đã bị xóa.');
+            // Chuyển hướng đến trang danh sách sự kiện với thông báo lỗi
+            return redirect()->route('events.index')->with('error', 'Sự kiện này đã bị xóa hoặc không tồn tại.');
         }
 
         // Kiểm tra xem người dùng đã tham gia chưa
