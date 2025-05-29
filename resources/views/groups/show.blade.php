@@ -27,7 +27,8 @@
                 </div>
                 <div class="card-footer bg-transparent">
                      <div class="d-flex justify-content-end">
-                            @if($group->created_by == auth()->id())
+                            {{-- Chỉ hiển thị nút Chỉnh sửa và Xóa nhóm cho người tạo hoặc admin --}}
+                            @if($group->created_by == auth()->id() || $group->hasAdmin(auth()->id()))
                                 <a href="{{ route('groups.edit', $group->id) }}" class="btn btn-outline-primary btn-sm me-2">Chỉnh sửa</a>
                                 <form action="{{ route('groups.destroy', $group->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Bạn có chắc chắn muốn xóa nhóm này? Hành động này không thể hoàn tác!');">
                                     @csrf
@@ -66,6 +67,7 @@
             <div class="tab-content" id="groupTabContent">
                 {{-- Tab Thảo luận --}}
                 <div class="tab-pane fade show active" id="discussion-pane" role="tabpanel" aria-labelledby="discussion-tab">
+                    {{-- Chỉ hiển thị form đăng bài nếu là thành viên --}}
                     @if($group->members->where('user_id', auth()->id())->count() > 0)
                         <form method="POST" action="{{ route('groups.post', $group->id) }}" class="mb-4">
                             @csrf
@@ -96,7 +98,8 @@
                                                 <small class="text-muted">{{ $post->created_at->diffForHumans() }}</small>
                                             </div>
                                         </div>
-                                        @if($post->user_id == auth()->id() || $group->hasAdmin(auth()->id()))
+                                        {{-- Chỉ hiển thị dropdown tùy chọn cho người tạo bài viết hoặc admin --}}
+                                        @if($post->user_id == auth()->id() || $group->created_by == auth()->id() || $group->hasAdmin(auth()->id()))
                                             <div class="dropdown">
                                                 <button class="btn btn-link text-dark" type="button" data-bs-toggle="dropdown">
                                                     <i class="fas fa-ellipsis-v"></i>
@@ -113,13 +116,14 @@
                                                             </form>
                                                         </li>
                                                     @endif
-                                                    @if($group->hasAdmin(auth()->id()))
+                                                    {{-- Chỉ hiển thị tùy chọn xóa bài viết cho admin (nếu họ không phải người tạo bài) --}}
+                                                    @if(($group->created_by == auth()->id() || $group->hasAdmin(auth()->id())) && $post->user_id !== auth()->id())
                                                         <li>
                                                             <form action="{{ route('groups.posts.destroy', ['group' => $group->id, 'post' => $post->id]) }}" method="POST" class="d-inline">
                                                                 @csrf
                                                                 @method('DELETE')
                                                                 <button type="submit" class="dropdown-item text-danger" onclick="return confirm('Bạn có chắc chắn muốn xóa bài viết này?')">
-                                                                    <i class="fas fa-trash"></i> Xóa bài viết
+                                                                    <i class="fas fa-trash"></i> Xóa bài viết (Admin)
                                                                 </button>
                                                             </form>
                                                         </li>
@@ -203,7 +207,8 @@
                 </div>
                 {{-- Tab Thành viên --}}
                 <div class="tab-pane fade" id="members-pane" role="tabpanel" aria-labelledby="members-tab">
-                    @if($group->hasAdmin(auth()->id()))
+                    {{-- Chỉ hiển thị nút Quản lý thành viên cho người tạo hoặc admin --}}
+                    @if($group->created_by == auth()->id() || $group->hasAdmin(auth()->id()))
                         <div class="mb-3">
                             <a href="{{ route('groups.members', $group) }}" class="btn btn-primary">
                                 <i class="fas fa-users-cog"></i> Quản lý thành viên
