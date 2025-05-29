@@ -357,4 +357,10 @@ class PostController extends Controller
     {
         return view('posts.partials.likes_list', ['users' => $post->likes]);
     }
+
+    public function hide(Post $post)
+    {
+        auth()->user()->hiddenPosts()->syncWithoutDetaching([$post->id]);
+        return back()->with('success', 'Bài viết đã được ẩn khỏi bảng tin của bạn.');
+    }
 } 

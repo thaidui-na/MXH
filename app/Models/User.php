@@ -717,4 +717,9 @@ class User extends Authenticatable
             ->withPivot('status')
             ->withTimestamps();
     }
+
+    public function hiddenPosts()
+    {
+        return $this->belongsToMany(Post::class, 'hidden_posts', 'user_id', 'post_id')->withTimestamps();
+    }
 }

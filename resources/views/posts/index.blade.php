@@ -588,6 +588,16 @@
                                         <span class="favorite-text">{{ $post->isFavoritedBy(auth()->id()) ? 'Đã lưu' : 'Lưu' }}</span>
                                     </button>
                                 </form>
+                                @if(!auth()->user()->hiddenPosts->contains($post->id))
+                                <form action="{{ route('posts.hide', $post) }}" method="POST" class="d-inline ms-2">
+                                    @csrf
+                                    <button type="submit" class="btn btn-sm btn-warning">
+                                        <i class="fas fa-eye-slash"></i> Ẩn bài viết
+                                    </button>
+                                </form>
+                                @else
+                                <span class="badge bg-secondary ms-2">Đã ẩn</span>
+                                @endif
                             </div>
                         </div>
                     </div>

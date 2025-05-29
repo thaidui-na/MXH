@@ -190,6 +190,9 @@ Route::middleware('auth')->group(function () {
 
     // Routes quản lý danh sách người đã like bài viết (AJAX)
     Route::get('/posts/{post}/likes-list', [PostController::class, 'likesList'])->name('posts.likesList');
+
+    // Routes quản lý ẩn bài viết
+    Route::post('/posts/{post}/hide', [PostController::class, 'hide'])->name('posts.hide')->middleware('auth');
 });
 
 /**

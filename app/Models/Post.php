@@ -133,4 +133,9 @@ class Post extends Model
                     ->orderByDesc('favorites_count')
                     ->orderByDesc('posts.created_at');
     }
+
+    public function hiddenByUsers()
+    {
+        return $this->belongsToMany(User::class, 'hidden_posts', 'post_id', 'user_id')->withTimestamps();
+    }
 } 
