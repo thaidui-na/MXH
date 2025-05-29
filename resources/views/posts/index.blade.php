@@ -675,6 +675,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (likeCount) {
                     likeCount.textContent = data.likesCount;
                 }
+                // Cập nhật lại danh sách người đã thích trong modal
+                fetch(`/posts/${postId}/likes-list`)
+                    .then(res => res.text())
+                    .then(html => {
+                        const modalLikesList = document.querySelector(`#likesModal${postId} .likes-list`);
+                        if (modalLikesList) {
+                            modalLikesList.innerHTML = html;
+                        }
+                    });
             })
             .catch(error => {
                 console.error('Error:', error);

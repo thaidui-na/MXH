@@ -36,8 +36,10 @@ Route::get('/register', [AuthController::class, 'showRegisterForm'])->name('regi
 Route::post('/register', [AuthController::class, 'register']); // Xử lý dữ liệu đăng ký
 
 // Routes xử lý đăng nhập
-Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login'); // Hiển thị form đăng nhập
-Route::post('/login', [AuthController::class, 'login']); // Xử lý dữ liệu đăng nhập
+Route::middleware(['web'])->group(function () {
+    Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login'); // Hiển thị form đăng nhập
+    Route::post('/login', [AuthController::class, 'login']); // Xử lý dữ liệu đăng nhập
+});
 
 // Routes xử lý quên mật khẩu
 Route::get('/forgot-password', [PasswordController::class, 'showForgotForm'])->name('password.request');
@@ -179,6 +181,9 @@ Route::middleware('auth')->group(function () {
     // Event participation routes
     Route::post('/events/{event}/join', [EventController::class, 'join'])->name('events.join');
     Route::post('/events/{event}/leave', [EventController::class, 'leave'])->name('events.leave');
+
+    // Routes quản lý danh sách người đã like bài viết (AJAX)
+    Route::get('/posts/{post}/likes-list', [PostController::class, 'likesList'])->name('posts.likesList');
 });
 
 /**

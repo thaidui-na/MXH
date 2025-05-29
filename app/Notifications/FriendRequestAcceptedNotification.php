@@ -40,10 +40,11 @@ class FriendRequestAcceptedNotification extends Notification
     public function toArray(object $notifiable): array
     {
         return [
-            'message' => "{$this->accepter->name} đã chấp nhận lời mời kết bạn của bạn",
+            'message' => "Bạn đã đồng ý kết bạn với {$this->accepter->name}",
             'avatar' => $this->accepter->avatar_url,
             'user_id' => $this->accepter->id,
-            'type' => 'friend_request_accepted'
+            'type' => 'friend_request_accepted',
+            'senderName' => $this->accepter->name
         ];
     }
 } 

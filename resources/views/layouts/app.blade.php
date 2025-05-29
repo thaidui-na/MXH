@@ -190,11 +190,11 @@
                                     <div class="fw-bold text-dark">${user.name}</div>
                                     ${user.email ? `<div class="text-muted small">${user.email}</div>` : ''}
                                 </div>
-                                <button class="btn btn-sm ${user.isFriend ? 'btn-primary' : 'btn-outline-primary'} rounded-pill friend-button ms-2" 
+                                <button class="btn btn-sm ${user.isFriend ? 'btn-primary' : (user.hasPendingRequest ? 'btn-secondary' : (user.hasReceivedRequest ? 'btn-success' : 'btn-outline-primary'))} rounded-pill friend-button ms-2" 
                                         data-user-id="${user.id}"
-                                        onclick="event.preventDefault(); toggleFriend(${user.id}, this);">
-                                    <i class="fas fa-${user.isFriend ? 'user-friends' : 'user-plus'}"></i> 
-                                    ${user.isFriend ? 'Bạn bè' : 'Kết bạn'}
+                                        onclick="event.preventDefault(); ${user.isFriend ? 'toggleFriend' : (user.hasPendingRequest ? 'toggleFriend' : (user.hasReceivedRequest ? 'acceptFriendRequest' : 'toggleFriend'))}(${user.id}, this);">
+                                    <i class="fas fa-${user.isFriend ? 'user-friends' : (user.hasPendingRequest ? 'clock' : (user.hasReceivedRequest ? 'user-check' : 'user-plus'))}"></i> 
+                                    ${user.isFriend ? 'Bạn bè' : (user.hasPendingRequest ? 'Đã gửi lời mời' : (user.hasReceivedRequest ? 'Chấp nhận' : 'Kết bạn'))}
                                 </button>
                             `;
                             searchResults.appendChild(userElement);
@@ -227,8 +227,9 @@
     // Follow/Unfollow functionality
     function toggleFriend(userId, button) {
         const isFriend = button.classList.contains('btn-primary');
-        const url = isFriend ? `/users/${userId}/remove-friend` : `/users/${userId}/add-friend`;
-        const method = isFriend ? 'DELETE' : 'POST';
+        const hasPendingRequest = button.classList.contains('btn-secondary');
+        const url = isFriend || hasPendingRequest ? `/users/${userId}/remove-friend` : `/users/${userId}/add-friend`;
+        const method = isFriend || hasPendingRequest ? 'DELETE' : 'POST';
 
         fetch(url, {
             method: method,
@@ -243,16 +244,84 @@
         .then(data => {
             if (data.success) {
                 if (data.isFriend) {
-                    button.classList.remove('btn-outline-primary');
+                    button.classList.remove('btn-outline-primary', 'btn-secondary');
                     button.classList.add('btn-primary');
                     button.innerHTML = '<i class="fas fa-user-friends"></i> Bạn bè';
+                } else if (data.hasPendingRequest) {
+                    button.classList.remove('btn-outline-primary', 'btn-primary');
+                    button.classList.add('btn-secondary');
+                    button.innerHTML = '<i class="fas fa-clock"></i> Đã gửi lời mời';
                 } else {
-                    button.classList.remove('btn-primary');
+                    button.classList.remove('btn-primary', 'btn-secondary');
                     button.classList.add('btn-outline-primary');
                     button.innerHTML = '<i class="fas fa-user-plus"></i> Kết bạn';
                 }
                 // Hiển thị thông báo thành công
                 alert(data.message || 'Thao tác thành công');
+            } else {
+                // Hiển thị thông báo lỗi
+                alert(data.error || 'Có lỗi xảy ra');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Có lỗi xảy ra khi thực hiện thao tác');
+        });
+    }
+
+    // Hàm xử lý chấp nhận lời mời kết bạn
+    function acceptFriendRequest(userId, button) {
+        fetch(`/users/${userId}/accept-friend-request`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'Accept': 'application/json'
+            },
+            credentials: 'same-origin'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Cập nhật giao diện nút
+                button.classList.remove('btn-outline-primary', 'btn-secondary');
+                button.classList.add('btn-primary');
+                button.innerHTML = '<i class="fas fa-user-friends"></i> Bạn bè';
+                
+                // Hiển thị thông báo thành công
+                alert(data.message || 'Đã chấp nhận lời mời kết bạn thành công');
+            } else {
+                // Hiển thị thông báo lỗi
+                alert(data.error || 'Có lỗi xảy ra');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Có lỗi xảy ra khi thực hiện thao tác');
+        });
+    }
+
+    // Hàm xử lý từ chối lời mời kết bạn
+    function rejectFriendRequest(userId, button) {
+        fetch(`/users/${userId}/reject-friend-request`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'Accept': 'application/json'
+            },
+            credentials: 'same-origin'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Cập nhật giao diện nút
+                button.classList.remove('btn-primary', 'btn-secondary');
+                button.classList.add('btn-outline-primary');
+                button.innerHTML = '<i class="fas fa-user-plus"></i> Kết bạn';
+                
+                // Hiển thị thông báo thành công
+                alert(data.message || 'Đã từ chối lời mời kết bạn');
             } else {
                 // Hiển thị thông báo lỗi
                 alert(data.error || 'Có lỗi xảy ra');

@@ -2,6 +2,10 @@
 
 @section('title', 'Đăng nhập')
 
+@push('head')
+<meta name="csrf-token" content="{{ csrf_token() }}">
+@endpush
+
 @section('content')
 <div class="container">
     <div class="row justify-content-center">

@@ -18,7 +18,11 @@
                 </div>
                 <div class="card-body">
                     @forelse($notifications as $notification)
-                        <div class="notification-item mb-3 p-3 border rounded" id="notification-{{ $notification->id }}">
+                        <div class="notification-item mb-3 p-3 border rounded" 
+                             id="notification-{{ $notification->id }}"
+                             data-notification-type="{{ $notification->data['type'] }}"
+                             data-user-id="{{ $notification->data['user_id'] }}"
+                             data-notification-id="{{ $notification->id }}">
                             <div class="d-flex align-items-center">
                                 @if($notification->type === 'App\\Notifications\\PostLikeNotification')
                                     <a href="{{ route('posts.show', $notification->data['post_id']) }}" class="text-decoration-none text-dark flex-grow-1">
@@ -30,7 +34,13 @@
                                     <div class="d-flex align-items-center">
                                         <img src="{{ $notification->data['avatar'] }}" alt="Avatar" class="rounded-circle me-2" style="width: 40px; height: 40px; object-fit: cover;">
                                         <div class="flex-grow-1">
-                                            <p class="mb-0">{{ $notification->data['message'] }}</p>
+                                            <p class="mb-0 notification-message">
+                                                @if($notification->type === 'App\\Notifications\\FriendRequestAcceptedNotification')
+                                                    Bạn đã đồng ý kết bạn với {{ $notification->data['senderName'] }}
+                                                @else
+                                                    {{ $notification->data['message'] }}
+                                                @endif
+                                            </p>
                                             <small class="text-muted">{{ $notification->created_at->diffForHumans() }}</small>
                                         </div>
                                     </div>
@@ -99,6 +109,31 @@ document.addEventListener('DOMContentLoaded', function() {
             deleteNotification(notificationId);
         });
     });
+
+    // Xử lý click vào thông báo
+    document.querySelectorAll('.notification-item a').forEach(link => {
+        link.addEventListener('click', function(e) {
+            // Nếu click vào nút chấp nhận/từ chối, không chuyển trang
+            if (e.target.closest('.accept-friend') || e.target.closest('.reject-friend')) {
+                e.preventDefault();
+                return;
+            }
+            
+            // Nếu click vào nút xóa thông báo, không chuyển trang
+            if (e.target.closest('.delete-notification')) {
+                e.preventDefault();
+                return;
+            }
+            
+            // Nếu là thông báo kết bạn hoặc chấp nhận kết bạn, chuyển đến trang của người gửi
+            const notificationType = this.closest('.notification-item').dataset.notificationType;
+            if (notificationType === 'friend_request' || notificationType === 'friend_request_accepted') {
+                e.preventDefault();
+                const userId = this.closest('.notification-item').dataset.userId;
+                window.location.href = `/posts/my_posts/${userId}`;
+            }
+        });
+    });
 });
 
 function showAlert(message, type = 'success') {
@@ -148,49 +183,63 @@ function handleFriendRequest(action, userId) {
         console.log('Response data:', data);
         
         if (data.success) {
-            const noti = document.getElementById(`notification-${userId}`);
-            if (noti) {
-                const messageElement = noti.querySelector('.flex-grow-1 p');
+            // Tìm tất cả các thông báo liên quan đến user này
+            const notifications = document.querySelectorAll(`.notification-item[data-user-id="${userId}"]`);
+            notifications.forEach(noti => {
+                const messageElement = noti.querySelector('.notification-message');
                 if (messageElement) {
-                    messageElement.textContent = action === 'accept' 
-                        ? 'Bạn đã chấp nhận lời mời kết bạn này.'
-                        : 'Bạn đã từ chối lời mời kết bạn này.';
+                    if (action === 'accept') {
+                        messageElement.textContent = `Bạn đã đồng ý kết bạn với ${data.senderName}`;
+                        // Thêm badge "Bạn bè"
+                        const badge = document.createElement('span');
+                        badge.className = 'badge bg-success ms-2';
+                        badge.textContent = 'Bạn bè';
+                        messageElement.parentElement.appendChild(badge);
+                    } else {
+                        messageElement.textContent = 'Bạn đã từ chối lời mời kết bạn này.';
+                    }
                 }
-                
+
+                // Xóa các nút chấp nhận/từ chối
                 const buttonsContainer = noti.querySelector('.ms-2');
                 if (buttonsContainer) {
                     buttonsContainer.innerHTML = '';
                 }
-            }
+            });
 
+            // Cập nhật tất cả các nút kết bạn có cùng user_id
+            document.querySelectorAll(`.friend-button[data-user-id="${userId}"]`).forEach(button => {
+                if (action === 'accept') {
+                    button.classList.remove('btn-outline-primary', 'btn-secondary');
+                    button.classList.add('btn-primary');
+                    button.innerHTML = '<i class="fas fa-user-friends"></i> Bạn bè';
+                    // Cập nhật onclick handler
+                    button.onclick = function(e) {
+                        e.preventDefault();
+                        toggleFriend(userId, this);
+                    };
+                } else {
+                    button.classList.remove('btn-primary', 'btn-secondary');
+                    button.classList.add('btn-outline-primary');
+                    button.innerHTML = '<i class="fas fa-user-plus"></i> Kết bạn';
+                }
+            });
+
+            // Hiển thị thông báo thành công
             showAlert(data.message);
 
+            // Nếu từ chối, xóa thông báo sau 3 giây
             if (action === 'reject') {
                 setTimeout(() => {
-                    const noti = document.getElementById(`notification-${userId}`);
-                    if (noti) {
-                        noti.remove();
-                        updateNotificationCount();
-                    }
+                    notifications.forEach(noti => noti.remove());
+                    updateNotificationCount();
                 }, 3000);
             }
 
+            // Nếu chấp nhận, cập nhật danh sách bạn bè
             if (action === 'accept' && data.friend) {
-                console.log('Updating friend list with:', data.friend);
-                
-                // Cập nhật trạng thái nút kết bạn trong trang cá nhân nếu có
-                const friendButton = document.querySelector(`.friend-button[data-user-id="${userId}"]`);
-                if (friendButton) {
-                    console.log('Updating friend button');
-                    friendButton.classList.remove('btn-outline-primary');
-                    friendButton.classList.add('btn-primary');
-                    friendButton.innerHTML = '<i class="fas fa-user-friends"></i> Bạn bè';
-                }
-
-                // Thêm bạn bè mới vào danh sách bạn bè
                 const friendsList = document.querySelector('.friends-list');
                 if (friendsList) {
-                    console.log('Found friends list, adding new friend');
                     const friendCard = document.createElement('div');
                     friendCard.className = 'col-md-4 mb-3';
                     friendCard.innerHTML = `
@@ -218,11 +267,9 @@ function handleFriendRequest(action, userId) {
                         </div>
                     `;
                     friendsList.appendChild(friendCard);
-                } else {
-                    console.log('Friends list not found');
                 }
 
-                // Cập nhật số lượng bạn bè nếu có
+                // Cập nhật số lượng bạn bè
                 const friendCountElement = document.querySelector('.friend-count');
                 if (friendCountElement) {
                     const currentCount = parseInt(friendCountElement.textContent) || 0;

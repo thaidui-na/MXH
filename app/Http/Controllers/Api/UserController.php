@@ -29,17 +29,27 @@ class UserController extends Controller
                     $q->where('name', 'like', '%' . $query . '%')
                       ->orWhere('email', 'like', '%' . $query . '%');
                 })
+                ->where('account_status', 'active') // Chỉ lấy tài khoản đang hoạt động
+                ->whereNull('deleted_at') // Loại bỏ tài khoản đã bị xóa mềm
                 ->when(auth()->check(), function($q) {
                     $q->where('id', '!=', auth()->id());
                 })
                 ->select('id', 'name', 'email', 'avatar')
                 ->get()
                 ->map(function ($user) {
+                    $currentUser = auth()->user();
+                    $isFriend = $currentUser->isFriendWith($user);
+                    $hasPendingRequest = $currentUser->hasSentFriendRequestTo($user);
+                    $hasReceivedRequest = $currentUser->hasReceivedFriendRequestFrom($user);
+                    
                     return [
                         'id' => $user->id,
                         'name' => $user->name,
                         'email' => $user->email,
-                        'avatar' => $user->avatar ? asset('storage/' . $user->avatar) : asset('images/default-avatar.jpg')
+                        'avatar' => $user->avatar ? asset('storage/' . $user->avatar) : asset('images/default-avatar.jpg'),
+                        'isFriend' => $isFriend,
+                        'hasPendingRequest' => $hasPendingRequest,
+                        'hasReceivedRequest' => $hasReceivedRequest
                     ];
                 });
 

@@ -8,6 +8,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * Model đại diện cho một người dùng (User) trong hệ thống.
@@ -20,8 +21,9 @@ class User extends Authenticatable
      * Sử dụng các trait cần thiết.
      * HasFactory: Cho phép sử dụng model factories để tạo dữ liệu mẫu.
      * Notifiable: Cho phép gửi thông báo (notifications) đến người dùng này.
+     * SoftDeletes: Cho phép xóa mềm (soft delete) các bản ghi.
      */
-    use HasFactory, Notifiable;
+    use HasFactory, Notifiable, SoftDeletes;
 
     /**
      * Các thuộc tính có thể được gán hàng loạt (mass assignable).
@@ -118,6 +120,14 @@ class User extends Authenticatable
     {
         // Tham số thứ hai ('receiver_id') chỉ định tên cột khóa ngoại trong bảng 'messages' liên kết đến 'id' của User này.
         return $this->hasMany(Message::class, 'receiver_id');
+    }
+
+    /**
+     * Định nghĩa quan hệ với tin nhắn trong nhóm chat
+     */
+    public function groupMessages()
+    {
+        return $this->hasMany(GroupMessage::class, 'sender_id');
     }
 
     /**
@@ -256,7 +266,7 @@ class User extends Authenticatable
     /**
      * Định nghĩa quan hệ với những người dùng đã chặn người dùng này
      */
-    public function blockedByUsers()
+    public function blockedBy()
     {
         return $this->belongsToMany(User::class, 'user_blocks', 'blocked_id', 'blocker_id')
                     ->withTimestamps();
@@ -415,38 +425,151 @@ class User extends Authenticatable
      */
     public function deletePermanently()
     {
-        // Xóa avatar nếu có
-        if ($this->avatar) {
-            Storage::disk('public')->delete($this->avatar);
+        DB::beginTransaction();
+        try {
+            // Load tất cả các quan hệ cần thiết
+            $this->load([
+                'posts.comments',
+                'posts.likes',
+                'sentMessages',
+                'receivedMessages',
+                'groupMessages',
+                'comments',
+                'createdEvents',
+                'createdGroups',
+                'notifications',
+                'blockedUsers',
+                'blockedBy',
+                'following',
+                'followers',
+                'friends',
+                'friendOf',
+                'favoritedPosts',
+                'joinedEvents',
+                'joinedGroups',
+                'chatGroups'
+            ]);
+
+            // Xóa avatar nếu có
+            if ($this->avatar && $this->avatar !== 'default-avatar.png') {
+                Storage::disk('public')->delete('avatars/' . $this->avatar);
+            }
+
+            // Xóa tất cả bài viết và dữ liệu liên quan
+            foreach ($this->posts as $post) {
+                // Xóa hình ảnh bài viết
+                if ($post->image) {
+                    Storage::disk('public')->delete('posts/' . $post->image);
+                }
+                
+                // Xóa tất cả bình luận của bài viết
+                foreach ($post->comments as $comment) {
+                    // Xóa hình ảnh trong bình luận nếu có
+                    if ($comment->image) {
+                        Storage::disk('public')->delete('comments/' . $comment->image);
+                    }
+                    $comment->forceDelete();
+                }
+                
+                // Xóa tất cả like của bài viết
+                $post->likes()->forceDelete();
+                
+                // Xóa tất cả báo cáo của bài viết
+                DB::table('reports')->where('post_id', $post->id)->delete();
+                
+                // Xóa bài viết
+                $post->forceDelete();
+            }
+
+            // Xóa tất cả tin nhắn đã gửi và nhận
+            foreach ($this->sentMessages as $message) {
+                if ($message->attachment) {
+                    Storage::disk('public')->delete('messages/' . $message->attachment);
+                }
+                $message->forceDelete();
+            }
+            
+            foreach ($this->receivedMessages as $message) {
+                if ($message->attachment) {
+                    Storage::disk('public')->delete('messages/' . $message->attachment);
+                }
+                $message->forceDelete();
+            }
+
+            // Xóa tất cả tin nhắn trong nhóm
+            foreach ($this->groupMessages as $message) {
+                if ($message->attachment) {
+                    Storage::disk('public')->delete('messages/' . $message->attachment);
+                }
+                $message->forceDelete();
+            }
+
+            // Xóa tất cả bình luận đã tạo
+            foreach ($this->comments as $comment) {
+                if ($comment->image) {
+                    Storage::disk('public')->delete('comments/' . $comment->image);
+                }
+                $comment->forceDelete();
+            }
+
+            // Xóa tất cả sự kiện đã tạo
+            foreach ($this->createdEvents as $event) {
+                if ($event->image) {
+                    Storage::disk('public')->delete('events/' . $event->image);
+                }
+                $event->forceDelete();
+            }
+
+            // Xóa tất cả nhóm đã tạo
+            foreach ($this->createdGroups as $group) {
+                if ($group->avatar) {
+                    Storage::disk('public')->delete('groups/avatars/' . $group->avatar);
+                }
+                if ($group->cover_image) {
+                    Storage::disk('public')->delete('groups/covers/' . $group->cover_image);
+                }
+                $group->forceDelete();
+            }
+
+            // Xóa tất cả thông báo
+            $this->notifications()->forceDelete();
+
+            // Xóa tất cả báo cáo liên quan
+            DB::table('user_user_reports')->where('reporter_id', $this->id)->orWhere('reported_user_id', $this->id)->delete();
+
+            // Xóa tất cả mối quan hệ chặn
+            $this->blockedUsers()->detach();
+            $this->blockedBy()->detach();
+
+            // Xóa tất cả mối quan hệ theo dõi
+            $this->following()->detach();
+            $this->followers()->detach();
+
+            // Xóa tất cả mối quan hệ bạn bè
+            $this->friends()->detach();
+            $this->friendOf()->detach();
+
+            // Xóa tất cả bài viết đã lưu
+            $this->favoritedPosts()->detach();
+
+            // Xóa tất cả tham gia sự kiện
+            $this->joinedEvents()->detach();
+
+            // Xóa tất cả tham gia nhóm
+            $this->joinedGroups()->detach();
+
+            // Xóa tất cả tham gia nhóm chat
+            $this->chatGroups()->detach();
+
+            // Xóa hoàn toàn tài khoản
+            $this->forceDelete();
+
+            DB::commit();
+            return true;
+        } catch (\Exception $e) {
+            DB::rollBack();
+            throw $e;
         }
-
-        // Xóa tất cả các bài viết của người dùng
-        $this->posts()->delete();
-
-        // Xóa tất cả các tin nhắn của người dùng
-        $this->sentMessages()->delete();
-        $this->receivedMessages()->delete();
-
-        // Xóa tất cả các báo cáo liên quan
-        $this->reportedByUsers()->detach();
-        $this->reportedUsers()->detach();
-
-        // Xóa tất cả các mối quan hệ chặn
-        $this->blockedUsers()->detach();
-        $this->blockedByUsers()->detach();
-
-        // Xóa tất cả các mối quan hệ theo dõi
-        $this->followers()->detach();
-        $this->following()->detach();
-
-        // Xóa tất cả các bài viết yêu thích
-        $this->favoritedPosts()->detach();
-
-        // Cập nhật trạng thái tài khoản thành đã xóa
-        $this->update([
-            'account_status' => 'deleted',
-            'deleted_at' => now()
-        ]);
     }
 
     /**
@@ -553,5 +676,45 @@ class User extends Authenticatable
                     ->wherePivot('status', 'joined')
                     ->withPivot('joined_at')
                     ->withTimestamps();
+    }
+
+    /**
+     * Định nghĩa quan hệ một-nhiều: Một người dùng (User) có thể có nhiều bình luận (Comment).
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function comments()
+    {
+        return $this->hasMany(Comment::class);
+    }
+
+    /**
+     * Định nghĩa quan hệ một-nhiều: Một người dùng (User) có thể tạo nhiều sự kiện (Event).
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function createdEvents()
+    {
+        return $this->hasMany(Event::class, 'user_id');
+    }
+
+    /**
+     * Định nghĩa quan hệ một-nhiều: Một người dùng (User) có thể tạo nhiều nhóm (Group).
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function createdGroups()
+    {
+        return $this->hasMany(Group::class, 'created_by');
+    }
+
+    /**
+     * Định nghĩa quan hệ với những người dùng mà người dùng này là bạn của họ
+     */
+    public function friendOf()
+    {
+        return $this->belongsToMany(User::class, 'friends', 'friend_id', 'user_id')
+            ->withPivot('status')
+            ->withTimestamps();
     }
 }

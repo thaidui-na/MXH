@@ -103,6 +103,11 @@
                             <li><a class="dropdown-item" href="{{ route('password.change') }}"><i class="fas fa-key me-2"></i>Đổi mật khẩu</a></li>
                             <li><hr class="dropdown-divider"></li>
                             <li>
+                                <a href="{{ route('profile.delete') }}" class="dropdown-item text-danger">
+                                    <i class="fas fa-user-times me-2"></i>Xóa tài khoản
+                                </a>
+                            </li>
+                            <li>
                                 <form action="{{ route('logout') }}" method="POST" class="d-grid px-2">
                                     @csrf
                                     <button type="submit" class="btn btn-sm btn-outline-danger w-100"><i class="fas fa-sign-out-alt me-2"></i>Đăng xuất</button>

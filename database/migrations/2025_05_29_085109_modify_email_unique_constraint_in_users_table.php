@@ -11,8 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('events', function (Blueprint $table) {
-            $table->enum('event_type', ['online', 'offline'])->default('offline')->after('description');
+        Schema::table('users', function (Blueprint $table) {
+            //
         });
     }
 
@@ -21,8 +21,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('events', function (Blueprint $table) {
-            $table->dropColumn('event_type');
+        Schema::table('users', function (Blueprint $table) {
+            //
         });
     }
-}; 
+};

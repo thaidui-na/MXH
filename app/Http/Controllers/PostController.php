@@ -328,4 +328,12 @@ class PostController extends Controller
         // Trả về view, truyền kèm danh sách bài viết yêu thích và đối tượng user
         return view('posts.my_favorited_posts', compact('favoritedPosts', 'user'));
     }
+
+    /**
+     * Trả về HTML danh sách người đã like bài viết (AJAX)
+     */
+    public function likesList(Post $post)
+    {
+        return view('posts.partials.likes_list', ['users' => $post->likes]);
+    }
 } 
