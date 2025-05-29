@@ -16,7 +16,8 @@ class UserController extends Controller
             // Bật query logging
             DB::enableQueryLog();
             
-            $query = $request->input('q');
+            // Lấy query từ cả hai tham số có thể có
+            $query = $request->input('q') ?? $request->input('query');
             Log::info('Search query:', ['query' => $query]);
             
             if (empty($query)) {
@@ -33,18 +34,27 @@ class UserController extends Controller
                 ->whereNull('deleted_at') // Loại bỏ tài khoản đã bị xóa mềm
                 ->when(auth()->check(), function($q) {
                     $q->where('id', '!=', auth()->id());
-                     // Loại trừ người dùng mà người dùng hiện tại đã chặn
-                    $q->whereDoesntHave('blockedByUsers', function ($query) {
+                    // Loại trừ người dùng mà người dùng hiện tại đã chặn
+                    $q->whereDoesntHave('blockedBy', function ($query) {
                         $query->where('blocker_id', auth()->id());
                     });
                 })
                 ->select('id', 'name', 'email', 'avatar')
-                ->get()
-                ->map(function ($user) {
+                ->limit(12)
+                ->get();
+
+            // Log câu query SQL để debug
+            Log::info('SQL Query:', [
+                'queries' => DB::getQueryLog()
+            ]);
+
+            // Map kết quả và thêm thông tin về trạng thái bạn bè
+            $mappedUsers = $users->map(function ($user) {
+                try {
                     $currentUser = auth()->user();
-                    $isFriend = $currentUser->isFriendWith($user);
-                    $hasPendingRequest = $currentUser->hasSentFriendRequestTo($user);
-                    $hasReceivedRequest = $currentUser->hasReceivedFriendRequestFrom($user);
+                    $isFriend = $currentUser ? $currentUser->isFriendWith($user) : false;
+                    $hasPendingRequest = $currentUser ? $currentUser->hasSentFriendRequestTo($user) : false;
+                    $hasReceivedRequest = $currentUser ? $currentUser->hasReceivedFriendRequestFrom($user) : false;
                     
                     return [
                         'id' => $user->id,
@@ -55,25 +65,31 @@ class UserController extends Controller
                         'hasPendingRequest' => $hasPendingRequest,
                         'hasReceivedRequest' => $hasReceivedRequest
                     ];
-                });
-
-            // Log câu query SQL để debug
-            Log::info('SQL Query:', [
-                'queries' => DB::getQueryLog()
-            ]);
+                } catch (\Exception $e) {
+                    Log::error('Error mapping user data:', [
+                        'user_id' => $user->id,
+                        'error' => $e->getMessage()
+                    ]);
+                    return null;
+                }
+            })->filter(); // Lọc bỏ các kết quả null
 
             Log::info('Search results:', [
-                'count' => $users->count(),
-                'users' => $users->toArray()
+                'count' => $mappedUsers->count(),
+                'users' => $mappedUsers->toArray()
             ]);
 
-            return response()->json(['users' => $users]);
+            return response()->json(['users' => $mappedUsers]);
         } catch (\Exception $e) {
             Log::error('Search error: ' . $e->getMessage(), [
                 'exception' => $e,
-                'query' => $request->input('q')
+                'query' => $request->input('q') ?? $request->input('query'),
+                'trace' => $e->getTraceAsString()
             ]);
-            return response()->json(['error' => 'Có lỗi xảy ra khi tìm kiếm'], 500);
+            return response()->json([
+                'error' => 'Có lỗi xảy ra khi tìm kiếm',
+                'message' => $e->getMessage()
+            ], 500);
         }
     }
 } 

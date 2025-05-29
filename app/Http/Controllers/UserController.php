@@ -196,16 +196,35 @@ class UserController extends Controller
                 ]);
             }
 
-            // Xóa mối quan hệ
-            $currentUser->friends()->detach($user->id);
+            DB::beginTransaction();
+
+            // Xóa mối quan hệ ở cả hai chiều
+            DB::table('friends')
+                ->where(function($query) use ($currentUser, $user) {
+                    $query->where('user_id', $currentUser->id)
+                          ->where('friend_id', $user->id);
+                })
+                ->orWhere(function($query) use ($currentUser, $user) {
+                    $query->where('user_id', $user->id)
+                          ->where('friend_id', $currentUser->id);
+                })
+                ->delete();
+
+            // Gửi thông báo cho người bị hủy kết bạn nếu đã là bạn bè
+            if ($currentUser->isFriendWith($user)) {
+                $user->notify(new \App\Notifications\FriendRemovedNotification($currentUser));
+            }
+
+            DB::commit();
 
             return response()->json([
                 'success' => true,
-                'message' => 'Đã hủy kết bạn thành công',
+                'message' => $currentUser->isFriendWith($user) ? 'Đã hủy kết bạn thành công' : 'Đã hủy lời mời kết bạn',
                 'isFriend' => false,
                 'hasPendingRequest' => false
             ]);
         } catch (\Exception $e) {
+            DB::rollBack();
             \Log::error('Error removing friend: ' . $e->getMessage());
             return response()->json([
                 'success' => false,

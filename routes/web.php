@@ -138,6 +138,8 @@ Route::middleware('auth')->group(function () {
     // Routes quản lý kết bạn
     Route::post('/users/{user}/add-friend', [UserController::class, 'addFriend'])->name('users.add-friend');
     Route::delete('/users/{user}/remove-friend', [UserController::class, 'removeFriend'])->name('users.remove-friend');
+    Route::post('/users/{user}/accept-friend-request', [UserController::class, 'acceptFriendRequest'])->name('users.accept-friend-request');
+    Route::post('/users/{user}/reject-friend-request', [UserController::class, 'rejectFriendRequest'])->name('users.reject-friend-request');
     Route::get('/users/{user}/friends', [UserController::class, 'friends'])->name('users.friends');
 
     // Routes quản lý chặn người dùng
