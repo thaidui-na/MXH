@@ -4,6 +4,18 @@
 
 @section('content')
 <div class="container py-4">
+    @if(session('success'))
+        <div class="alert alert-success">
+            {{ session('success') }}
+        </div>
+    @endif
+
+    @if(session('error'))
+        <div class="alert alert-danger">
+            {{ session('error') }}
+        </div>
+    @endif
+
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
             <h5 class="mb-0">Bình luận cho bài viết: {{ $post->title }}</h5>
@@ -170,3 +182,17 @@ function hideReplyForm(commentId) {
 </script>
 @endpush
 @endsection
+
+@push('scripts')
+<script>
+    //Tự động tắt sau 3s
+    document.addEventListener('DOMContentLoaded', function() {
+        const alerts = document.querySelectorAll('.alert');
+        alerts.forEach(alert => {
+            setTimeout(() => {
+                alert.style.display = 'none';
+            }, 3000); 
+        });
+    });
+</script>
+@endpush
