@@ -7,21 +7,38 @@ use App\Models\Comment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 class CommentController extends Controller
 {
-    // Hiển thị danh sách comment cho 1 post
-    public function index(Post $post)
+    /**
+     * Display a listing of the comments for a given post.
+     * Hiển thị danh sách comment cho 1 post
+     */
+    public function index($postId) // Thay đổi để nhận postId thay vì Post model
     {
-        $comments = $post->comments()
-            ->whereNull('parent_id')
-            ->with(['user', 'replies.user' => function($query) {
-                $query->orderBy('created_at', 'asc');
-            }])
-            ->orderBy('created_at', 'desc')
-            ->get();
+        // Bắt đầu try block để xử lý lỗi ModelNotFoundException khi tìm post thủ công
+        try {
+            // Tự tay tìm bài viết. Nếu không tìm thấy, ModelNotFoundException sẽ được ném ra tại đây
+            $post = Post::findOrFail($postId);
 
-        return view('posts.comment', compact('post', 'comments'));
+            $comments = $post->comments()
+                ->whereNull('parent_id')
+                ->with(['user', 'replies.user' => function($query) {
+                    $query->orderBy('created_at', 'asc');
+                }])
+                ->orderBy('created_at', 'desc')
+                ->get();
+
+            // Trả về view hiển thị bình luận nếu tìm thấy bài viết
+            return view('posts.comment', compact('post', 'comments'));
+
+        } catch (ModelNotFoundException $e) {
+            // Bắt ngoại lệ khi không tìm thấy bài viết
+            return redirect()
+                ->route('posts.index') // Chuyển hướng về trang danh sách bài viết
+                ->with('error', 'Bài viết bạn đang tìm kiếm đã bị xóa hoặc không tồn tại.');
+        }
     }
 
     public function store(Request $request, Post $post)
