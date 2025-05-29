@@ -34,11 +34,9 @@ class PostController extends Controller
             ->withCount('members')
             ->get();
 
-        // Lấy stories của người dùng đang theo dõi và của chính mình
+        // Lấy stories của tất cả người dùng
         $stories = Story::with('user')
             ->active()
-            ->fromFollowing(auth()->id())
-            ->orWhere('user_id', auth()->id())
             ->latest()
             ->get()
             ->groupBy('user_id');

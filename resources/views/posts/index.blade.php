@@ -493,8 +493,16 @@
                         <div class="story-item">
                             <a href="{{ route('stories.show', $latestStory) }}" class="text-decoration-none">
                                 <div class="story-avatar">
-                                    <img src="{{ $user->avatar_url }}" alt="{{ $user->name }}" 
-                                         class="rounded-circle {{ $userStories->where('is_active', true)->count() > 0 ? 'has-story' : '' }}">
+                                    @if($latestStory->media_type === 'image')
+                                        <img src="{{ $latestStory->media_url }}" alt="{{ $user->name }}'s Story"
+                                             class="{{ $userStories->where('is_active', true)->count() > 0 ? 'has-story' : '' }}">
+                                    @else
+                                        {{-- Hiển thị thumbnail hoặc icon cho video --}}
+                                        <img src="{{ $latestStory->media_url }}" alt="{{ $user->name }}'s Story"
+                                             class="{{ $userStories->where('is_active', true)->count() > 0 ? 'has-story' : '' }}"
+                                             onerror="this.onerror=null;this.src='{{ asset('images/video-placeholder.png') }}';">
+                                        {{-- Có thể thêm icon play overlay ở đây --}}
+                                    @endif
                                 </div>
                                 <div class="story-username">{{ $user->name }}</div>
                             </a>

@@ -30,6 +30,24 @@ class Story extends Model
         return $this->belongsTo(User::class);
     }
 
+    // Quan hệ với StoryView
+    public function views()
+    {
+        return $this->hasMany(StoryView::class);
+    }
+
+    // Lấy số lượt xem
+    public function getViewsCountAttribute()
+    {
+        return $this->views()->count();
+    }
+
+    // Kiểm tra xem người dùng đã xem story này chưa
+    public function isViewedBy($userId)
+    {
+        return $this->views()->where('user_id', $userId)->exists();
+    }
+
     // Accessor để lấy URL đầy đủ của media
     public function getMediaUrlAttribute()
     {
