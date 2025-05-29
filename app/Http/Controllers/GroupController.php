@@ -110,7 +110,7 @@ class GroupController extends Controller
 
     public function edit(Group $group)
     {
-        if (!$group->hasAdmin(auth()->id())) {
+        if ($group->created_by !== auth()->id() && !$group->hasAdmin(auth()->id())) {
             return redirect()->route('groups.show', $group)
                 ->with('error', 'Bạn không có quyền chỉnh sửa nhóm này!');
         }
@@ -119,7 +119,7 @@ class GroupController extends Controller
 
     public function update(Request $request, Group $group)
     {
-        if (!$group->hasAdmin(auth()->id())) {
+        if ($group->created_by !== auth()->id() && !$group->hasAdmin(auth()->id())) {
             return redirect()->route('groups.show', $group)
                 ->with('error', 'Bạn không có quyền chỉnh sửa nhóm này!');
         }
@@ -158,7 +158,7 @@ class GroupController extends Controller
 
     public function destroy(Group $group)
     {
-        if (!$group->hasAdmin(auth()->id())) {
+        if ($group->created_by !== auth()->id() && !$group->hasAdmin(auth()->id())) {
             return redirect()->route('groups.show', $group)
                 ->with('error', 'Bạn không có quyền xóa nhóm này!');
         }
@@ -246,13 +246,19 @@ class GroupController extends Controller
 
     public function members(Group $group)
     {
+        // Kiểm tra quyền: người tạo hoặc admin mới được xem trang quản lý thành viên
+        if ($group->created_by !== auth()->id() && !$group->hasAdmin(auth()->id())) {
+            return redirect()->route('groups.show', $group)
+                ->with('error', 'Bạn không có quyền xem trang quản lý thành viên nhóm này!');
+        }
         $members = $group->members()->with('user')->paginate(20);
         return view('groups.members', compact('group', 'members'));
     }
 
     public function updateMember(Request $request, Group $group, GroupMember $member)
     {
-        if (!$group->hasAdmin(auth()->id())) {
+        // Kiểm tra quyền: người tạo hoặc admin mới được cập nhật vai trò thành viên
+        if ($group->created_by !== auth()->id() && !$group->hasAdmin(auth()->id())) {
             return redirect()->route('groups.members', $group)
                 ->with('error', 'Bạn không có quyền quản lý thành viên!');
         }
@@ -270,7 +276,8 @@ class GroupController extends Controller
 
     public function removeMember(Group $group, GroupMember $member)
     {
-        if (!$group->hasAdmin(auth()->id())) {
+        // Kiểm tra quyền: người tạo hoặc admin mới được xóa thành viên
+         if ($group->created_by !== auth()->id() && !$group->hasAdmin(auth()->id())) {
             return redirect()->route('groups.members', $group)
                 ->with('error', 'Bạn không có quyền quản lý thành viên!');
         }
@@ -288,7 +295,8 @@ class GroupController extends Controller
 
     public function addMembers(Request $request, Group $group)
     {
-        if (!$group->hasAdmin(auth()->id())) {
+        // Kiểm tra quyền: người tạo hoặc admin mới được thêm thành viên
+        if ($group->created_by !== auth()->id() && !$group->hasAdmin(auth()->id())) {
             return redirect()->route('groups.members', $group)
                 ->with('error', 'Bạn không có quyền thêm thành viên vào nhóm!');
         }
