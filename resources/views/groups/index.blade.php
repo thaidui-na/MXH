@@ -4,15 +4,6 @@
 <div class="container">
     <div class="row justify-content-center">
         <div class="col-md-12">
-            {{-- Giả định tiêu đề "Nhóm của bạn" nằm ở đây hoặc file cha --}}
-            {{-- Form tìm kiếm nhóm --}}
-            <form method="GET" action="{{ route('groups.index') }}" class="mb-4">
-                <div class="input-group">
-                    <input type="text" name="q" class="form-control" placeholder="Tìm kiếm nhóm..." value="{{ request('q') }}">
-                    <button class="btn btn-outline-secondary" type="submit"><i class="fas fa-search"></i> Tìm kiếm</button>
-                </div>
-            </form>
-
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">Danh sách nhóm</h5>
@@ -22,9 +13,21 @@
                 </div>
 
                 <div class="card-body">
+                    {{-- Form tìm kiếm nhóm --}}
+                    <form method="GET" action="{{ route('groups.index') }}" class="mb-4">
+                        <div class="input-group">
+                            <input type="text" name="q" class="form-control" placeholder="Tìm kiếm nhóm..." value="{{ request('q') }}">
+                            <button class="btn btn-outline-secondary" type="submit"><i class="fas fa-search"></i> Tìm kiếm</button>
+                        </div>
+                    </form>
                     @if(session('success'))
                         <div class="alert alert-success">
                             {{ session('success') }}
+                        </div>
+                    @endif
+                    @if(session('error'))
+                        <div class="alert alert-danger">
+                            {{ session('error') }}
                         </div>
                     @endif
                     @if($groups->count() > 0)
@@ -35,11 +38,11 @@
                                         <div class="position-relative">
                                             <img src="{{ $group->cover_image ? asset('storage/' . $group->cover_image) : asset('images/default-cover.jpg') }}"
                                                  onerror="this.onerror=null;this.src='{{ asset('images/default-cover.jpg') }}';"
-                                                 class="card-img-top" alt="Cover" style="height: 100px; object-fit: cover;">
+                                                 class="card-img-top" alt="Cover" style="height: 150px; object-fit: cover;">
                                             <img src="{{ $group->avatar ? asset('storage/' . $group->avatar) : asset('images/default-avatar.jpg') }}"
                                                  onerror="this.onerror=null;this.src='{{ asset('images/default-avatar.jpg') }}';"
                                                  class="rounded-circle position-absolute"
-                                                 style="width: 40px; height: 40px; bottom: -20px; left: 15px; border: 3px solid white;">
+                                                 style="width: 60px; height: 60px; bottom: -30px; left: 20px; border: 3px solid white;">
                                         </div>
                                         <div class="card-body pt-4">
                                             <h5 class="card-title">{{ $group->name }}</h5>

@@ -120,11 +120,7 @@
                 <i class="fas fa-user-friends"></i> Đang theo dõi
             </button>
         </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" id="groups-tab" data-bs-toggle="tab" data-bs-target="#groups-pane" type="button" role="tab" aria-controls="groups-pane" aria-selected="false">
-                <i class="fas fa-users"></i> Nhóm
-            </button>
-        </li>
+       
         <li class="nav-item" role="presentation">
             <button class="nav-link" id="events-tab" data-bs-toggle="tab" data-bs-target="#events-pane" type="button" role="tab" aria-controls="events-pane" aria-selected="false">
                 <i class="fas fa-calendar-alt"></i> Sự kiện

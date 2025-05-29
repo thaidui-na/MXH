@@ -199,7 +199,7 @@ class PostController extends Controller
                 'required',
                 'string',
                 'max:10000',
-                'regex:/^[^\s　]*[^\s　]+[^\s　]*$/',
+                'regex:/^\S.*\S$|^[\S]$/',
             ],
         ], [
             'title.required' => 'Vui lòng nhập tiêu đề bài viết',
@@ -209,7 +209,7 @@ class PostController extends Controller
             'content.required' => 'Vui lòng nhập nội dung bài viết',
             'content.string' => 'Nội dung phải là chuỗi ký tự',
             'content.max' => 'Nội dung không được vượt quá 10000 ký tự',
-            'content.regex' => 'Nội dung không được chứa toàn khoảng trắng',
+            'content.regex' => 'Nội dung không được bắt đầu hoặc kết thúc bằng khoảng trắng.',
         ]);
 
         // Gán lại giá trị is_public
