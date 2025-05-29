@@ -123,7 +123,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/posts/{post}/favorites/toggle', [PostController::class, 'toggleFavorite'])->name('posts.favorites.toggle');
 
     // Routes quản lý bình luận
-    Route::get('/posts/{post}/comments', [CommentController::class, 'index'])->name('comments.index');
+    Route::get('/posts/{postId}/comments', [CommentController::class, 'index'])->name('comments.index');
     Route::post('/posts/{post}/comments', [CommentController::class, 'store'])->name('comments.store');
     Route::delete('/comments/{comment}', [CommentController::class, 'destroy'])->name('comments.destroy');
     Route::post('/comments/{comment}/reply', [CommentController::class, 'reply'])->name('comments.reply');

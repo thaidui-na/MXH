@@ -116,7 +116,7 @@
                                 <!-- Danh sách trả lời -->
                                 @if($comment->replies && $comment->replies->count() > 0)
                                     <div class="replies-list mt-3 ms-4 border-start ps-3">
-                                        @foreach($comment->replies as $reply)
+                                        @foreach($comment->replies->sortByDesc('created_at') as $reply)
                                             <div class="reply-item mb-2">
                                                 <div class="d-flex gap-2">
                                                     <img src="{{ $reply->user->avatar ? asset('storage/' . $reply->user->avatar) : asset('images/default-avatar.jpg') }}" 
