@@ -53,7 +53,7 @@ Route::middleware(['web', 'auth'])->group(function () {
 
             $results = $users->map(function($user) {
                 return [
-                    'id' => $user->id,
+                    'id' => $user->id,đăng m
                     'name' => $user->name,
                     'email' => $user->email,
                     'avatar_url' => $user->avatar ? Storage::url($user->avatar) : asset('images/default-avatar.jpg')
