@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\Post;
 use App\Models\Report;
+use App\Models\UserReport;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 
@@ -201,21 +202,57 @@ class AdminController extends Controller
     }
 
     /**
-     * Xóa một báo cáo dựa vào ID.
+     * Xóa một báo cáo bài viết dựa vào ID.
      *
      * @param  int  $id ID của báo cáo cần xóa
      * @return \Illuminate\Http\RedirectResponse
      */
     public function deleteReport($id)
     {
-        // Tìm báo cáo bằng ID và thực hiện xóa
         $report = Report::find($id);
-
         if ($report) {
             $report->delete();
-            return back()->with('success', 'Đã xóa báo cáo thành công.');
-        } else {
-            return back()->with('error', 'Không tìm thấy báo cáo cần xóa.');
+            return redirect()->route('admin.reports')->with('success', 'Xóa báo cáo bài viết thành công!');
         }
+        return redirect()->route('admin.reports')->with('error', 'Không tìm thấy báo cáo bài viết!');
+    }
+
+    /**
+     * Hiển thị danh sách báo cáo người dùng.
+     *
+     * @return \Illuminate\View\View
+     */
+    public function userReports()
+    {
+        // Lấy danh sách báo cáo người dùng, kèm thông tin người báo cáo và người bị báo cáo
+        $userReports = UserReport::with(['reporter', 'reportedUser'])->latest()->paginate(15);
+        return view('admin.user-reports', compact('userReports'));
+    }
+
+    /**
+     * Đánh dấu một báo cáo người dùng là đã xử lý.
+     *
+     * @param  \App\Models\UserReport  $userReport
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function markUserReportResolved(UserReport $userReport)
+    {
+        $userReport->is_resolved = true;
+        $userReport->save();
+
+        return redirect()->route('admin.user-reports')->with('success', 'Đã đánh dấu báo cáo là đã xử lý!');
+    }
+
+    /**
+     * Xóa một báo cáo người dùng.
+     *
+     * @param  \App\Models\UserReport  $userReport
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function deleteUserReport(UserReport $userReport)
+    {
+        $userReport->delete();
+
+        return redirect()->route('admin.user-reports')->with('success', 'Đã xóa báo cáo người dùng!');
     }
 }
