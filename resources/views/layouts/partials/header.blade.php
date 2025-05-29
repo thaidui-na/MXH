@@ -68,6 +68,11 @@
             @endauth
 
             <ul class="navbar-nav ms-auto">
+                <li class="nav-item d-flex align-items-center me-2">
+                    <button id="toggle-dark-mode" class="btn btn-outline-secondary btn-sm" title="Chuyển đổi Dark/Light mode">
+                        <i class="fas fa-moon"></i>
+                    </button>
+                </li>
                 @guest
                     <li class="nav-item">
                         <a class="nav-link" href="{{ route('login') }}">Đăng nhập</a>
@@ -310,4 +315,34 @@
         from { opacity: 0; transform: translateY(-5px); }
         to { opacity: 1; transform: translateY(0); }
     }
-</style> 
+</style>
+
+@push('scripts')
+<script>
+// Dark/Light mode toggle
+const darkModeKey = 'mxh_dark_mode';
+const body = document.body;
+const toggleBtn = document.getElementById('toggle-dark-mode');
+
+function setDarkMode(on) {
+    if (on) {
+        body.classList.add('dark-mode');
+        localStorage.setItem(darkModeKey, '1');
+        if (toggleBtn) toggleBtn.innerHTML = '<i class="fas fa-sun"></i>';
+    } else {
+        body.classList.remove('dark-mode');
+        localStorage.setItem(darkModeKey, '0');
+        if (toggleBtn) toggleBtn.innerHTML = '<i class="fas fa-moon"></i>';
+    }
+}
+
+if (localStorage.getItem(darkModeKey) === '1') {
+    setDarkMode(true);
+}
+if (toggleBtn) {
+    toggleBtn.addEventListener('click', function() {
+        setDarkMode(!body.classList.contains('dark-mode'));
+    });
+}
+</script>
+@endpush 
