@@ -21,6 +21,8 @@ class DatabaseSeeder extends Seeder
             CommentSeeder::class,
             FollowSeeder::class,
             EventSeeder::class,
+            ReportSeeder::class,
+            JoinEventSeeder::class,
         ]);
     }
 }

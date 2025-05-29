@@ -63,20 +63,7 @@
     </table>
 </div>
 
-{{ $reports->links() }}
+{{ $reports->links('pagination::bootstrap-5') }}
 @endsection
 
-@push('styles')
-<style>
-    .table th,
-    .table td {
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        max-width: 200px;
-    }
-    .table-responsive {
-        overflow-x: auto;
-    }
-</style>
-@endpush
+
