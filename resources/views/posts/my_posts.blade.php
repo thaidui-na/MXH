@@ -364,61 +364,48 @@
 
         {{-- Tab Nhóm --}}
         <div class="tab-pane fade" id="groups-pane" role="tabpanel" aria-labelledby="groups-tab">
-            <div class="search-container position-relative mb-4">
+            <h4>Nhóm của bạn</h4>
+            {{-- Form tìm kiếm nhóm --}}
+            <form method="GET" action="{{ route('groups.index') }}" class="mb-4">
                 <div class="input-group">
-                    <input type="text" 
-                           name="q" 
-                           class="form-control" 
-                           id="groupSearchInput"
-                           placeholder="Tìm kiếm nhóm..." 
-                           value="{{ request('q') }}"
-                           autocomplete="off">
-                    <button class="btn btn-outline-secondary" type="button">
-                        <i class="fas fa-search"></i> Tìm kiếm
-                    </button>
+                    <input type="text" name="q" class="form-control" placeholder="Tìm kiếm nhóm..." value="{{ request('q') }}">
+                    <button class="btn btn-outline-secondary" type="submit"><i class="fas fa-search"></i> Tìm kiếm</button>
                 </div>
-                <div id="groupSearchResults" class="autocomplete-results position-absolute w-100 mt-1 d-none"></div>
-            </div>
-            @php
-                $q = request('q');
-                $groups = \App\Models\Group::withCount('members')->with(['members'])
-                    ->when($q, function($query) use ($q) {
-                        $query->where(function($sub) use ($q) {
-                            $sub->where('name', 'like', "%$q%")
-                                 ->orWhere('description', 'like', "%$q%") ;
-                        });
-                    })
-                    ->latest()->get();
-                $joinedGroupIds = auth()->user()->joinedGroups()->pluck('groups.id')->toArray();
-            @endphp
-            @if($groups->count() > 0)
-                <h5 class="mb-3">Kết quả nhóm</h5>
-                <div class="row mb-4">
-                    @foreach($groups as $group)
-                        <div class="col-md-4">
-                            <div class="group-card">
-                                <img src="{{ $group->cover_image ? asset('storage/' . $group->cover_image) : asset('images/default-cover.jpg') }}"
-                                     onerror="this.onerror=null;this.src='{{ asset('images/default-cover.jpg') }}';"
-                                     class="group-cover" alt="Cover">
-                                <img src="{{ $group->avatar ? asset('storage/' . $group->avatar) : asset('images/default-avatar.jpg') }}"
-                                     onerror="this.onerror=null;this.src='{{ asset('images/default-avatar.jpg') }}';"
-                                     class="group-avatar" alt="Avatar">
-                                <div class="group-info">
-                                    <h5 class="group-title">{{ $group->name }}</h5>
-                                    <p class="group-description">{{ Str::limit($group->description, 100) }}</p>
-                                    <div class="group-meta">
-                                        <span>
+            </form>
+            @if($user->groups->count() > 0)
+                <div class="row">
+                    @foreach($user->groups as $group)
+                        <div class="col-md-4 mb-4">
+                            <div class="card h-100">
+                                <div class="position-relative">
+                                    <img src="{{ $group->cover_image ? asset('storage/' . $group->cover_image) : asset('images/default-cover.jpg') }}"
+                                         onerror="this.onerror=null;this.src='{{ asset('images/default-cover.jpg') }}';"
+                                         class="card-img-top" alt="Cover" style="height: 100px; object-fit: cover;">
+                                    <img src="{{ $group->avatar ? asset('storage/' . $group->avatar) : asset('images/default-avatar.jpg') }}"
+                                         onerror="this.onerror=null;this.src='{{ asset('images/default-avatar.jpg') }}';"
+                                         class="rounded-circle position-absolute"
+                                         style="width: 40px; height: 40px; bottom: -20px; left: 15px; border: 3px solid white;">
+                                </div>
+                                <div class="card-body pt-4">
+                                    <h5 class="card-title">{{ $group->name }}</h5>
+                                    <p class="card-text text-muted small">
+                                        {{ Str::limit($group->description, 100) }}
+                                    </p>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span class="text-muted small">
                                             <i class="fas fa-users"></i> {{ $group->members_count }} thành viên
                                         </span>
-                                        <span class="badge {{ $group->is_private ? 'bg-secondary' : 'bg-success' }} group-badge">
+                                        <span class="badge {{ $group->is_private ? 'bg-secondary' : 'bg-success' }}">
                                             {{ $group->is_private ? 'Riêng tư' : 'Công khai' }}
                                         </span>
                                     </div>
-                                    <div class="d-grid mt-3">
+                                </div>
+                                <div class="card-footer bg-transparent">
+                                    <div class="d-grid gap-2">
                                         <a href="{{ route('groups.show', $group) }}" class="btn btn-outline-primary mb-2">
                                             Xem chi tiết
                                         </a>
-                                        @if(!in_array($group->id, $joinedGroupIds))
+                                        @if(!$group->members->contains('user_id', auth()->id()))
                                             <form method="POST" action="{{ route('groups.join', $group->id) }}">
                                                 @csrf
                                                 <button type="submit" class="btn btn-success">Tham gia nhóm</button>
@@ -434,7 +421,7 @@
                 </div>
             @else
                 <div class="alert alert-info">
-                    Không tìm thấy nhóm nào phù hợp. <a href="{{ route('groups.create') }}">Tạo nhóm mới</a>
+                    Bạn chưa tham gia nhóm nào. Hãy <a href="{{ route('groups.index') }}">tìm và tham gia nhóm</a>!
                 </div>
             @endif
         </div>
