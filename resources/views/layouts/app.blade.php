@@ -161,7 +161,9 @@
                 })
                 .then(response => {
                     if (!response.ok) {
-                        throw new Error('Network response was not ok');
+                        return response.json().then(err => {
+                            throw new Error(err.message || 'Network response was not ok');
+                        });
                     }
                     return response.json();
                 })
@@ -177,6 +179,8 @@
                         `;
                     } else {
                         data.users.forEach(user => {
+                            if (!user) return; // Bỏ qua kết quả null
+                            
                             const userElement = document.createElement('a');
                             userElement.href = `/posts/my_posts/${user.id}`;
                             userElement.className = 'search-result-item d-flex align-items-center text-decoration-none';
@@ -190,12 +194,27 @@
                                     <div class="fw-bold text-dark">${user.name}</div>
                                     ${user.email ? `<div class="text-muted small">${user.email}</div>` : ''}
                                 </div>
-                                <button class="btn btn-sm ${user.isFriend ? 'btn-primary' : (user.hasPendingRequest ? 'btn-secondary' : (user.hasReceivedRequest ? 'btn-success' : 'btn-outline-primary'))} rounded-pill friend-button ms-2" 
-                                        data-user-id="${user.id}"
-                                        onclick="event.preventDefault(); ${user.isFriend ? 'toggleFriend' : (user.hasPendingRequest ? 'toggleFriend' : (user.hasReceivedRequest ? 'acceptFriendRequest' : 'toggleFriend'))}(${user.id}, this);">
-                                    <i class="fas fa-${user.isFriend ? 'user-friends' : (user.hasPendingRequest ? 'clock' : (user.hasReceivedRequest ? 'user-check' : 'user-plus'))}"></i> 
-                                    ${user.isFriend ? 'Bạn bè' : (user.hasPendingRequest ? 'Đã gửi lời mời' : (user.hasReceivedRequest ? 'Chấp nhận' : 'Kết bạn'))}
-                                </button>
+                                <div class="d-flex gap-2">
+                                    ${user.isFriend ? `
+                                        <button class="btn btn-sm btn-primary rounded-pill friend-button" 
+                                                data-user-id="${user.id}"
+                                                onclick="event.preventDefault(); toggleFriend(${user.id}, this);">
+                                            <i class="fas fa-user-friends"></i> Bạn bè
+                                        </button>
+                                        <button class="btn btn-sm btn-danger rounded-pill unfriend-button" 
+                                                data-user-id="${user.id}"
+                                                onclick="event.preventDefault(); unfriend(${user.id}, this);">
+                                            <i class="fas fa-user-minus"></i> Hủy kết bạn
+                                        </button>
+                                    ` : `
+                                        <button class="btn btn-sm ${user.hasPendingRequest ? 'btn-secondary' : (user.hasReceivedRequest ? 'btn-success' : 'btn-outline-primary')} rounded-pill friend-button" 
+                                                data-user-id="${user.id}"
+                                                onclick="event.preventDefault(); ${user.hasPendingRequest ? 'toggleFriend' : (user.hasReceivedRequest ? 'acceptFriendRequest' : 'toggleFriend')}(${user.id}, this);">
+                                            <i class="fas fa-${user.hasPendingRequest ? 'clock' : (user.hasReceivedRequest ? 'user-check' : 'user-plus')}"></i> 
+                                            ${user.hasPendingRequest ? 'Đã gửi lời mời' : (user.hasReceivedRequest ? 'Chấp nhận' : 'Kết bạn')}
+                                        </button>
+                                    `}
+                                </div>
                             `;
                             searchResults.appendChild(userElement);
                         });
@@ -208,7 +227,7 @@
                     searchResults.innerHTML = `
                         <div class="p-4 text-center">
                             <div class="text-danger mb-2">Có lỗi xảy ra khi tìm kiếm</div>
-                            <div class="text-muted small">Từ khóa tìm kiếm: "${query}"</div>
+                            <div class="text-muted small">${error.message || 'Vui lòng thử lại sau'}</div>
                         </div>
                     `;
                     searchResults.classList.remove('hidden');
@@ -230,6 +249,12 @@
         const hasPendingRequest = button.classList.contains('btn-secondary');
         const url = isFriend || hasPendingRequest ? `/users/${userId}/remove-friend` : `/users/${userId}/add-friend`;
         const method = isFriend || hasPendingRequest ? 'DELETE' : 'POST';
+
+        if (isFriend) {
+            if (!confirm('Bạn có chắc chắn muốn hủy kết bạn?')) {
+                return;
+            }
+        }
 
         fetch(url, {
             method: method,
@@ -284,9 +309,15 @@
         .then(data => {
             if (data.success) {
                 // Cập nhật giao diện nút
-                button.classList.remove('btn-outline-primary', 'btn-secondary');
+                button.classList.remove('btn-outline-primary', 'btn-secondary', 'btn-success');
                 button.classList.add('btn-primary');
                 button.innerHTML = '<i class="fas fa-user-friends"></i> Bạn bè';
+                
+                // Cập nhật onclick handler
+                button.onclick = function(e) {
+                    e.preventDefault();
+                    toggleFriend(userId, this);
+                };
                 
                 // Hiển thị thông báo thành công
                 alert(data.message || 'Đã chấp nhận lời mời kết bạn thành công');
@@ -322,6 +353,46 @@
                 
                 // Hiển thị thông báo thành công
                 alert(data.message || 'Đã từ chối lời mời kết bạn');
+            } else {
+                // Hiển thị thông báo lỗi
+                alert(data.error || 'Có lỗi xảy ra');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Có lỗi xảy ra khi thực hiện thao tác');
+        });
+    }
+
+    // Hàm xử lý hủy kết bạn
+    function unfriend(userId, button) {
+        if (!confirm('Bạn có chắc chắn muốn hủy kết bạn?')) {
+            return;
+        }
+
+        fetch(`/users/${userId}/remove-friend`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'Accept': 'application/json'
+            },
+            credentials: 'same-origin'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Cập nhật giao diện nút
+                const friendButton = button.previousElementSibling;
+                friendButton.classList.remove('btn-primary');
+                friendButton.classList.add('btn-outline-primary');
+                friendButton.innerHTML = '<i class="fas fa-user-plus"></i> Kết bạn';
+                
+                // Xóa nút hủy kết bạn
+                button.remove();
+                
+                // Hiển thị thông báo thành công
+                alert(data.message || 'Đã hủy kết bạn thành công');
             } else {
                 // Hiển thị thông báo lỗi
                 alert(data.error || 'Có lỗi xảy ra');

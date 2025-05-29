@@ -16,8 +16,6 @@ return new class extends Migration
             $table->foreignId('blocker_id')->constrained('users')->onDelete('cascade');
             $table->foreignId('blocked_id')->constrained('users')->onDelete('cascade');
             $table->timestamps();
-
-            // Đảm bảo một người dùng chỉ có thể chặn một người khác một lần
             $table->unique(['blocker_id', 'blocked_id']);
         });
     }

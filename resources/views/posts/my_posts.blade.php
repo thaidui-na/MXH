@@ -262,9 +262,14 @@
                                     <a href="{{ route('posts.user_posts', $friend) }}" class="btn btn-sm btn-info me-2">
                                         <i class="fas fa-user me-1"></i>Xem trang cá nhân
                                     </a>
-                                    <a href="{{ route('messages.show', $friend) }}" class="btn btn-sm btn-primary">
+                                    <a href="{{ route('messages.show', $friend) }}" class="btn btn-sm btn-primary me-2">
                                         <i class="fas fa-envelope me-1"></i>Nhắn tin
                                     </a>
+                                    <button class="btn btn-sm btn-danger unfriend-button" 
+                                            data-user-id="{{ $friend->id }}"
+                                            onclick="unfriend({{ $friend->id }}, this)">
+                                        <i class="fas fa-user-minus me-1"></i>Hủy kết bạn
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -1078,6 +1083,48 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
     });
+
+    // Hàm xử lý hủy kết bạn
+    function unfriend(userId, button) {
+        if (!confirm('Bạn có chắc chắn muốn hủy kết bạn?')) {
+            return;
+        }
+
+        fetch(`/users/${userId}/remove-friend`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'Accept': 'application/json'
+            },
+            credentials: 'same-origin'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Xóa card bạn bè
+                const friendCard = button.closest('.col-md-4');
+                friendCard.remove();
+                
+                // Cập nhật số lượng bạn bè
+                const friendCountElement = document.querySelector('.friend-count');
+                if (friendCountElement) {
+                    const currentCount = parseInt(friendCountElement.textContent) || 0;
+                    friendCountElement.textContent = currentCount - 1;
+                }
+                
+                // Hiển thị thông báo thành công
+                alert(data.message || 'Đã hủy kết bạn thành công');
+            } else {
+                // Hiển thị thông báo lỗi
+                alert(data.error || 'Có lỗi xảy ra');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Có lỗi xảy ra khi thực hiện thao tác');
+        });
+    }
 });
 </script>
 @endpush
