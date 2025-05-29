@@ -21,6 +21,8 @@ use App\Http\Controllers\StoryController;
 use App\Http\Controllers\FollowController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\EventController;
+use App\Http\Controllers\AdminReportController;
+use App\Http\Controllers\UserReportController;
 
 // Route mặc định, hiển thị trang chào mừng
 Route::get('/', function () {
@@ -127,7 +129,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/comments/{comment}/reply', [CommentController::class, 'reply'])->name('comments.reply');
 
     // Routes quản lý báo cáo bài viết
-    Route::post('/posts/{post}/report', [PostController::class, 'report'])->name('posts.report');
+    Route::post('/posts/{post}/report', [UserReportController::class, 'store'])->name('posts.report');
 
     // Routes quản lý kết bạn
     Route::post('/users/{user}/add-friend', [UserController::class, 'addFriend'])->name('users.add-friend');
@@ -229,4 +231,8 @@ Route::middleware(['web', 'auth', \App\Http\Middleware\AdminMiddleware::class])-
     Route::get('/posts/{id}/edit', [AdminController::class, 'editPost'])->name('admin.posts.edit'); // Form sửa post
     Route::put('/posts/{id}', [AdminController::class, 'updatePost'])->name('admin.posts.update'); // Cập nhật post
     Route::delete('/posts/{id}', [AdminController::class, 'deletePost'])->name('admin.posts.delete'); // Xóa post
+
+    // Routes quản lý báo cáo bài viết
+    Route::get('/reports', [AdminController::class, 'reports'])->name('admin.reports');
+    Route::delete('/reports/{id}', [AdminController::class, 'deleteReport'])->name('admin.reports.delete');
 });

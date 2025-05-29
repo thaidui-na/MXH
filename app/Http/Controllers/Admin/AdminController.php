@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\Post;
+use App\Models\Report;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 
@@ -185,5 +186,36 @@ class AdminController extends Controller
 
         // Chuyển hướng về trang danh sách bài viết với thông báo thành công
         return redirect()->route('admin.posts')->with('success', 'Cập nhật bài viết thành công');
+    }
+
+    /**
+     * Hiển thị danh sách báo cáo bài viết.
+     *
+     * @return \Illuminate\View\View
+     */
+    public function reports()
+    {
+        // Lấy danh sách báo cáo, kèm thông tin bài viết và người báo cáo
+        $reports = Report::with(['post', 'user'])->latest()->paginate(15);
+        return view('admin.reports', compact('reports'));
+    }
+
+    /**
+     * Xóa một báo cáo dựa vào ID.
+     *
+     * @param  int  $id ID của báo cáo cần xóa
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function deleteReport($id)
+    {
+        // Tìm báo cáo bằng ID và thực hiện xóa
+        $report = Report::find($id);
+
+        if ($report) {
+            $report->delete();
+            return back()->with('success', 'Đã xóa báo cáo thành công.');
+        } else {
+            return back()->with('error', 'Không tìm thấy báo cáo cần xóa.');
+        }
     }
 }
