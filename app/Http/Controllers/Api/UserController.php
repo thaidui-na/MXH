@@ -23,7 +23,7 @@ class UserController extends Controller
                 return response()->json(['users' => []]);
             }
 
-            // Tìm kiếm với điều kiện chính xác hơn
+            // Tìm kiếm với điều kiện chính xác hơn và loại trừ người dùng đã bị chặn
             $users = User::query()
                 ->where(function($q) use ($query) {
                     $q->where('name', 'like', '%' . $query . '%')
@@ -31,6 +31,10 @@ class UserController extends Controller
                 })
                 ->when(auth()->check(), function($q) {
                     $q->where('id', '!=', auth()->id());
+                     // Loại trừ người dùng mà người dùng hiện tại đã chặn
+                    $q->whereDoesntHave('blockedByUsers', function ($query) {
+                        $query->where('blocker_id', auth()->id());
+                    });
                 })
                 ->select('id', 'name', 'email', 'avatar')
                 ->get()
