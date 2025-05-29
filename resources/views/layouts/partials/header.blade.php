@@ -33,7 +33,7 @@
                 @endauth
             </ul>
 
-            <!-- Search Form -->
+            {{-- Form tìm kiếm người dùng --}}
             @auth
             <div class="search-container mx-auto">
                 <div class="input-group">
