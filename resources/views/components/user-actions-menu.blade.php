@@ -35,6 +35,9 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
+                    {{-- Khu vực hiển thị thông báo --}}
+                    <div id="reportMessage-{{ $user->id }}"></div>
+
                     <p>Bạn đang báo cáo người dùng <strong>{{ $user->name }}</strong></p>
                     <div class="mb-3">
                         <label class="form-label">Lý do báo cáo:</label>
@@ -125,6 +128,14 @@ document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('.submit-report').forEach(button => {
         button.addEventListener('click', function() {
             const userId = this.dataset.userId;
+            const modalId = `reportModal-${userId}`;
+            const modalElement = document.getElementById(modalId);
+            const reportMessageDiv = document.getElementById(`reportMessage-${userId}`);
+            const submitButton = this;
+            
+            // Xóa thông báo cũ
+            reportMessageDiv.innerHTML = '';
+
             const selectedReason = document.querySelector(`input[name='reason-${userId}']:checked`);
             let reason = '';
             let other_reason = '';
@@ -136,34 +147,52 @@ document.addEventListener('DOMContentLoaded', function() {
                     reason = selectedReason.value;
                 }
             }
+            
             if (!reason || (reason === 'other' && !other_reason)) {
-                alert('Vui lòng chọn và nhập lý do báo cáo');
+                reportMessageDiv.innerHTML = '<div class="alert alert-danger">Vui lòng chọn và/hoặc nhập lý do báo cáo.</div>';
                 return;
             }
+
             const formData = new URLSearchParams();
             formData.append('reason', reason);
             if (reason === 'other') {
                 formData.append('other_reason', other_reason);
             }
+
+            // Hiển thị trạng thái đang xử lý
+            submitButton.disabled = true;
+            submitButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Đang gửi...';
+
             fetch(`/users/${userId}/report`, {
                 method: 'POST',
                 headers: {
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    // Content-Type không cần thiết với URLSearchParams
                 },
                 body: formData
             })
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    bootstrap.Modal.getInstance(document.getElementById(`reportModal-${userId}`)).hide();
-                    alert('Đã gửi báo cáo thành công');
+                    reportMessageDiv.innerHTML = '<div class="alert alert-success">' + data.message + '</div>';
+                    // Đóng modal sau 2 giây
+                    setTimeout(() => {
+                        bootstrap.Modal.getInstance(modalElement).hide();
+                        // Tùy chọn: Reset form hoặc reload trang nhỏ
+                         // location.reload(); // Nếu muốn reload lại toàn bộ trang
+                    }, 2000); 
                 } else {
-                    alert(data.error || 'Có lỗi xảy ra');
+                    reportMessageDiv.innerHTML = '<div class="alert alert-danger">' + (data.error || 'Có lỗi xảy ra khi gửi báo cáo.') + '</div>';
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                alert('Có lỗi xảy ra');
+                reportMessageDiv.innerHTML = '<div class="alert alert-danger">Đã xảy ra lỗi mạng hoặc máy chủ. Vui lòng thử lại.</div>';
+            })
+            .finally(() => {
+                // Luôn re-enable nút sau khi hoàn thành
+                submitButton.disabled = false;
+                submitButton.innerHTML = 'Gửi báo cáo';
             });
         });
     });

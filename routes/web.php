@@ -232,7 +232,15 @@ Route::middleware(['web', 'auth', \App\Http\Middleware\AdminMiddleware::class])-
     Route::put('/posts/{id}', [AdminController::class, 'updatePost'])->name('admin.posts.update'); // Cập nhật post
     Route::delete('/posts/{id}', [AdminController::class, 'deletePost'])->name('admin.posts.delete'); // Xóa post
 
-    // Routes quản lý báo cáo bài viết
-    Route::get('/reports', [AdminController::class, 'reports'])->name('admin.reports');
-    Route::delete('/reports/{id}', [AdminController::class, 'deleteReport'])->name('admin.reports.delete');
+    // Routes quản lý báo cáo
+    // Route hiện tại cho báo cáo bài viết
+    Route::get('/reports', [AdminController::class, 'reports'])->name('admin.reports'); // Danh sách báo cáo bài viết
+    Route::delete('/reports/{id}', [AdminController::class, 'deleteReport'])->name('admin.reports.delete'); // Xóa báo cáo bài viết
+
+    // Route mới cho báo cáo người dùng
+    Route::get('/user-reports', [AdminController::class, 'userReports'])->name('admin.user-reports'); // Danh sách báo cáo người dùng
+
+    // Routes xử lý hành động trên báo cáo người dùng
+    Route::put('/user-reports/{userReport}/mark-resolved', [AdminController::class, 'markUserReportResolved'])->name('admin.user-reports.mark-resolved'); // Đánh dấu báo cáo đã xử lý
+    Route::delete('/user-reports/{userReport}', [AdminController::class, 'deleteUserReport'])->name('admin.user-reports.delete'); // Xóa báo cáo người dùng
 });
