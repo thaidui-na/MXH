@@ -21,6 +21,26 @@
                 @if($story->caption)
                     <div class="caption">{{ $story->caption }}</div>
                 @endif
+                
+                {{-- Hiển thị lượt xem và danh sách người xem --}}
+                <div class="story-stats">
+                    <div class="views-count">
+                        <i class="fas fa-eye"></i> {{ $story->views_count }} lượt xem
+                    </div>
+                    @if($viewers->isNotEmpty())
+                        <div class="viewers-list">
+                            <div class="viewers-title">Đã xem bởi:</div>
+                            <div class="viewers-avatars">
+                                @foreach($viewers as $view)
+                                    <img src="{{ $view->user->avatar_url }}" 
+                                         alt="{{ $view->user->name }}" 
+                                         class="viewer-avatar" 
+                                         title="{{ $view->user->name }} ({{ $view->viewed_at->diffForHumans() }})">
+                                @endforeach
+                            </div>
+                        </div>
+                    @endif
+                </div>
             </div>
 
             @if($story->user_id === auth()->id())
@@ -106,6 +126,51 @@
     position: absolute;
     top: 1rem;
     right: 1rem;
+}
+
+.story-stats {
+    margin-top: 1rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.views-count {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+}
+
+.views-count i {
+    margin-right: 0.3rem;
+}
+
+.viewers-list {
+    margin-top: 0.5rem;
+}
+
+.viewers-title {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+}
+
+.viewers-avatars {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.viewer-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 2px solid white;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.viewer-avatar:hover {
+    transform: scale(1.1);
 }
 </style>
 @endpush

@@ -4,44 +4,50 @@
 <div class="container">
     <div class="row justify-content-center">
         <div class="col-md-10">
-            {{-- Cover và avatar nhóm --}}
-            <div class="position-relative mb-4">
-                <img src="{{ $group->cover_image ? asset('storage/' . $group->cover_image) : asset('images/default-cover.jpg') }}"
-                     onerror="this.onerror=null;this.src='{{ asset('images/default-cover.jpg') }}';"
-                     class="w-100 rounded" style="height: 220px; object-fit: cover;">
-                <img src="{{ $group->avatar ? asset('storage/' . $group->avatar) : asset('images/default-avatar.jpg') }}"
-                     onerror="this.onerror=null;this.src='{{ asset('images/default-avatar.jpg') }}';"
-                     class="rounded-circle border border-3 border-white position-absolute" style="width: 110px; height: 110px; left: 40px; bottom: -55px; object-fit: cover; background: #fff;">
-            </div>
-            <div class="d-flex align-items-center mb-4" style="margin-top: 40px;">
-                <div class="flex-grow-1">
-                    <h3 class="mb-1">{{ $group->name }}</h3>
-                    <div class="text-muted mb-1">{{ $group->description }}</div>
-                    <div class="d-flex align-items-center gap-3">
+            {{-- Card thông tin nhóm --}}
+            <div class="card mb-4">
+                <div class="position-relative">
+                    {{-- Cover nhóm --}}
+                    <img src="{{ $group->cover_image ? asset('storage/' . $group->cover_image) : asset('images/default-cover.jpg') }}"
+                         onerror="this.onerror=null;this.src='{{ asset('images/default-cover.jpg') }}';"
+                         class="card-img-top" style="height: 200px; object-fit: cover;">
+
+                    {{-- Avatar nhóm --}}
+                    <img src="{{ $group->avatar ? asset('storage/' . $group->avatar) : asset('images/default-avatar.jpg') }}"
+                         onerror="this.onerror=null;this.src='{{ asset('images/default-avatar.jpg') }}';"
+                         class="rounded-circle border border-3 border-white position-absolute" style="width: 80px; height: 80px; left: 20px; bottom: -40px; object-fit: cover; background: #fff;">
+                </div>
+                <div class="card-body pt-4">
+                    <h4 class="card-title mb-1">{{ $group->name }}</h4>
+                    <p class="card-text text-muted mb-2">{{ $group->description }}</p>
+                    <div class="d-flex justify-content-between align-items-center mb-2">
                         <span><i class="fas fa-users"></i> {{ $group->members->count() }} thành viên</span>
                         <span class="badge {{ $group->is_private ? 'bg-secondary' : 'bg-success' }}">{{ $group->is_private ? 'Riêng tư' : 'Công khai' }}</span>
                     </div>
                 </div>
-                <div>
-                    @if($group->created_by == auth()->id())
-                        <a href="{{ route('groups.edit', $group->id) }}" class="btn btn-outline-primary me-2">Chỉnh sửa nhóm</a>
-                        <form action="{{ route('groups.destroy', $group->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Bạn có chắc chắn muốn xóa nhóm này? Hành động này không thể hoàn tác!');">
-                            @csrf
-                            @method('DELETE')
-                            <button type="submit" class="btn btn-outline-danger">Xóa nhóm</button>
-                        </form>
-                    @endif
-                    @if($group->members->where('user_id', auth()->id())->count() == 0)
-                        <form method="POST" action="{{ route('groups.join', $group->id) }}" class="d-inline">
-                            @csrf
-                            <button type="submit" class="btn btn-success">Tham gia nhóm</button>
-                        </form>
-                    @else
-                        <form method="POST" action="{{ route('groups.leave', $group->id) }}" class="d-inline">
-                            @csrf
-                            <button type="submit" class="btn btn-danger">Rời nhóm</button>
-                        </form>
-                    @endif
+                <div class="card-footer bg-transparent">
+                     <div class="d-flex justify-content-end">
+                            {{-- Chỉ hiển thị nút Chỉnh sửa và Xóa nhóm cho người tạo hoặc admin --}}
+                            @if($group->created_by == auth()->id() || $group->hasAdmin(auth()->id()))
+                                <a href="{{ route('groups.edit', $group->id) }}" class="btn btn-outline-primary btn-sm me-2">Chỉnh sửa</a>
+                                <form action="{{ route('groups.destroy', $group->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Bạn có chắc chắn muốn xóa nhóm này? Hành động này không thể hoàn tác!');">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="btn btn-outline-danger btn-sm">Xóa nhóm</button>
+                                </form>
+                            @endif
+                            @if($group->members->where('user_id', auth()->id())->count() == 0)
+                                <form method="POST" action="{{ route('groups.join', $group->id) }}" class="d-inline">
+                                    @csrf
+                                    <button type="submit" class="btn btn-success btn-sm">Tham gia nhóm</button>
+                                </form>
+                            @else
+                                <form method="POST" action="{{ route('groups.leave', $group->id) }}" class="d-inline">
+                                    @csrf
+                                    <button type="submit" class="btn btn-danger btn-sm">Rời nhóm</button>
+                                </form>
+                            @endif
+                        </div>
                 </div>
             </div>
 
@@ -61,6 +67,7 @@
             <div class="tab-content" id="groupTabContent">
                 {{-- Tab Thảo luận --}}
                 <div class="tab-pane fade show active" id="discussion-pane" role="tabpanel" aria-labelledby="discussion-tab">
+                    {{-- Chỉ hiển thị form đăng bài nếu là thành viên --}}
                     @if($group->members->where('user_id', auth()->id())->count() > 0)
                         <form method="POST" action="{{ route('groups.post', $group->id) }}" class="mb-4">
                             @csrf
@@ -91,7 +98,8 @@
                                                 <small class="text-muted">{{ $post->created_at->diffForHumans() }}</small>
                                             </div>
                                         </div>
-                                        @if($post->user_id == auth()->id() || $group->hasAdmin(auth()->id()))
+                                        {{-- Chỉ hiển thị dropdown tùy chọn cho người tạo bài viết hoặc admin --}}
+                                        @if($post->user_id == auth()->id() || $group->created_by == auth()->id() || $group->hasAdmin(auth()->id()))
                                             <div class="dropdown">
                                                 <button class="btn btn-link text-dark" type="button" data-bs-toggle="dropdown">
                                                     <i class="fas fa-ellipsis-v"></i>
@@ -108,13 +116,14 @@
                                                             </form>
                                                         </li>
                                                     @endif
-                                                    @if($group->hasAdmin(auth()->id()))
+                                                    {{-- Chỉ hiển thị tùy chọn xóa bài viết cho admin (nếu họ không phải người tạo bài) --}}
+                                                    @if(($group->created_by == auth()->id() || $group->hasAdmin(auth()->id())) && $post->user_id !== auth()->id())
                                                         <li>
                                                             <form action="{{ route('groups.posts.destroy', ['group' => $group->id, 'post' => $post->id]) }}" method="POST" class="d-inline">
                                                                 @csrf
                                                                 @method('DELETE')
                                                                 <button type="submit" class="dropdown-item text-danger" onclick="return confirm('Bạn có chắc chắn muốn xóa bài viết này?')">
-                                                                    <i class="fas fa-trash"></i> Xóa bài viết
+                                                                    <i class="fas fa-trash"></i> Xóa bài viết (Admin)
                                                                 </button>
                                                             </form>
                                                         </li>
@@ -123,6 +132,8 @@
                                             </div>
                                         @endif
                                     </div>
+                                    {{-- Thêm tiêu đề bài viết --}}
+                                    <h5 class="card-title">{{ $post->title }}</h5> 
                                     <p class="card-text">{{ $post->content }}</p>
                                     @if($post->image)
                                         <img src="{{ Storage::url($post->image) }}" class="img-fluid rounded mb-3" alt="Post image">
@@ -198,7 +209,8 @@
                 </div>
                 {{-- Tab Thành viên --}}
                 <div class="tab-pane fade" id="members-pane" role="tabpanel" aria-labelledby="members-tab">
-                    @if($group->hasAdmin(auth()->id()))
+                    {{-- Chỉ hiển thị nút Quản lý thành viên cho người tạo hoặc admin --}}
+                    @if($group->created_by == auth()->id() || $group->hasAdmin(auth()->id()))
                         <div class="mb-3">
                             <a href="{{ route('groups.members', $group) }}" class="btn btn-primary">
                                 <i class="fas fa-users-cog"></i> Quản lý thành viên

@@ -35,11 +35,9 @@ class PostController extends Controller
             ->withCount('members')
             ->get();
 
-        // Lấy stories của người dùng đang theo dõi và của chính mình
+        // Lấy stories của tất cả người dùng
         $stories = Story::with('user')
             ->active()
-            ->fromFollowing(auth()->id())
-            ->orWhere('user_id', auth()->id())
             ->latest()
             ->get()
             ->groupBy('user_id');
@@ -109,25 +107,26 @@ class PostController extends Controller
     {
         // Validate dữ liệu nhận được từ request
         $validated = $request->validate([
-            'title' => 'required|string|max:255', // Tiêu đề là bắt buộc, dạng chuỗi, tối đa 255 ký tự
-            'content' => 'required|string', // Nội dung là bắt buộc, dạng chuỗi
-            // 'is_public' không cần validate ở đây vì sẽ được gán cố định
+            'title' => 'required|string|max:255',
+            'content' => 'required|string',
+        ], [
+            'title.required' => 'Vui lòng nhập tiêu đề bài viết',
+            'title.string' => 'Tiêu đề phải là chuỗi ký tự',
+            'title.max' => 'Tiêu đề không được vượt quá 255 ký tự',
+            'content.required' => 'Vui lòng nhập nội dung bài viết',
+            'content.string' => 'Nội dung phải là chuỗi ký tự',
         ]);
 
-        // Thêm user_id của người dùng đang đăng nhập vào mảng dữ liệu đã validate
+        // Thêm user_id và is_public
         $validated['user_id'] = auth()->id();
-
-        // Gán giá trị cố định cho trường is_public (mặc định mọi bài viết đều công khai)
-        // Nếu bạn muốn có tùy chọn riêng tư/công khai, cần thêm trường này vào form và validate
         $validated['is_public'] = true;
 
-        // Tạo bản ghi bài viết mới trong database với dữ liệu đã chuẩn bị
+        // Tạo bài viết mới
         Post::create($validated);
 
-        // Chuyển hướng người dùng về trang "Bài viết của tôi"
         return redirect()
-            ->route('posts.my_posts') // Route name của trang danh sách bài viết của tôi
-            ->with('success', 'Bài viết đã được đăng thành công!'); // Gửi kèm thông báo thành công (flash message)
+            ->route('posts.my_posts')
+            ->with('success', 'Bài viết đã được đăng thành công!');
     }
 
     /**
@@ -184,28 +183,45 @@ class PostController extends Controller
      */
     public function update(Request $request, Post $post) // Inject Request và Post
     {
-        // Kiểm tra quyền chỉnh sửa (giống như trong hàm edit)
+        // Kiểm tra quyền chỉnh sửa
         if ($post->user_id !== auth()->id()) {
             abort(403, 'Bạn không có quyền chỉnh sửa bài viết này.');
         }
 
         // Validate dữ liệu gửi lên từ form
         $validated = $request->validate([
-            'title' => 'required|string|max:255',
-            'content' => 'required|string',
-             // 'is_public' không cần validate nếu luôn là true
+            'title' => [
+                'required',
+                'string',
+                'max:255',
+                'regex:/^[^\s　]*[^\s　]+[^\s　]*$/',
+            ],
+            'content' => [
+                'required',
+                'string',
+                'max:10000',
+                'regex:/^[^\s　]*[^\s　]+[^\s　]*$/',
+            ],
+        ], [
+            'title.required' => 'Vui lòng nhập tiêu đề bài viết',
+            'title.string' => 'Tiêu đề phải là chuỗi ký tự',
+            'title.max' => 'Tiêu đề không được vượt quá 255 ký tự',
+            'title.regex' => 'Tiêu đề không được chứa toàn khoảng trắng',
+            'content.required' => 'Vui lòng nhập nội dung bài viết',
+            'content.string' => 'Nội dung phải là chuỗi ký tự',
+            'content.max' => 'Nội dung không được vượt quá 10000 ký tự',
+            'content.regex' => 'Nội dung không được chứa toàn khoảng trắng',
         ]);
 
-        // Gán lại giá trị is_public (nếu logic ứng dụng yêu cầu mọi bài viết đều công khai)
+        // Gán lại giá trị is_public
         $validated['is_public'] = true;
 
-        // Cập nhật bản ghi bài viết trong database với dữ liệu đã validate
+        // Cập nhật bản ghi bài viết
         $post->update($validated);
 
-        // Chuyển hướng người dùng về trang xem chi tiết bài viết vừa cập nhật
         return redirect()
-            ->route('posts.show', $post) // Route name của trang xem chi tiết, truyền đối tượng post
-            ->with('success', 'Bài viết đã được cập nhật thành công!'); // Gửi kèm thông báo thành công
+            ->route('posts.show', $post)
+            ->with('success', 'Bài viết đã được cập nhật thành công!');
     }
 
     /**
@@ -216,20 +232,25 @@ class PostController extends Controller
      * @param  \App\Models\Post  $post Đối tượng Post cần xóa
      * @return \Illuminate\Http\RedirectResponse
      */
-    public function destroy(Post $post) // Inject Post model
+    public function destroy(Post $post)
     {
-        // Kiểm tra quyền xóa (giống như trong hàm edit và update)
-        if ($post->user_id !== auth()->id()) {
-            abort(403, 'Bạn không có quyền xóa bài viết này.');
+        try {
+            // Kiểm tra quyền xóa
+            if ($post->user_id !== auth()->id()) {
+                abort(403, 'Bạn không có quyền xóa bài viết này.');
+            }
+
+            // Thực hiện xóa bản ghi bài viết
+            $post->delete();
+
+            return redirect()
+                ->route('posts.my_posts')
+                ->with('success', 'Bài viết đã được xóa thành công!');
+        } catch (\Exception $e) {
+            return redirect()
+                ->route('posts.my_posts')
+                ->with('error', 'Không thể xóa bài viết. Bài viết có thể đã bị xóa hoặc không tồn tại.');
         }
-
-        // Thực hiện xóa bản ghi bài viết khỏi database
-        $post->delete();
-
-        // Chuyển hướng người dùng về trang "Bài viết của tôi"
-        return redirect()
-            ->route('posts.my_posts') // Route name của trang danh sách bài viết của tôi
-            ->with('success', 'Bài viết đã được xóa thành công!'); // Gửi kèm thông báo thành công
     }
 
     /**

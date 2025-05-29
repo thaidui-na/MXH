@@ -20,21 +20,13 @@
                 </div>
 
                 <div class="card-body">
-                    @if(session('error'))
-                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                            <i class="fas fa-exclamation-circle me-2"></i>
-                            {{ session('error') }}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                        </div>
-                    @endif
-
-                    <form action="{{ route('events.store') }}" method="POST" enctype="multipart/form-data">
+                    <form action="{{ route('events.store') }}" method="POST" enctype="multipart/form-data" class="needs-validation" novalidate>
                         @csrf
 
                         <div class="mb-3">
                             <label for="title" class="form-label">
                                 <i class="fas fa-heading text-primary me-1"></i>
-                                Tên sự kiện
+                                Tên sự kiện <span class="text-danger">*</span>
                             </label>
                             <input type="text" 
                                    class="form-control @error('title') is-invalid @enderror" 
@@ -44,7 +36,7 @@
                                    required
                                    placeholder="Nhập tên sự kiện">
                             @error('title')
-                                <div class="invalid-feedback">
+                                <div class="invalid-feedback d-block">
                                     <i class="fas fa-exclamation-circle me-1"></i>
                                     {{ $message }}
                                 </div>
@@ -54,7 +46,7 @@
                         <div class="mb-3">
                             <label for="description" class="form-label">
                                 <i class="fas fa-align-left text-primary me-1"></i>
-                                Mô tả
+                                Mô tả <span class="text-danger">*</span>
                             </label>
                             <textarea class="form-control @error('description') is-invalid @enderror" 
                                       id="description" 
@@ -63,7 +55,7 @@
                                       required
                                       placeholder="Nhập mô tả sự kiện">{{ old('description') }}</textarea>
                             @error('description')
-                                <div class="invalid-feedback">
+                                <div class="invalid-feedback d-block">
                                     <i class="fas fa-exclamation-circle me-1"></i>
                                     {{ $message }}
                                 </div>
@@ -71,21 +63,37 @@
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label">Loại sự kiện</label>
+                            <label class="form-label">
+                                <i class="fas fa-tag text-primary me-1"></i>
+                                Loại sự kiện <span class="text-danger">*</span>
+                            </label>
                             <div class="form-check">
-                                <input class="form-check-input" type="radio" name="event_type" id="online" value="online" {{ old('event_type') == 'online' ? 'checked' : '' }}>
+                                <input class="form-check-input @error('event_type') is-invalid @enderror" 
+                                       type="radio" 
+                                       name="event_type" 
+                                       id="online" 
+                                       value="online" 
+                                       {{ old('event_type') == 'online' ? 'checked' : '' }}>
                                 <label class="form-check-label" for="online">
                                     Online
                                 </label>
                             </div>
                             <div class="form-check">
-                                <input class="form-check-input" type="radio" name="event_type" id="offline" value="offline" {{ old('event_type') == 'offline' ? 'checked' : '' }}>
+                                <input class="form-check-input @error('event_type') is-invalid @enderror" 
+                                       type="radio" 
+                                       name="event_type" 
+                                       id="offline" 
+                                       value="offline" 
+                                       {{ old('event_type') == 'offline' ? 'checked' : '' }}>
                                 <label class="form-check-label" for="offline">
                                     Offline
                                 </label>
                             </div>
                             @error('event_type')
-                                <div class="invalid-feedback d-block">{{ $message }}</div>
+                                <div class="invalid-feedback d-block">
+                                    <i class="fas fa-exclamation-circle me-1"></i>
+                                    {{ $message }}
+                                </div>
                             @enderror
                         </div>
 
@@ -93,7 +101,7 @@
                             <div class="col-md-6 mb-3">
                                 <label for="event_time" class="form-label">
                                     <i class="fas fa-clock text-primary me-1"></i>
-                                    Thời gian
+                                    Thời gian <span class="text-danger">*</span>
                                 </label>
                                 <input type="datetime-local" 
                                        class="form-control @error('event_time') is-invalid @enderror" 
@@ -102,7 +110,7 @@
                                        value="{{ old('event_time') }}" 
                                        required>
                                 @error('event_time')
-                                    <div class="invalid-feedback">
+                                    <div class="invalid-feedback d-block">
                                         <i class="fas fa-exclamation-circle me-1"></i>
                                         {{ $message }}
                                     </div>
@@ -112,7 +120,7 @@
                             <div class="col-md-6 mb-3">
                                 <label for="location" class="form-label">
                                     <i class="fas fa-map-marker-alt text-primary me-1"></i>
-                                    Địa điểm
+                                    Địa điểm <span class="text-danger">*</span>
                                 </label>
                                 <input type="text" 
                                        class="form-control @error('location') is-invalid @enderror" 
@@ -122,7 +130,7 @@
                                        required
                                        placeholder="Nhập địa chỉ tổ chức sự kiện">
                                 @error('location')
-                                    <div class="invalid-feedback">
+                                    <div class="invalid-feedback d-block">
                                         <i class="fas fa-exclamation-circle me-1"></i>
                                         {{ $message }}
                                     </div>
@@ -142,7 +150,7 @@
                                    accept="image/*">
                             <div class="form-text">Chọn ảnh đại diện cho sự kiện (tùy chọn)</div>
                             @error('image')
-                                <div class="invalid-feedback">
+                                <div class="invalid-feedback d-block">
                                     <i class="fas fa-exclamation-circle me-1"></i>
                                     {{ $message }}
                                 </div>
@@ -191,6 +199,28 @@
         font-size: 0.875rem;
         color: #6c757d;
     }
+
+    .invalid-feedback {
+        font-size: 0.875rem;
+        margin-top: 0.25rem;
+    }
+
+    .invalid-feedback i {
+        color: #dc3545;
+    }
+
+    .form-check-input.is-invalid {
+        border-color: #dc3545;
+    }
+
+    .form-check-input.is-invalid:checked {
+        background-color: #dc3545;
+        border-color: #dc3545;
+    }
+
+    .text-danger {
+        font-size: 0.875rem;
+    }
 </style>
 @endpush
 
@@ -228,7 +258,19 @@ document.addEventListener('DOMContentLoaded', function() {
             locationInput.value = 'Online Meeting';
         }
     });
+
+    // Add real-time validation
+    const inputs = form.querySelectorAll('input, textarea');
+    inputs.forEach(input => {
+        input.addEventListener('input', function() {
+            if (this.checkValidity()) {
+                this.classList.remove('is-invalid');
+            } else {
+                this.classList.add('is-invalid');
+            }
+        });
+    });
 });
 </script>
 @endpush
-@endsection 
+@endsection

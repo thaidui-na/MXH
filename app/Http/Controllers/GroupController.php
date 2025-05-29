@@ -32,38 +32,67 @@ class GroupController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'name' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'cover_image' => 'nullable|image|max:2048',
-            'avatar' => 'nullable|image|max:2048',
+            'name' => [
+                'required',
+                'string',
+                'max:255',
+                'regex:/^[^\s　]*[^\s　]+[^\s　]*$/', // Không cho phép toàn khoảng trắng
+                'unique:groups,name', // Kiểm tra tên nhóm trùng
+            ],
+            'description' => [
+                'nullable',
+                'string',
+                'max:1000',
+                'regex:/^[^\s　]*[^\s　]+[^\s　]*$/', // Không cho phép toàn khoảng trắng
+            ],
+            'cover_image' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'avatar' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
             'is_private' => 'boolean'
+        ], [
+            'name.required' => 'Vui lòng nhập tên nhóm',
+            'name.string' => 'Tên nhóm phải là chuỗi ký tự',
+            'name.max' => 'Tên nhóm không được vượt quá 255 ký tự',
+            'name.regex' => 'Tên nhóm không được chứa toàn khoảng trắng',
+            'name.unique' => 'Tên nhóm này đã tồn tại. Vui lòng chọn tên khác',
+            'description.max' => 'Mô tả không được vượt quá 1000 ký tự',
+            'description.regex' => 'Mô tả không được chứa toàn khoảng trắng',
+            'cover_image.required' => 'Vui lòng chọn ảnh bìa cho nhóm',
+            'cover_image.image' => 'File ảnh bìa không đúng định dạng',
+            'cover_image.mimes' => 'Ảnh bìa phải có định dạng: jpeg, png, jpg, gif',
+            'cover_image.max' => 'Ảnh bìa không được vượt quá 2MB',
+            'avatar.required' => 'Vui lòng chọn ảnh đại diện cho nhóm',
+            'avatar.image' => 'File ảnh đại diện không đúng định dạng',
+            'avatar.mimes' => 'Ảnh đại diện phải có định dạng: jpeg, png, jpg, gif',
+            'avatar.max' => 'Ảnh đại diện không được vượt quá 2MB',
         ]);
 
-        $data = $request->only(['name', 'description', 'is_private']);
-        $data['created_by'] = auth()->id();
+        try {
+            $data = $request->only(['name', 'description', 'is_private']);
+            $data['created_by'] = auth()->id();
 
-        // Upload cover image
-        if ($request->hasFile('cover_image')) {
+            // Upload cover image
             $data['cover_image'] = $request->file('cover_image')->store('group-covers', 'public');
-        }
 
-        // Upload avatar
-        if ($request->hasFile('avatar')) {
+            // Upload avatar
             $data['avatar'] = $request->file('avatar')->store('group-avatars', 'public');
+
+            $group = Group::create($data);
+
+            // Tự động thêm người tạo làm admin
+            GroupMember::create([
+                'group_id' => $group->id,
+                'user_id' => auth()->id(),
+                'role' => 'admin',
+                'is_approved' => true
+            ]);
+
+            return redirect()->route('groups.show', $group)
+                ->with('success', 'Tạo nhóm thành công!');
+        } catch (\Exception $e) {
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Có lỗi xảy ra khi tạo nhóm. Vui lòng thử lại sau.');
         }
-
-        $group = Group::create($data);
-
-        // Tự động thêm người tạo làm admin
-        GroupMember::create([
-            'group_id' => $group->id,
-            'user_id' => auth()->id(),
-            'role' => 'admin',
-            'is_approved' => true
-        ]);
-
-        return redirect()->route('groups.show', $group)
-            ->with('success', 'Tạo nhóm thành công!');
     }
 
     public function show(Group $group)
@@ -81,7 +110,7 @@ class GroupController extends Controller
 
     public function edit(Group $group)
     {
-        if (!$group->hasAdmin(auth()->id())) {
+        if ($group->created_by !== auth()->id() && !$group->hasAdmin(auth()->id())) {
             return redirect()->route('groups.show', $group)
                 ->with('error', 'Bạn không có quyền chỉnh sửa nhóm này!');
         }
@@ -90,7 +119,7 @@ class GroupController extends Controller
 
     public function update(Request $request, Group $group)
     {
-        if (!$group->hasAdmin(auth()->id())) {
+        if ($group->created_by !== auth()->id() && !$group->hasAdmin(auth()->id())) {
             return redirect()->route('groups.show', $group)
                 ->with('error', 'Bạn không có quyền chỉnh sửa nhóm này!');
         }
@@ -129,23 +158,47 @@ class GroupController extends Controller
 
     public function destroy(Group $group)
     {
-        if (!$group->hasAdmin(auth()->id())) {
+        if ($group->created_by !== auth()->id() && !$group->hasAdmin(auth()->id())) {
             return redirect()->route('groups.show', $group)
                 ->with('error', 'Bạn không có quyền xóa nhóm này!');
         }
 
-        // Xóa ảnh
-        if ($group->cover_image) {
-            Storage::disk('public')->delete($group->cover_image);
-        }
-        if ($group->avatar) {
-            Storage::disk('public')->delete($group->avatar);
-        }
+        try {
+            // Kiểm tra lại xem nhóm có tồn tại không
+            $group = Group::find($group->id);
+            if (!$group) {
+                return redirect()->route('groups.index')
+                    ->with('error', 'Nhóm này đã bị xóa hoặc không tồn tại!');
+            }
 
-        $group->delete();
+            // Xóa ảnh
+            if ($group->cover_image) {
+                Storage::disk('public')->delete($group->cover_image);
+            }
+            if ($group->avatar) {
+                Storage::disk('public')->delete($group->avatar);
+            }
 
-        return redirect()->route('groups.index')
-            ->with('success', 'Xóa nhóm thành công!');
+            // Xóa tất cả bài viết và ảnh của bài viết
+            foreach ($group->posts as $post) {
+                if ($post->image) {
+                    Storage::disk('public')->delete($post->image);
+                }
+                $post->delete();
+            }
+
+            // Xóa tất cả thành viên
+            $group->members()->delete();
+
+            // Xóa nhóm
+            $group->delete();
+
+            return redirect()->route('groups.index')
+                ->with('success', 'Xóa nhóm thành công!');
+        } catch (\Exception $e) {
+            return redirect()->back()
+                ->with('error', 'Có lỗi xảy ra khi xóa nhóm. Vui lòng thử lại sau.');
+        }
     }
 
     public function join(Group $group)
@@ -173,26 +226,39 @@ class GroupController extends Controller
                 ->with('error', 'Bạn không phải thành viên của nhóm này!');
         }
 
-        if ($group->hasAdmin(auth()->id()) && $group->members()->where('role', 'admin')->count() === 1) {
-            return redirect()->route('groups.show', $group)
-                ->with('error', 'Bạn là admin duy nhất của nhóm. Hãy chỉ định admin khác trước khi rời nhóm!');
+        try {
+            // Kiểm tra nếu là admin duy nhất
+            if ($group->hasAdmin(auth()->id()) && $group->members()->where('role', 'admin')->count() === 1) {
+                return redirect()->route('groups.show', $group)
+                    ->with('error', 'Bạn là admin duy nhất của nhóm. Hãy chỉ định admin khác trước khi rời nhóm!');
+            }
+
+            // Xóa thành viên
+            $group->members()->where('user_id', auth()->id())->delete();
+
+            return redirect()->route('groups.index')
+                ->with('success', 'Rời nhóm thành công!');
+        } catch (\Exception $e) {
+            return redirect()->back()
+                ->with('error', 'Có lỗi xảy ra khi rời nhóm. Vui lòng thử lại sau.');
         }
-
-        $group->members()->where('user_id', auth()->id())->delete();
-
-        return redirect()->route('groups.index')
-            ->with('success', 'Rời nhóm thành công!');
     }
 
     public function members(Group $group)
     {
+        // Kiểm tra quyền: người tạo hoặc admin mới được xem trang quản lý thành viên
+        if ($group->created_by !== auth()->id() && !$group->hasAdmin(auth()->id())) {
+            return redirect()->route('groups.show', $group)
+                ->with('error', 'Bạn không có quyền xem trang quản lý thành viên nhóm này!');
+        }
         $members = $group->members()->with('user')->paginate(20);
         return view('groups.members', compact('group', 'members'));
     }
 
     public function updateMember(Request $request, Group $group, GroupMember $member)
     {
-        if (!$group->hasAdmin(auth()->id())) {
+        // Kiểm tra quyền: người tạo hoặc admin mới được cập nhật vai trò thành viên
+        if ($group->created_by !== auth()->id() && !$group->hasAdmin(auth()->id())) {
             return redirect()->route('groups.members', $group)
                 ->with('error', 'Bạn không có quyền quản lý thành viên!');
         }
@@ -210,7 +276,8 @@ class GroupController extends Controller
 
     public function removeMember(Group $group, GroupMember $member)
     {
-        if (!$group->hasAdmin(auth()->id())) {
+        // Kiểm tra quyền: người tạo hoặc admin mới được xóa thành viên
+         if ($group->created_by !== auth()->id() && !$group->hasAdmin(auth()->id())) {
             return redirect()->route('groups.members', $group)
                 ->with('error', 'Bạn không có quyền quản lý thành viên!');
         }
@@ -228,7 +295,8 @@ class GroupController extends Controller
 
     public function addMembers(Request $request, Group $group)
     {
-        if (!$group->hasAdmin(auth()->id())) {
+        // Kiểm tra quyền: người tạo hoặc admin mới được thêm thành viên
+        if ($group->created_by !== auth()->id() && !$group->hasAdmin(auth()->id())) {
             return redirect()->route('groups.members', $group)
                 ->with('error', 'Bạn không có quyền thêm thành viên vào nhóm!');
         }
@@ -269,27 +337,56 @@ class GroupController extends Controller
     {
         if (!$group->hasMember(auth()->id())) {
             return redirect()->route('groups.show', $group)
-                ->with('error', 'Bạn cần là thành viên của nhóm để đăng bài!');
+                ->with('error', 'Bạn không phải là thành viên của nhóm này.');
         }
 
         $request->validate([
-            'title' => 'required|string|max:255',
-            'content' => 'required|string',
-            'image' => 'nullable|image|max:2048'
+            'title' => [
+                'required',
+                'string',
+                'max:255',
+                'regex:/^[^\s　]*[^\s　]+[^\s　]*$/', // Tiêu đề: không cho phép toàn khoảng trắng
+            ],
+            'content' => [
+                'required',
+                'string',
+                'max:1000', // Giới hạn nội dung tối đa 1000 ký tự
+            ],
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048', // Tùy chọn upload ảnh
+        ], [
+            'title.required' => 'Vui lòng nhập tiêu đề bài viết.',
+            'title.string' => 'Tiêu đề phải là chuỗi ký tự.',
+            'title.max' => 'Tiêu đề không được vượt quá 255 ký tự.',
+            'title.regex' => 'Tiêu đề không được chỉ chứa toàn khoảng trắng.',
+            'content.required' => 'Vui lòng nhập nội dung bài viết.',
+            'content.string' => 'Nội dung bài viết phải là chuỗi ký tự.',
+            'content.max' => 'Nội dung bài viết không được vượt quá 1000 ký tự.',
+            'image.image' => 'File upload không phải là ảnh hợp lệ.',
+            'image.mimes' => 'Ảnh chỉ chấp nhận định dạng: jpeg, png, jpg, gif.',
+            'image.max' => 'Kích thước ảnh không được vượt quá 2MB.',
         ]);
 
-        $data = $request->only(['title', 'content']);
-        $data['user_id'] = auth()->id();
-        $data['group_id'] = $group->id;
+        try {
+            $postData = [
+                'group_id' => $group->id,
+                'user_id' => auth()->id(),
+                'title' => $request->title,
+                'content' => $request->content,
+            ];
 
-        if ($request->hasFile('image')) {
-            $data['image'] = $request->file('image')->store('group-posts', 'public');
+            if ($request->hasFile('image')) {
+                $postData['image'] = $request->file('image')->store('group-post-images', 'public');
+            }
+
+            $groupPost = GroupPost::create($postData);
+
+            return redirect()->route('groups.show', $group)
+                ->with('success', 'Bài viết đã được đăng thành công trong nhóm.');
+        } catch (\Exception $e) {
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Có lỗi xảy ra khi đăng bài viết. Vui lòng thử lại sau.');
         }
-
-        GroupPost::create($data);
-
-        return redirect()->route('groups.show', $group)
-            ->with('success', 'Đăng bài thành công!');
     }
 
     /**

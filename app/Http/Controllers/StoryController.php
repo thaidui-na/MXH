@@ -6,6 +6,9 @@ use App\Models\Story;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Carbon\Carbon;
+use FFMpeg\FFMpeg;
+use FFMpeg\Coordinate\Dimension;
+use FFMpeg\Format\Video\X264;
 
 class StoryController extends Controller
 {
@@ -36,7 +39,70 @@ class StoryController extends Controller
 
         $file = $request->file('media');
         $mediaType = str_starts_with($file->getMimeType(), 'video/') ? 'video' : 'image';
-        $path = $file->store('stories', 'public');
+        
+        if ($mediaType === 'video') {
+            // Tạo thư mục tạm để xử lý video
+            $tempPath = storage_path('app/temp');
+            if (!file_exists($tempPath)) {
+                mkdir($tempPath, 0777, true);
+            }
+            
+            // Lưu file video tạm thời
+            $tempFile = $file->move($tempPath, uniqid() . '.mp4');
+            
+            try {
+                // Khởi tạo FFmpeg
+                $ffmpeg = FFMpeg::create([
+                    'ffmpeg.binaries' => '/usr/bin/ffmpeg', // Đường dẫn đến ffmpeg trên server
+                    'ffprobe.binaries' => '/usr/bin/ffprobe', // Đường dẫn đến ffprobe trên server
+                    'timeout' => 3600, // Timeout 1 giờ
+                    'ffmpeg.threads' => 12, // Số thread xử lý
+                ]);
+                
+                // Mở video
+                $video = $ffmpeg->open($tempFile->getPathname());
+                
+                // Lấy thông tin video
+                $format = $video->getStreams()->first()->getDimensions();
+                $width = $format->getWidth();
+                $height = $format->getHeight();
+                
+                // Tính toán kích thước mới giữ nguyên tỷ lệ
+                $maxDimension = 1280; // Kích thước tối đa cho chiều rộng hoặc cao
+                if ($width > $height) {
+                    $newWidth = min($width, $maxDimension);
+                    $newHeight = round(($height / $width) * $newWidth);
+                } else {
+                    $newHeight = min($height, $maxDimension);
+                    $newWidth = round(($width / $height) * $newHeight);
+                }
+                
+                // Tạo format mới với bitrate thấp hơn
+                $format = new X264('aac', 'libx264');
+                $format->setKiloBitrate(1000); // 1Mbps
+                
+                // Xử lý video
+                $video->resize(new Dimension($newWidth, $newHeight))
+                      ->save($format, $tempPath . '/processed_' . $tempFile->getFilename());
+                
+                // Lưu video đã xử lý vào storage
+                $path = Storage::disk('public')->putFile(
+                    'stories',
+                    new \Illuminate\Http\File($tempPath . '/processed_' . $tempFile->getFilename())
+                );
+                
+                // Xóa file tạm
+                unlink($tempFile->getPathname());
+                unlink($tempPath . '/processed_' . $tempFile->getFilename());
+                
+            } catch (\Exception $e) {
+                // Nếu có lỗi trong quá trình xử lý, lưu video gốc
+                $path = $file->store('stories', 'public');
+            }
+        } else {
+            // Xử lý ảnh như bình thường
+            $path = $file->store('stories', 'public');
+        }
 
         $story = Story::create([
             'user_id' => auth()->id(),
@@ -57,7 +123,21 @@ class StoryController extends Controller
             abort(404);
         }
 
-        return view('stories.show', compact('story'));
+        // Ghi nhận lượt xem nếu người dùng chưa xem story này
+        if (!$story->isViewedBy(auth()->id())) {
+            $story->views()->create([
+                'user_id' => auth()->id(),
+                'viewed_at' => now()
+            ]);
+        }
+
+        // Lấy danh sách người đã xem story
+        $viewers = $story->views()
+            ->with('user')
+            ->latest('viewed_at')
+            ->get();
+
+        return view('stories.show', compact('story', 'viewers'));
     }
 
     public function destroy(Story $story)

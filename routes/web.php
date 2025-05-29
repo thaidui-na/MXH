@@ -21,6 +21,8 @@ use App\Http\Controllers\StoryController;
 use App\Http\Controllers\FollowController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\EventController;
+use App\Http\Controllers\AdminReportController;
+use App\Http\Controllers\UserReportController;
 
 // Route mặc định, hiển thị trang chào mừng
 Route::get('/', function () {
@@ -121,13 +123,15 @@ Route::middleware('auth')->group(function () {
     Route::post('/posts/{post}/favorites/toggle', [PostController::class, 'toggleFavorite'])->name('posts.favorites.toggle');
 
     // Routes quản lý bình luận
-    Route::get('/posts/{post}/comments', [CommentController::class, 'index'])->name('comments.index');
+    Route::get('/posts/{postId}/comments', [CommentController::class, 'index'])->name('comments.index');
     Route::post('/posts/{post}/comments', [CommentController::class, 'store'])->name('comments.store');
     Route::delete('/comments/{comment}', [CommentController::class, 'destroy'])->name('comments.destroy');
     Route::post('/comments/{comment}/reply', [CommentController::class, 'reply'])->name('comments.reply');
+    Route::get('/comments/{comment}/edit', [CommentController::class, 'edit'])->name('comments.edit');
+    Route::put('/comments/{comment}', [CommentController::class, 'update'])->name('comments.update');
 
     // Routes quản lý báo cáo bài viết
-    Route::post('/posts/{post}/report', [PostController::class, 'report'])->name('posts.report');
+    Route::post('/posts/{post}/report', [UserReportController::class, 'store'])->name('posts.report');
 
     // Routes quản lý kết bạn
     Route::post('/users/{user}/add-friend', [UserController::class, 'addFriend'])->name('users.add-friend');
@@ -235,4 +239,16 @@ Route::middleware(['web', 'auth', \App\Http\Middleware\AdminMiddleware::class])-
     Route::get('/posts/{id}/edit', [AdminController::class, 'editPost'])->name('admin.posts.edit'); // Form sửa post
     Route::put('/posts/{id}', [AdminController::class, 'updatePost'])->name('admin.posts.update'); // Cập nhật post
     Route::delete('/posts/{id}', [AdminController::class, 'deletePost'])->name('admin.posts.delete'); // Xóa post
+
+    // Routes quản lý báo cáo
+    // Route hiện tại cho báo cáo bài viết
+    Route::get('/reports', [AdminController::class, 'reports'])->name('admin.reports'); // Danh sách báo cáo bài viết
+    Route::delete('/reports/{id}', [AdminController::class, 'deleteReport'])->name('admin.reports.delete'); // Xóa báo cáo bài viết
+
+    // Route mới cho báo cáo người dùng
+    Route::get('/user-reports', [AdminController::class, 'userReports'])->name('admin.user-reports'); // Danh sách báo cáo người dùng
+
+    // Routes xử lý hành động trên báo cáo người dùng
+    Route::put('/user-reports/{userReport}/mark-resolved', [AdminController::class, 'markUserReportResolved'])->name('admin.user-reports.mark-resolved'); // Đánh dấu báo cáo đã xử lý
+    Route::delete('/user-reports/{userReport}', [AdminController::class, 'deleteUserReport'])->name('admin.user-reports.delete'); // Xóa báo cáo người dùng
 });

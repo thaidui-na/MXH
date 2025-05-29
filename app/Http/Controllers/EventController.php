@@ -84,38 +84,60 @@ class EventController extends Controller
      */
     public function store(Request $request)
     {
-        try {
-            $request->validate([
-                'title' => 'required|string|max:255',
-                'description' => 'required|string',
-                'event_time' => 'required|date',
-                'location' => 'required|string|max:255',
-                'event_type' => 'required|in:online,offline',
-                'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048'
-            ]);
+        $request->validate([
+            'title' => 'required|string|max:255|regex:/^[\p{L}\s]+$/u', // Chỉ cho phép chữ cái và khoảng trắng
+            'description' => 'required|string|max:1000', // Giới hạn độ dài mô tả
+            'event_time' => 'required|date|after:now', // Phải là thời gian trong tương lai
+            'location' => 'required|string|max:255',
+            'event_type' => 'required|in:online,offline',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048|dimensions:min_width=100,min_height=100'
+        ], [
+            'title.required' => 'Vui lòng nhập tiêu đề sự kiện',
+            'title.regex' => 'Tiêu đề chỉ được chứa chữ cái và khoảng trắng',
+            'title.max' => 'Tiêu đề không được vượt quá 255 ký tự',
+            'description.required' => 'Vui lòng nhập mô tả sự kiện',
+            'description.max' => 'Mô tả không được vượt quá 1000 ký tự',
+            'event_time.required' => 'Vui lòng chọn thời gian sự kiện',
+            'event_time.after' => 'Thời gian sự kiện phải là thời gian trong tương lai',
+            'location.required' => 'Vui lòng nhập địa điểm sự kiện',
+            'location.max' => 'Địa điểm không được vượt quá 255 ký tự',
+            'event_type.required' => 'Vui lòng chọn loại sự kiện',
+            'event_type.in' => 'Loại sự kiện không hợp lệ',
+            'image.image' => 'File phải là hình ảnh',
+            'image.mimes' => 'Hình ảnh phải có định dạng: jpeg, png, jpg, gif',
+            'image.max' => 'Kích thước hình ảnh không được vượt quá 2MB',
+            'image.dimensions' => 'Hình ảnh phải có kích thước tối thiểu 100x100 pixels'
+        ]);
 
-            $data = $request->all();
-            $data['user_id'] = auth()->id();
+        // Kiểm tra sự kiện trùng lặp
+        $duplicateEvent = Event::where('title', $request->title)
+            ->where('event_time', $request->event_time)
+            ->where('user_id', auth()->id())
+            ->first();
 
-            // Thêm prefix cho địa điểm dựa vào loại sự kiện
-            if ($data['event_type'] === 'online') {
-                $data['location'] = 'Online: ' . $data['location'];
-            }
-
-            if ($request->hasFile('image')) {
-                $path = $request->file('image')->store('events', 'public');
-                $data['image_path'] = $path;
-            }
-
-            Event::create($data);
-
-            return redirect()->route('events.index')
-                ->with('success', 'Sự kiện đã được tạo thành công.');
-        } catch (\Exception $e) {
+        if ($duplicateEvent) {
             return redirect()->back()
                 ->withInput()
-                ->with('error', 'Có lỗi xảy ra khi tạo sự kiện: ' . $e->getMessage());
+                ->with('error', 'Bạn đã tạo một sự kiện trùng lặp với cùng tiêu đề và thời gian.');
         }
+
+        $data = $request->all();
+        $data['user_id'] = auth()->id();
+
+        // Thêm tiền tố cho địa điểm dựa vào loại sự kiện
+        if ($data['event_type'] === 'online') {
+            $data['location'] = 'Online: ' . $data['location'];
+        }
+
+        if ($request->hasFile('image')) {
+            $path = $request->file('image')->store('events', 'public');
+            $data['image_path'] = $path;
+        }
+
+        Event::create($data);
+
+        return redirect()->route('events.index')
+            ->with('success', 'Sự kiện đã được tạo thành công.');
     }
 
     /**
@@ -158,23 +180,52 @@ class EventController extends Controller
             }
 
             $request->validate([
-                'title' => 'required|string|max:255',
-                'description' => 'required|string',
-                'event_time' => 'required|date',
+                'title' => 'required|string|max:255|regex:/^[\p{L}\s]+$/u', // Chỉ cho phép chữ cái và khoảng trắng
+                'description' => 'required|string|max:1000', // Giới hạn độ dài mô tả
+                'event_time' => 'required|date|after:now', // Phải là thời gian trong tương lai
                 'location' => 'required|string|max:255',
                 'event_type' => 'required|in:online,offline',
-                'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048'
+                'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048|dimensions:min_width=100,min_height=100'
+            ], [
+                'title.required' => 'Vui lòng nhập tiêu đề sự kiện',
+                'title.regex' => 'Tiêu đề chỉ được chứa chữ cái và khoảng trắng',
+                'title.max' => 'Tiêu đề không được vượt quá 255 ký tự',
+                'description.required' => 'Vui lòng nhập mô tả sự kiện',
+                'description.max' => 'Mô tả không được vượt quá 1000 ký tự',
+                'event_time.required' => 'Vui lòng chọn thời gian sự kiện',
+                'event_time.after' => 'Thời gian sự kiện phải là thời gian trong tương lai',
+                'location.required' => 'Vui lòng nhập địa điểm sự kiện',
+                'location.max' => 'Địa điểm không được vượt quá 255 ký tự',
+                'event_type.required' => 'Vui lòng chọn loại sự kiện',
+                'event_type.in' => 'Loại sự kiện không hợp lệ',
+                'image.image' => 'File phải là hình ảnh',
+                'image.mimes' => 'Hình ảnh phải có định dạng: jpeg, png, jpg, gif',
+                'image.max' => 'Kích thước hình ảnh không được vượt quá 2MB',
+                'image.dimensions' => 'Hình ảnh phải có kích thước tối thiểu 100x100 pixels'
             ]);
+
+            // Kiểm tra sự kiện trùng lặp (trừ sự kiện hiện tại)
+            $duplicateEvent = Event::where('title', $request->title)
+                ->where('event_time', $request->event_time)
+                ->where('user_id', auth()->id())
+                ->where('id', '!=', $event->id)
+                ->first();
+
+            if ($duplicateEvent) {
+                return redirect()->back()
+                    ->withInput()
+                    ->with('error', 'Bạn đã tạo một sự kiện trùng lặp với cùng tiêu đề và thời gian.');
+            }
 
             $data = $request->all();
 
-            // Thêm prefix cho địa điểm dựa vào loại sự kiện
+            // Thêm tiền tố cho địa điểm dựa vào loại sự kiện
             if ($data['event_type'] === 'online') {
                 $data['location'] = 'Online: ' . $data['location'];
             }
 
             if ($request->hasFile('image')) {
-                // Delete old image
+                // Xóa ảnh cũ nếu tồn tại
                 if ($event->image_path) {
                     Storage::disk('public')->delete($event->image_path);
                 }
@@ -200,6 +251,11 @@ class EventController extends Controller
     public function destroy(Event $event)
     {
         try {
+            if (!$event) {
+                return redirect()->route('events.index')
+                    ->with('error', 'Sự kiện không tồn tại.');
+            }
+
             if (auth()->id() !== $event->user_id) {
                 return redirect()->route('events.index')
                     ->with('error', 'Bạn không có quyền xóa sự kiện này.');
@@ -211,8 +267,12 @@ class EventController extends Controller
                     ->with('error', 'Không thể xóa sự kiện vì đã có người tham gia.');
             }
 
-            // Xóa ảnh nếu có
+            // Xóa ảnh nếu tồn tại
             if ($event->image_path) {
+                if (!Storage::disk('public')->exists($event->image_path)) {
+                    return redirect()->route('events.index')
+                        ->with('error', 'Không thể xóa hình ảnh sự kiện vì file không tồn tại.');
+                }
                 Storage::disk('public')->delete($event->image_path);
             }
 

@@ -131,7 +131,7 @@
                     <div class="nav-section">
                         <div class="nav-section-title">QUẢN LÝ</div>
                         <a href="{{ route('admin.users') }}" 
-                           class="nav-link {{ request()->routeIs('admin.users*') ? 'active' : '' }}">
+                           class="nav-link {{ request()->routeIs('admin.users*') ? 'active': '' }}">
                             <i class="bi bi-people-fill"></i>
                             <span>Người dùng</span>
                         </a>
@@ -139,6 +139,16 @@
                            class="nav-link {{ request()->routeIs('admin.posts*') ? 'active' : '' }}">
                             <i class="bi bi-file-text-fill"></i>
                             <span>Bài viết</span>
+                        </a>
+                         <a href="{{ route('admin.reports') }}" 
+                           class="nav-link {{ request()->routeIs('admin.reports') ? 'active' : '' }}">
+                            <i class="bi bi-flag-fill"></i>
+                            <span>Báo cáo bài viết</span>
+                        </a>
+                        <a href="{{ route('admin.user-reports') }}" 
+                           class="nav-link {{ request()->routeIs('admin.user-reports') ? 'active' : '' }}">
+                            <i class="bi bi-person-x-fill"></i>
+                            <span>Báo cáo người dùng</span>
                         </a>
                     </div>
                 </nav>

@@ -464,6 +464,21 @@
 
 @section('content')
 <div class="container py-4">
+    {{-- Display Session Flash Messages --}}
+    @if (session('success'))
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            {{ session('success') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    @endif
+
+    @if (session('error'))
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            {{ session('error') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    @endif
+
     {{-- Stories Section --}}
     @if($stories->isNotEmpty())
         <div class="card mb-4">
@@ -493,8 +508,16 @@
                         <div class="story-item">
                             <a href="{{ route('stories.show', $latestStory) }}" class="text-decoration-none">
                                 <div class="story-avatar">
-                                    <img src="{{ $user->avatar_url }}" alt="{{ $user->name }}" 
-                                         class="rounded-circle {{ $userStories->where('is_active', true)->count() > 0 ? 'has-story' : '' }}">
+                                    @if($latestStory->media_type === 'image')
+                                        <img src="{{ $latestStory->media_url }}" alt="{{ $user->name }}'s Story"
+                                             class="{{ $userStories->where('is_active', true)->count() > 0 ? 'has-story' : '' }}">
+                                    @else
+                                        {{-- Hiển thị thumbnail hoặc icon cho video --}}
+                                        <img src="{{ $latestStory->media_url }}" alt="{{ $user->name }}'s Story"
+                                             class="{{ $userStories->where('is_active', true)->count() > 0 ? 'has-story' : '' }}"
+                                             onerror="this.onerror=null;this.src='{{ asset('images/video-placeholder.png') }}';">
+                                        {{-- Có thể thêm icon play overlay ở đây --}}
+                                    @endif
                                 </div>
                                 <div class="story-username">{{ $user->name }}</div>
                             </a>
@@ -607,39 +630,89 @@
         </div>
         {{-- Tab Nhóm của tôi --}}
         <div class="tab-pane fade" id="groups-pane" role="tabpanel" aria-labelledby="groups-tab">
-            @if($groups->count() > 0)
-            <h5 class="mb-3">Nhóm của bạn</h5>
-            <div class="row mb-4">
-                @foreach($groups as $group)
-                <div class="col-md-4">
-                    <div class="group-card">
-                        <img src="{{ $group->cover_image ? Storage::url($group->cover_image) : asset('images/default-cover.jpg') }}" class="group-cover" alt="Cover">
-                        <img src="{{ $group->avatar ? Storage::url($group->avatar) : asset('images/default-avatar.jpg') }}" class="group-avatar" alt="Avatar">
-                        <div class="group-info">
-                            <h5 class="group-title">{{ $group->name }}</h5>
-                            <p class="group-description">{{ Str::limit($group->description, 100) }}</p>
-                            <div class="group-meta">
-                                <span>
-                                    <i class="fas fa-users"></i> {{ $group->members_count }} thành viên
-                                </span>
-                                <span class="badge {{ $group->is_private ? 'bg-secondary' : 'bg-success' }} group-badge">
-                                    {{ $group->is_private ? 'Riêng tư' : 'Công khai' }}
-                                </span>
-                            </div>
-                            <div class="d-grid mt-3">
-                                <a href="{{ route('groups.show', $group) }}" class="btn btn-outline-primary">
-                                    Xem chi tiết
-                                </a>
+            <h4>Nhóm của bạn</h4>
+            {{-- Form tìm kiếm nhóm trong tab Nhóm của tôi (sử dụng cho autocomplete) --}}
+            <div class="group-search-container position-relative mb-4">
+                <div class="input-group">
+                    <input type="text" name="q_groups" class="form-control" id="groupSearchInput" placeholder="Tìm kiếm nhóm..." value="{{ request('q') }}" autocomplete="off">
+                    <button class="btn btn-outline-secondary" type="button"><i class="fas fa-search"></i></button>
+                </div>
+                {{-- Kết quả tìm kiếm gợi ý --}}
+                <div id="groupSearchResults" class="list-group position-absolute w-100 mt-1" style="z-index: 1000;"></div>
+            </div>
+
+            @php
+                // Lấy các nhóm mà người dùng hiện tại là thành viên
+                $userGroupsQuery = auth()->user()->joinedGroups();
+
+                // Áp dụng bộ lọc tìm kiếm nếu có (cho lần tải trang ban đầu)
+                $q = request('q');
+                if ($q) {
+                    $userGroupsQuery->where(function($query) use ($q) {
+                        $query->where('name', 'like', "%$q%")
+                              ->orWhere('description', 'like', "%$q%");
+                    });
+                }
+
+                // Lấy kết quả
+                $userGroups = $userGroupsQuery->withCount('members')->get();
+            @endphp
+
+            @if($userGroups->count() > 0)
+                <div class="row">
+                    @foreach($userGroups as $group)
+                        <div class="col-md-4 mb-4">
+                            <div class="card h-100">
+                                <div class="position-relative">
+                                    <img src="{{ $group->cover_image ? asset('storage/' . $group->cover_image) : asset('images/default-cover.jpg') }}"
+                                         onerror="this.onerror=null;this.src='{{ asset('images/default-cover.jpg') }}';"
+                                         class="card-img-top" alt="Cover" style="height: 100px; object-fit: cover;">
+                                    <img src="{{ $group->avatar ? asset('storage/' . $group->avatar) : asset('images/default-avatar.jpg') }}"
+                                         onerror="this.onerror=null;this.src='{{ asset('images/default-avatar.jpg') }}';"
+                                         class="rounded-circle position-absolute"
+                                         style="width: 40px; height: 40px; bottom: -20px; left: 15px; border: 3px solid white;">
+                                </div>
+                                <div class="card-body pt-4">
+                                    <h5 class="card-title">{{ $group->name }}</h5>
+                                    <p class="card-text text-muted small">
+                                        {{ Str::limit($group->description, 100) }}
+                                    </p>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span class="text-muted small">
+                                            <i class="fas fa-users"></i> {{ $group->members_count }} thành viên
+                                        </span>
+                                        <span class="badge {{ $group->is_private ? 'bg-secondary' : 'bg-success' }}">
+                                            {{ $group->is_private ? 'Riêng tư' : 'Công khai' }}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="card-footer bg-transparent">
+                                    <div class="d-grid gap-2">
+                                        <a href="{{ route('groups.show', $group) }}" class="btn btn-outline-primary mb-2">
+                                            Xem chi tiết
+                                        </a>
+                                        {{-- Nút Rời nhóm (trong tab Nhóm của tôi) --}}
+                                        <form method="POST" action="{{ route('groups.leave', $group->id) }}" onsubmit="return confirm('Bạn có chắc chắn muốn rời nhóm này?');">
+                                             @csrf
+                                             <button type="submit" class="btn btn-danger btn-sm w-100">
+                                                 <i class="fas fa-sign-out-alt"></i> Rời nhóm
+                                             </button>
+                                         </form>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                    </div>
+                    @endforeach
                 </div>
-                @endforeach
-            </div>
             @else
-            <div class="alert custom-alert">
-                Bạn chưa tham gia nhóm nào. <a href="{{ route('groups.create') }}">Tạo nhóm mới</a>
-            </div>
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    @if(request('q'))
+                        Không tìm thấy nhóm nào phù hợp với từ khóa "{{ request('q') }}".
+                    @else
+                        Bạn chưa tham gia nhóm nào. Hãy <a href="{{ route('groups.index') }}">tìm và tham gia nhóm</a>!
+                    @endif
+                </div>
             @endif
         </div>
     </div>
@@ -680,6 +753,91 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
     });
+
+    // Chức năng tìm kiếm nhóm (Autocomplete)
+    const groupSearchInput = document.getElementById('groupSearchInput');
+    const groupSearchResults = document.getElementById('groupSearchResults');
+    let groupSearchTimeout;
+
+    if (groupSearchInput && groupSearchResults) {
+        groupSearchInput.addEventListener('input', function() {
+            clearTimeout(groupSearchTimeout);
+            const query = this.value.trim();
+
+            if (query.length < 2) {
+                groupSearchResults.innerHTML = '';
+                groupSearchResults.classList.remove('list-group'); // Xóa class list-group khi rỗng
+                return;
+            }
+
+            groupSearchTimeout = setTimeout(() => {
+                fetch(`/api/groups/search?q=${encodeURIComponent(query)}`, {
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    groupSearchResults.innerHTML = '';
+                    groupSearchResults.classList.add('list-group'); // Thêm lại class list-group khi có kết quả
+                    
+                    if (data.length === 0) {
+                        groupSearchResults.innerHTML = `
+                            <div class="list-group-item text-center text-muted">
+                                Không tìm thấy nhóm nào
+                            </div>`;
+                    } else {
+                        data.forEach(group => {
+                            const item = document.createElement('a');
+                            item.href = `/groups/${group.id}`;
+                            item.className = 'list-group-item list-group-item-action';
+                            item.innerHTML = `
+                                <div class="d-flex align-items-center">
+                                    <img src="${group.avatar ? '/storage/' + group.avatar : '/images/default-avatar.jpg'}" 
+                                         class="rounded-circle me-2" 
+                                         style="width: 32px; height: 32px; object-fit: cover;">
+                                    <div>
+                                        <div class="fw-bold">${group.name}</div>
+                                        <small class="text-muted">${group.members_count || 0} thành viên</small>
+                                    </div>
+                                </div>`;
+                            groupSearchResults.appendChild(item);
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    groupSearchResults.innerHTML = `
+                        <div class="list-group-item text-center text-danger">
+                            Đã có lỗi xảy ra khi tìm kiếm
+                        </div>`;
+                     groupSearchResults.classList.add('list-group'); // Thêm lại class list-group khi có lỗi
+                });
+            }, 300); // Độ trễ 300ms trước khi tìm kiếm
+        });
+
+        // Ẩn kết quả khi click ra ngoài
+        document.addEventListener('click', function(e) {
+            if (!groupSearchInput.contains(e.target) && !groupSearchResults.contains(e.target)) {
+                groupSearchResults.innerHTML = '';
+                groupSearchResults.classList.remove('list-group');
+            }
+        });
+
+        // Ẩn kết quả khi scroll (để tránh bị che)
+        document.querySelector('.tab-content').addEventListener('scroll', function() {
+             groupSearchResults.innerHTML = '';
+             groupSearchResults.classList.remove('list-group');
+        });
+
+         // Hiện lại kết quả khi focus vào input nếu đã có query
+        groupSearchInput.addEventListener('focus', function() {
+            if (this.value.trim().length >= 2 && groupSearchResults.innerHTML !== '') {
+                groupSearchResults.classList.add('list-group');
+            }
+        });
+    }
 });
 </script>
 @endpush
