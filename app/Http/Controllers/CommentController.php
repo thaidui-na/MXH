@@ -63,7 +63,7 @@ class CommentController extends Controller
             }
 
             return redirect()
-                ->route('posts.show', $post->id)
+                ->back()
                 ->with('success', 'Bình luận đã được thêm thành công.');
         } catch (\Exception $e) {
             return redirect()
@@ -73,7 +73,7 @@ class CommentController extends Controller
         }
     }
 
-    public function reply(Request $request, Comment $comment)
+    public function reply(Request $request, $commentId)
     {
         $validated = $request->validate([
             'content' => 'required|string|max:1000'
@@ -84,6 +84,9 @@ class CommentController extends Controller
         ]);
 
         try {
+            // Tìm bình luận gốc bằng ID
+            $comment = Comment::findOrFail($commentId);
+
             $reply = Comment::create([
                 'content' => $validated['content'],
                 'user_id' => auth()->id(),
@@ -92,21 +95,19 @@ class CommentController extends Controller
             ]);
 
             // Lấy lại danh sách bình luận mới sau khi thêm trả lời
-            $post = Post::findOrFail($comment->post_id);
-            $comments = $post->comments()
-                ->whereNull('parent_id')
-                ->with(['user', 'replies.user' => function($query) {
-                    $query->orderBy('created_at', 'asc');
-                }])
-                ->orderBy('created_at', 'desc')
-                ->get();
-
-            return view('posts.comment', compact('post', 'comments'))
+            // Chúng ta chuyển hướng về trang show của bài viết chứa bình luận
+            return redirect()
+                ->back()
                 ->with('success', 'Trả lời đã được thêm thành công.');
 
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+             // Nếu không tìm thấy bình luận gốc
+            return back()
+                ->withInput() // Giữ lại dữ liệu nhập (nội dung trả lời)
+                ->with('error', 'Không tìm thấy bình luận để trả lời.');
         } catch (\Exception $e) {
             return redirect()
-                ->route('posts.show', $comment->post_id) // Redirect về trang comments với lỗi
+                ->back() // Hoặc có thể redirect()->route('posts.show', $comment->post_id) tùy luồng mong muốn
                 ->withInput()
                 ->with('error', 'Có lỗi xảy ra khi thêm trả lời. Vui lòng thử lại.');
         }
@@ -124,23 +125,29 @@ class CommentController extends Controller
             $post_id = $comment->post_id; // Lưu post_id trước khi xóa
             $comment->delete();
 
-            // Lấy lại danh sách bình luận mới sau khi xóa
-            $post = Post::findOrFail($post_id);
-            $comments = $post->comments()
-                ->whereNull('parent_id')
-                ->with(['user', 'replies.user' => function($query) {
-                    $query->orderBy('created_at', 'asc');
-                }])
-                ->orderBy('created_at', 'desc')
-                ->get();
-
-            return view('posts.comment', compact('post', 'comments'))
+            // Sau khi xóa thành công, chuyển hướng về trang chi tiết bài viết
+            return redirect()
+                ->back()
                 ->with('success', 'Bình luận đã được xóa thành công.');
 
-        } catch (\Exception $e) {
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            // Bắt ngoại lệ khi bài viết gốc không còn tồn tại
             return redirect()
-                ->route('posts.show', $comment->post_id)
-                ->with('error', 'Có lỗi xảy ra khi xóa bình luận. Vui lòng thử lại.');
+                ->route('posts.index') // Chuyển hướng về trang danh sách bài viết
+                ->with('error', 'Bài viết gốc của bình luận này không còn tồn tại.');
+        } catch (\Exception $e) {
+            // Bắt các lỗi khác trong quá trình xóa
+            // Cố gắng chuyển hướng về trang chi tiết bài viết nếu post_id có giá trị
+            if (isset($post_id)) {
+                 return redirect()
+                     ->route('posts.show', $post_id)
+                     ->with('error', 'Có lỗi xảy ra khi xóa bình luận. Vui lòng thử lại.');
+            } else {
+                 // Nếu post_id không xác định, chuyển hướng về trang danh sách bài viết
+                 return redirect()
+                     ->route('posts.index')
+                     ->with('error', 'Có lỗi xảy ra khi xóa bình luận. Vui lòng thử lại.');
+            }
         }
     }
 
