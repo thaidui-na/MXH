@@ -115,7 +115,7 @@ class ProfileController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return redirect()->route('login')->with('success', $message);
+        return redirect()->route('login')->with('status', $message);
     }
 
     /**

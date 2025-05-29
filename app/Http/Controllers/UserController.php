@@ -138,19 +138,19 @@ class UserController extends Controller
             ]);
         }
 
-        // Kiểm tra xem đã là bạn bè chưa
-        if ($currentUser->isFriendWith($user)) {
+        // Kiểm tra xem đã là bạn bè chưa (kiểm tra cả hai chiều)
+        if ($currentUser->isFriendWith($user) || $user->isFriendWith($currentUser)) {
             return response()->json([
                 'success' => false,
                 'error' => 'Bạn đã là bạn bè với người dùng này'
             ]);
         }
 
-        // Kiểm tra xem đã gửi lời mời kết bạn chưa
-        if (DB::table('friends')->where('user_id', $currentUser->id)->where('friend_id', $user->id)->where('status', 'pending')->exists()) {
+        // Kiểm tra xem đã gửi lời mời kết bạn chưa (kiểm tra cả hai chiều)
+        if ($currentUser->hasSentFriendRequestTo($user) || $user->hasSentFriendRequestTo($currentUser)) {
             return response()->json([
                 'success' => false,
-                'error' => 'Bạn đã gửi lời mời kết bạn cho người dùng này'
+                'error' => 'Đã có lời mời kết bạn giữa hai người dùng'
             ]);
         }
 
@@ -168,7 +168,8 @@ class UserController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Đã gửi lời mời kết bạn thành công',
-                'isFriend' => false
+                'isFriend' => false,
+                'hasPendingRequest' => true
             ]);
         } catch (\Exception $e) {
             \Log::error('Error adding friend: ' . $e->getMessage());
@@ -180,21 +181,36 @@ class UserController extends Controller
     }
 
     /**
-     * Hủy kết bạn.
+     * Hủy kết bạn hoặc hủy lời mời kết bạn.
      */
     public function removeFriend(User $user)
     {
-        // Kiểm tra nếu họ thực sự là bạn bè trước khi xóa
-        if (!Auth::user()->isFriendWith($user)) {
-             return response()->json(['success' => false, 'error' => 'Hai người không phải là bạn bè.'], 400);
-        }
+        $currentUser = auth()->user();
 
         try {
-            Auth::user()->removeFriend($user); // Gọi phương thức trong User model
-            return response()->json(['success' => true, 'message' => 'Đã hủy kết bạn thành công']);
+            // Kiểm tra xem có phải là bạn bè hoặc đã gửi lời mời kết bạn
+            if (!$currentUser->isFriendWith($user) && !$currentUser->hasSentFriendRequestTo($user)) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Không tìm thấy mối quan hệ bạn bè hoặc lời mời kết bạn'
+                ]);
+            }
+
+            // Xóa mối quan hệ
+            $currentUser->friends()->detach($user->id);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Đã hủy kết bạn thành công',
+                'isFriend' => false,
+                'hasPendingRequest' => false
+            ]);
         } catch (\Exception $e) {
-            Log::error("Error removing friend {$user->id} by user " . Auth::id() . ": " . $e->getMessage());
-            return response()->json(['success' => false, 'error' => 'Có lỗi xảy ra khi hủy kết bạn.'], 500);
+            \Log::error('Error removing friend: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'error' => 'Có lỗi xảy ra khi hủy kết bạn'
+            ]);
         }
     }
 
@@ -254,54 +270,50 @@ class UserController extends Controller
     public function acceptFriendRequest(User $user)
     {
         $currentUser = auth()->user();
-        
+
         try {
-            // Kiểm tra xem có lời mời kết bạn đang chờ không
+            // Kiểm tra xem có lời mời kết bạn từ người dùng này không
             if (!$currentUser->hasReceivedFriendRequestFrom($user)) {
                 return response()->json([
                     'success' => false,
                     'error' => 'Không tìm thấy lời mời kết bạn từ người dùng này'
-                ], 400);
+                ]);
             }
 
-            // Cập nhật trạng thái kết bạn (chiều nhận)
-            $currentUser->pendingFriendRequests()->updateExistingPivot($user->id, [
-                'status' => 'accepted',
-                'updated_at' => now()
-            ]);
-            
-            // Đảm bảo cả 2 chiều là bạn bè
-            $user->friends()->syncWithoutDetaching([
-                $currentUser->id => [
-                    'status' => 'accepted',
-                    'updated_at' => now()
-                ]
-            ]);
-
-            // Xóa tất cả các lời mời kết bạn chưa được chấp nhận từ người dùng này
+            // Cập nhật trạng thái lời mời kết bạn thành accepted
             DB::table('friends')
                 ->where('user_id', $user->id)
                 ->where('friend_id', $currentUser->id)
                 ->where('status', 'pending')
-                ->delete();
+                ->update([
+                    'status' => 'accepted',
+                    'updated_at' => now()
+                ]);
 
-            // Xóa tất cả các thông báo lời mời kết bạn từ người dùng này
-            $currentUser->notifications()
-                ->where('type', 'App\\Notifications\\FriendRequestNotification')
-                ->where('data->user_id', $user->id)
-                ->delete();
+            // Thêm mối quan hệ bạn bè ngược lại
+            DB::table('friends')->insert([
+                'user_id' => $currentUser->id,
+                'friend_id' => $user->id,
+                'status' => 'accepted',
+                'created_at' => now(),
+                'updated_at' => now()
+            ]);
 
             // Gửi thông báo cho người gửi lời mời
             $user->notify(new \App\Notifications\FriendRequestAcceptedNotification($currentUser));
 
             return response()->json([
-                'success' => true, 
-                'message' => 'Đã chấp nhận lời mời kết bạn!',
+                'success' => true,
+                'message' => 'Đã chấp nhận lời mời kết bạn thành công',
+                'isFriend' => true,
+                'hasPendingRequest' => false,
+                'senderName' => $user->name,
+                'currentUserName' => $currentUser->name,
                 'friend' => [
                     'id' => $user->id,
                     'name' => $user->name,
-                    'avatar' => $user->avatar_url,
-                    'email' => $user->email
+                    'email' => $user->email,
+                    'avatar' => $user->avatar_url
                 ]
             ]);
         } catch (\Exception $e) {
@@ -309,7 +321,7 @@ class UserController extends Controller
             return response()->json([
                 'success' => false,
                 'error' => 'Có lỗi xảy ra khi chấp nhận lời mời kết bạn'
-            ], 500);
+            ]);
         }
     }
 

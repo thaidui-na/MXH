@@ -41,6 +41,8 @@ Route::middleware(['web', 'auth'])->group(function () {
                     $q->where('name', 'like', "%{$query}%")
                       ->orWhere('email', 'like', "%{$query}%");
                 })
+                ->where('account_status', 'active')
+                ->whereNull('deleted_at')
                 ->excludeBlocked()
                 ->select('id', 'name', 'email', 'avatar')
                 ->limit(12)

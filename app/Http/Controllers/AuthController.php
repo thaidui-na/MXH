@@ -20,17 +20,30 @@ class AuthController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users',
+            'email' => 'required|string|email|max:255',
             'password' => 'required|string|min:8|confirmed',
         ]);
+
+        // Xóa hoàn toàn tài khoản cũ nếu tồn tại (cả active và soft-deleted)
+        $existingUser = User::withTrashed()
+            ->where('email', $request->email)
+            ->first();
+
+        if ($existingUser) {
+            $existingUser->forceDelete();
+        }
         
-        User::create([
+        $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
+            'account_status' => 'active'
         ]);
 
-        return redirect()->route('login')->with('success', 'Đăng ký thành công!');
+        // Tự động đăng nhập sau khi đăng ký
+        Auth::login($user);
+
+        return redirect()->route('dashboard')->with('success', 'Đăng ký thành công!');
     }
 
     // Hiển thị form đăng nhập
@@ -48,7 +61,9 @@ class AuthController extends Controller
         ]);
 
         // Kiểm tra trạng thái tài khoản trước khi đăng nhập
-        $user = User::where('email', $credentials['email'])->first();
+        $user = User::withTrashed()
+            ->where('email', $credentials['email'])
+            ->first();
         
         if ($user) {
             if ($user->isDisabled()) {
@@ -61,6 +76,12 @@ class AuthController extends Controller
                 return back()->withErrors([
                     'email' => 'Tài khoản của bạn đã bị xóa.',
                 ]);
+            }
+
+            // Nếu tài khoản đã bị xóa mềm, khôi phục lại
+            if ($user->trashed()) {
+                $user->restore();
+                $user->update(['account_status' => 'active']);
             }
         }
 
