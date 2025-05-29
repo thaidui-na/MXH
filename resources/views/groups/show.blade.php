@@ -132,6 +132,8 @@
                                             </div>
                                         @endif
                                     </div>
+                                    {{-- Thêm tiêu đề bài viết --}}
+                                    <h5 class="card-title">{{ $post->title }}</h5> 
                                     <p class="card-text">{{ $post->content }}</p>
                                     @if($post->image)
                                         <img src="{{ Storage::url($post->image) }}" class="img-fluid rounded mb-3" alt="Post image">
