@@ -425,6 +425,11 @@
                         <div class="card-body">
                             <a href="{{ route('posts.show', $post) }}" class="text-decoration-none">
                                 <h5 class="post-title">{{ $post->title }}</h5>
+                                @if($post->image)
+                                    <div class="mb-3">
+                                        <img src="{{ Storage::url($post->image) }}" alt="Ảnh bài viết" class="img-fluid rounded" style="max-height: 300px;">
+                                    </div>
+                                @endif
                             </a>
                             <div class="post-meta">
                                 <span>
